@@ -1,4 +1,4 @@
-package com.opennotes.app
+package com.builderpro.opennotes
 
 import android.app.Application
 import android.content.res.Configuration

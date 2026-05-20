@@ -1,4 +1,4 @@
-package com.opennotes.app
+package com.builderpro.opennotes
 
 import com.facebook.react.TurboReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -34,7 +34,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>1.0</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -43,7 +43,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>opennotes</string>
-          <string>com.opennotes.app</string>
+          <string>com.builderpro.opennotes</string>
         </array>
       </dict>
       <dict>

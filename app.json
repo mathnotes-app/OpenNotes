@@ -2,7 +2,7 @@
   "expo": {
     "name": "OpenNotes",
     "slug": "open-notes",
-    "version": "0.1.0",
+    "version": "1.0",
     "scheme": "opennotes",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -14,8 +14,9 @@
       "backgroundColor": "#F7F7F4"
     },
     "ios": {
-      "bundleIdentifier": "com.opennotes.app",
+      "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
+      "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "OpenNotes needs access to your photo library so you can insert images into your notes.",
@@ -52,7 +53,8 @@
       }
     },
     "android": {
-      "package": "com.opennotes.app",
+      "package": "com.builderpro.opennotes",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7F7F4"
