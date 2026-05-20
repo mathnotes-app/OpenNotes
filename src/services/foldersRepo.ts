@@ -7,15 +7,26 @@ import {
   listAllMetadata,
 } from './notesRepo';
 
-const INDEX_KEY = '@simplenotes:folders:index';
-const FOLDER_PREFIX = '@simplenotes:folder:';
+const INDEX_KEY = '@opennotes:folders:index';
+const FOLDER_PREFIX = '@opennotes:folder:';
+const LEGACY_NAMESPACE = '@simple' + 'notes:';
+const LEGACY_INDEX_KEY = `${LEGACY_NAMESPACE}folders:index`;
+const LEGACY_FOLDER_PREFIX = `${LEGACY_NAMESPACE}folder:`;
 
 function folderKey(id: string): string {
   return `${FOLDER_PREFIX}${id}`;
 }
 
+function legacyFolderKey(id: string): string {
+  return `${LEGACY_FOLDER_PREFIX}${id}`;
+}
+
 async function readIndex(): Promise<string[]> {
-  const raw = await AsyncStorage.getItem(INDEX_KEY);
+  let raw = await AsyncStorage.getItem(INDEX_KEY);
+  if (!raw) {
+    raw = await AsyncStorage.getItem(LEGACY_INDEX_KEY);
+    if (raw) await AsyncStorage.setItem(INDEX_KEY, raw);
+  }
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -47,7 +58,13 @@ export async function listFolders(): Promise<FolderMetadata[]> {
   if (ids.length === 0) return [];
   const entries = await AsyncStorage.multiGet(ids.map(folderKey));
   const out: FolderMetadata[] = [];
-  for (const [, raw] of entries) {
+  for (let i = 0; i < entries.length; i += 1) {
+    const id = ids[i];
+    let raw = entries[i]?.[1] ?? null;
+    if (!raw) {
+      raw = await AsyncStorage.getItem(legacyFolderKey(id));
+      if (raw) await AsyncStorage.setItem(folderKey(id), raw);
+    }
     if (!raw) continue;
     try {
       out.push(JSON.parse(raw) as FolderMetadata);
@@ -59,7 +76,11 @@ export async function listFolders(): Promise<FolderMetadata[]> {
 }
 
 export async function getFolder(id: string): Promise<FolderMetadata | null> {
-  const raw = await AsyncStorage.getItem(folderKey(id));
+  let raw = await AsyncStorage.getItem(folderKey(id));
+  if (!raw) {
+    raw = await AsyncStorage.getItem(legacyFolderKey(id));
+    if (raw) await AsyncStorage.setItem(folderKey(id), raw);
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as FolderMetadata;
@@ -104,6 +125,7 @@ export async function deleteFolder(id: string, mode: FolderDeleteMode): Promise<
   }
   await Promise.all([
     AsyncStorage.removeItem(folderKey(id)),
+    AsyncStorage.removeItem(legacyFolderKey(id)),
     removeFromIndex(id),
   ]);
 }

@@ -11,4 +11,4 @@ Useful reports include:
 - Native bridge issues in PDF import/export, image handling, or Mobile Ink integration.
 - Dependency or build configuration issues that could compromise users or downstream contributors.
 
-simplenotes is local-first and does not run a hosted notes service. The most important security and privacy surfaces are local file storage, import/export flows, native parsing/rendering, and accidental inclusion of private data in issues or pull requests.
+OpenNotes is local-first and does not run a hosted notes service. The most important security and privacy surfaces are local file storage, import/export flows, native parsing/rendering, and accidental inclusion of private data in issues or pull requests.

@@ -4,7 +4,8 @@ import type { ContinuousEnginePoolToolState } from '@mathnotes/mobile-ink';
 import { DEFAULT_TOOL, TOOL_BY_TYPE, TOOL_DESCRIPTORS } from '../utils/toolPalette';
 import type { SupportedTool } from '../utils/toolPalette';
 
-const KEY = '@simplenotes:toolStateV2';
+const KEY = '@opennotes:toolStateV2';
+const LEGACY_KEY = '@simple' + 'notes:toolStateV2';
 
 export type ToolState = ContinuousEnginePoolToolState;
 
@@ -29,6 +30,15 @@ export function useToolState() {
   useEffect(() => {
     let mounted = true;
     AsyncStorage.getItem(KEY)
+      .then((raw) => {
+        if (!raw) {
+          return AsyncStorage.getItem(LEGACY_KEY).then((legacyRaw) => {
+            if (legacyRaw) AsyncStorage.setItem(KEY, legacyRaw).catch(() => undefined);
+            return legacyRaw;
+          });
+        }
+        return raw;
+      })
       .then((raw) => {
         if (!mounted || !raw) {
           hydratedRef.current = true;

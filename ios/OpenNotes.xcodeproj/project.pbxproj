@@ -13,27 +13,27 @@
 		4788858903E15B3CAEB129E6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */; };
 		7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */; };
 		7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */; };
-		9C2FD7C620026BB779139CCD /* libPods-simplenotes.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7A85B485F4321855B927960 /* libPods-simplenotes.a */; };
+		9C2FD7C620026BB779139CCD /* libPods-OpenNotes.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7A85B485F4321855B927960 /* libPods-OpenNotes.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* simplenotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simplenotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = simplenotes/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = simplenotes/Info.plist; sourceTree = "<group>"; };
-		575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = simplenotes/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFUtilsModule.swift; path = simplenotes/PDFUtilsModule.swift; sourceTree = "<group>"; };
-		7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PDFUtilsModule.m; path = simplenotes/PDFUtilsModule.m; sourceTree = "<group>"; };
-		9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-simplenotes/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		A7A85B485F4321855B927960 /* libPods-simplenotes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-simplenotes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = simplenotes/SplashScreen.storyboard; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* OpenNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OpenNotes/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OpenNotes/Info.plist; sourceTree = "<group>"; };
+		575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = OpenNotes/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFUtilsModule.swift; path = OpenNotes/PDFUtilsModule.swift; sourceTree = "<group>"; };
+		7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PDFUtilsModule.m; path = OpenNotes/PDFUtilsModule.m; sourceTree = "<group>"; };
+		9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-OpenNotes/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		A7A85B485F4321855B927960 /* libPods-OpenNotes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OpenNotes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = OpenNotes/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CEB267F85878647A5ACA788A /* Pods-simplenotes.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-simplenotes.release.xcconfig"; path = "Target Support Files/Pods-simplenotes/Pods-simplenotes.release.xcconfig"; sourceTree = "<group>"; };
-		E6710FB66EE811C212116106 /* Pods-simplenotes.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-simplenotes.debug.xcconfig"; path = "Target Support Files/Pods-simplenotes/Pods-simplenotes.debug.xcconfig"; sourceTree = "<group>"; };
+		CEB267F85878647A5ACA788A /* Pods-OpenNotes.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenNotes.release.xcconfig"; path = "Target Support Files/Pods-OpenNotes/Pods-OpenNotes.release.xcconfig"; sourceTree = "<group>"; };
+		E6710FB66EE811C212116106 /* Pods-OpenNotes.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenNotes.debug.xcconfig"; path = "Target Support Files/Pods-OpenNotes/Pods-OpenNotes.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = simplenotes/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* simplenotes-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "simplenotes-Bridging-Header.h"; path = "simplenotes/simplenotes-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = OpenNotes/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* OpenNotes-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "OpenNotes-Bridging-Header.h"; path = "OpenNotes/OpenNotes-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,44 +41,44 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C2FD7C620026BB779139CCD /* libPods-simplenotes.a in Frameworks */,
+				9C2FD7C620026BB779139CCD /* libPods-OpenNotes.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* simplenotes */ = {
+		13B07FAE1A68108700A75B9A /* OpenNotes */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */,
 				7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */,
-				F11748442D0722820044C1D9 /* simplenotes-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* OpenNotes-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */,
 			);
-			name = simplenotes;
+			name = OpenNotes;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				A7A85B485F4321855B927960 /* libPods-simplenotes.a */,
+				A7A85B485F4321855B927960 /* libPods-OpenNotes.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		50EA7A6BE1D6947E458B577C /* simplenotes */ = {
+		50EA7A6BE1D6947E458B577C /* OpenNotes */ = {
 			isa = PBXGroup;
 			children = (
 				9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */,
 			);
-			name = simplenotes;
+			name = OpenNotes;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -91,7 +91,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* simplenotes */,
+				13B07FAE1A68108700A75B9A /* OpenNotes */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -106,7 +106,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* simplenotes.app */,
+				13B07F961A680F5B00A75B9A /* OpenNotes.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,7 +114,7 @@
 		B025AFE641A7B146AB64069B /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				50EA7A6BE1D6947E458B577C /* simplenotes */,
+				50EA7A6BE1D6947E458B577C /* OpenNotes */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -125,14 +125,14 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = simplenotes/Supporting;
+			path = OpenNotes/Supporting;
 			sourceTree = "<group>";
 		};
 		CCEB29EB4EA264547E3F22DF /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				E6710FB66EE811C212116106 /* Pods-simplenotes.debug.xcconfig */,
-				CEB267F85878647A5ACA788A /* Pods-simplenotes.release.xcconfig */,
+				E6710FB66EE811C212116106 /* Pods-OpenNotes.debug.xcconfig */,
+				CEB267F85878647A5ACA788A /* Pods-OpenNotes.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -141,9 +141,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* simplenotes */ = {
+		13B07F861A680F5B00A75B9A /* OpenNotes */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "simplenotes" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OpenNotes" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				C0723C22CAA8DB53B683F90D /* [Expo] Configure project */,
@@ -158,9 +158,9 @@
 			);
 			dependencies = (
 			);
-			name = simplenotes;
-			productName = simplenotes;
-			productReference = 13B07F961A680F5B00A75B9A /* simplenotes.app */;
+			name = OpenNotes;
+			productName = OpenNotes;
+			productReference = 13B07F961A680F5B00A75B9A /* OpenNotes.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -178,7 +178,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "simplenotes" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OpenNotes" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -191,7 +191,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* simplenotes */,
+				13B07F861A680F5B00A75B9A /* OpenNotes */,
 			);
 		};
 /* End PBXProject section */
@@ -243,7 +243,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-simplenotes-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-OpenNotes-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -256,7 +256,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-simplenotes/Pods-simplenotes-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-OpenNotes/Pods-OpenNotes-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
@@ -269,7 +269,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-simplenotes/Pods-simplenotes-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OpenNotes/Pods-OpenNotes-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -278,7 +278,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-simplenotes/Pods-simplenotes-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-OpenNotes/Pods-OpenNotes-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
@@ -301,7 +301,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-simplenotes/Pods-simplenotes-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OpenNotes/Pods-OpenNotes-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C0723C22CAA8DB53B683F90D /* [Expo] Configure project */ = {
@@ -315,18 +315,18 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/simplenotes/simplenotes.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-simplenotes/expo-configure-project.sh",
+				"$(SRCROOT)/OpenNotes/OpenNotes.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-OpenNotes/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-simplenotes/ExpoModulesProvider.swift",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-OpenNotes/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-simplenotes/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-OpenNotes/expo-configure-project.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -347,11 +347,11 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E6710FB66EE811C212116106 /* Pods-simplenotes.debug.xcconfig */;
+			baseConfigurationReference = E6710FB66EE811C212116106 /* Pods-OpenNotes.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = simplenotes/simplenotes.entitlements;
+				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -361,7 +361,7 @@
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = simplenotes/Info.plist;
+				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -374,9 +374,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.simplenotes.app;
-				PRODUCT_NAME = simplenotes;
-				SWIFT_OBJC_BRIDGING_HEADER = "simplenotes/simplenotes-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.opennotes.app;
+				PRODUCT_NAME = OpenNotes;
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -386,16 +386,16 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CEB267F85878647A5ACA788A /* Pods-simplenotes.release.xcconfig */;
+			baseConfigurationReference = CEB267F85878647A5ACA788A /* Pods-OpenNotes.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = simplenotes/simplenotes.entitlements;
+				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
-				INFOPLIST_FILE = simplenotes/Info.plist;
+				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -408,9 +408,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.simplenotes.app;
-				PRODUCT_NAME = simplenotes;
-				SWIFT_OBJC_BRIDGING_HEADER = "simplenotes/simplenotes-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.opennotes.app;
+				PRODUCT_NAME = OpenNotes;
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -538,7 +538,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "simplenotes" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OpenNotes" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -547,7 +547,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "simplenotes" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OpenNotes" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

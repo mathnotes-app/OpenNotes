@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve simplenotes. The goal of this project is a simple, local-first, open-source notes app with a strong mobile ink foundation.
+Thanks for helping improve OpenNotes. The goal of this project is a simple, local-first, open-source notes app with a strong mobile ink foundation.
 
 Small, focused contributions are welcome: bug reports, reproducible crashes, device-specific PDF import/export issues, documentation fixes, UI polish, and careful fixes to local storage or native integration all help.
 
@@ -30,7 +30,7 @@ Expo Go is not supported because the app depends on native code from `@mathnotes
 
 ## App And Engine Boundaries
 
-Use this repo for the simplenotes app: library UX, note storage, PDF import/export behavior, app chrome, and platform submission work.
+Use this repo for the OpenNotes app: library UX, note storage, PDF import/export behavior, app chrome, and platform submission work.
 
 Use [`mathnotes-app/mobile-ink`](https://github.com/mathnotes-app/mobile-ink) for reusable ink-engine bugs, canvas primitives, native rendering, selection behavior, stroke serialization, and engine-level PDF/page handling.
 

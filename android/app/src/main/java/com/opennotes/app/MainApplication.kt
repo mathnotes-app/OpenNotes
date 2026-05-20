@@ -1,4 +1,4 @@
-package com.simplenotes.app
+package com.opennotes.app
 
 import android.app.Application
 import android.content.res.Configuration

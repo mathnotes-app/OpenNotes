@@ -1,4 +1,4 @@
-package com.simplenotes.app
+package com.opennotes.app
 
 import com.facebook.react.TurboReactPackage
 import com.facebook.react.bridge.NativeModule

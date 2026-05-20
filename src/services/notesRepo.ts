@@ -6,15 +6,26 @@ import { deleteBody, readBody, writeBody } from './noteBodyStorage';
 import { deletePdfForNote } from './pdfStorage';
 import { deleteImagesForNote } from './imageInsertStorage';
 
-const INDEX_KEY = '@simplenotes:notes:index';
-const NOTE_PREFIX = '@simplenotes:note:';
+const INDEX_KEY = '@opennotes:notes:index';
+const NOTE_PREFIX = '@opennotes:note:';
+const LEGACY_NAMESPACE = '@simple' + 'notes:';
+const LEGACY_INDEX_KEY = `${LEGACY_NAMESPACE}notes:index`;
+const LEGACY_NOTE_PREFIX = `${LEGACY_NAMESPACE}note:`;
 
 function noteKey(id: string): string {
   return `${NOTE_PREFIX}${id}`;
 }
 
+function legacyNoteKey(id: string): string {
+  return `${LEGACY_NOTE_PREFIX}${id}`;
+}
+
 async function readIndex(): Promise<string[]> {
-  const raw = await AsyncStorage.getItem(INDEX_KEY);
+  let raw = await AsyncStorage.getItem(INDEX_KEY);
+  if (!raw) {
+    raw = await AsyncStorage.getItem(LEGACY_INDEX_KEY);
+    if (raw) await AsyncStorage.setItem(INDEX_KEY, raw);
+  }
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -46,7 +57,13 @@ export async function listAllMetadata(): Promise<NoteMetadata[]> {
   if (ids.length === 0) return [];
   const entries = await AsyncStorage.multiGet(ids.map(noteKey));
   const out: NoteMetadata[] = [];
-  for (const [, raw] of entries) {
+  for (let i = 0; i < entries.length; i += 1) {
+    const id = ids[i];
+    let raw = entries[i]?.[1] ?? null;
+    if (!raw) {
+      raw = await AsyncStorage.getItem(legacyNoteKey(id));
+      if (raw) await AsyncStorage.setItem(noteKey(id), raw);
+    }
     if (!raw) continue;
     try {
       out.push(JSON.parse(raw) as NoteMetadata);
@@ -63,7 +80,11 @@ export async function listNotes(folderId: string | null): Promise<NoteMetadata[]
 }
 
 export async function getNote(id: string): Promise<NoteMetadata | null> {
-  const raw = await AsyncStorage.getItem(noteKey(id));
+  let raw = await AsyncStorage.getItem(noteKey(id));
+  if (!raw) {
+    raw = await AsyncStorage.getItem(legacyNoteKey(id));
+    if (raw) await AsyncStorage.setItem(noteKey(id), raw);
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as NoteMetadata;
@@ -150,6 +171,7 @@ export async function deleteNote(id: string): Promise<void> {
     deletePdfForNote(id),
     deleteImagesForNote(id),
     AsyncStorage.removeItem(noteKey(id)),
+    AsyncStorage.removeItem(legacyNoteKey(id)),
     removeFromIndex(id),
   ]);
 }

@@ -1,17 +1,17 @@
 {
-  "name": "simplenotes",
+  "name": "open-notes",
   "version": "0.1.0",
   "description": "A no-bloat, local-first, open-source notes app powered by Mobile Ink.",
   "private": true,
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mathnotes-app/simplenotes.git"
+    "url": "git+https://github.com/mathnotes-app/OpenNotes.git"
   },
   "bugs": {
-    "url": "https://github.com/mathnotes-app/simplenotes/issues"
+    "url": "https://github.com/mathnotes-app/OpenNotes/issues"
   },
-  "homepage": "https://github.com/mathnotes-app/simplenotes#readme",
+  "homepage": "https://github.com/mathnotes-app/OpenNotes#readme",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",

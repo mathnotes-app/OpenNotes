@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "simplenotes",
-    "slug": "simplenotes",
+    "name": "OpenNotes",
+    "slug": "open-notes",
     "version": "0.1.0",
-    "scheme": "simplenotes",
+    "scheme": "opennotes",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.simplenotes.app",
+      "bundleIdentifier": "com.opennotes.app",
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "simplenotes needs access to your photo library so you can insert images into your notes.",
-        "NSCameraUsageDescription": "simplenotes needs camera access so you can capture images directly into your notes.",
+        "NSPhotoLibraryUsageDescription": "OpenNotes needs access to your photo library so you can insert images into your notes.",
+        "NSCameraUsageDescription": "OpenNotes needs camera access so you can capture images directly into your notes.",
         "LSSupportsOpeningDocumentsInPlace": true,
         "CFBundleDocumentTypes": [
           {
@@ -45,7 +45,7 @@
       }
     },
     "android": {
-      "package": "com.simplenotes.app",
+      "package": "com.opennotes.app",
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -83,8 +83,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "simplenotes accesses your photos to let you insert them into notes.",
-          "cameraPermission": "simplenotes accesses the camera to let you capture images into notes."
+          "photosPermission": "OpenNotes accesses your photos to let you insert them into notes.",
+          "cameraPermission": "OpenNotes accesses the camera to let you capture images into notes."
         }
       ]
     ]

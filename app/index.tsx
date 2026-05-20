@@ -227,13 +227,13 @@ export default function LibraryScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <LibraryHeader
-        title="simplenotes"
+        title="OpenNotes"
         rightActions={[
           {
             key: 'github',
             icon: 'logo-github',
-            accessibilityLabel: 'Open simplenotes on GitHub',
-            onPress: () => void openUrl('https://github.com/mathnotes-app/simplenotes'),
+            accessibilityLabel: 'Open OpenNotes on GitHub',
+            onPress: () => void openUrl('https://github.com/mathnotes-app/OpenNotes'),
           },
           {
             key: 'x',
@@ -244,7 +244,7 @@ export default function LibraryScreen() {
           {
             key: 'about',
             icon: 'information-circle-outline',
-            accessibilityLabel: 'About simplenotes',
+            accessibilityLabel: 'About OpenNotes',
             onPress: () => setAction({ kind: 'about' }),
           },
         ]}
@@ -480,7 +480,7 @@ function AboutSheet({
         </View>
         <View style={styles.aboutTitleBlock}>
           <Text style={[typography.title, { color: theme.colors.text }]}>
-            About simplenotes
+            About OpenNotes
           </Text>
           <Text style={[typography.footnote, { color: theme.colors.textSecondary }]}>
             Simple notes, open foundations.
@@ -489,7 +489,7 @@ function AboutSheet({
       </View>
 
       <Text style={[typography.callout, styles.aboutBody, { color: theme.colors.text }]}>
-        simplenotes is meant to be a no-bloat, simple, free, open source notes
+        OpenNotes is meant to be a no-bloat, simple, free, open source notes
         app. Most notes apps collect years of extra features, put important
         tools behind a subscription, and keep the underlying ink technology
         closed source.
@@ -504,7 +504,7 @@ function AboutSheet({
         people write.
       </Text>
       <Text style={[typography.footnote, styles.aboutBody, { color: theme.colors.textSecondary }]}>
-        simplenotes is powered by the open source Mobile Ink engine.
+        OpenNotes is powered by the open source Mobile Ink engine.
       </Text>
     </Sheet>
   );

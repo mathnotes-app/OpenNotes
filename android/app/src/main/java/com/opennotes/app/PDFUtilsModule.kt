@@ -1,4 +1,4 @@
-package com.simplenotes.app
+package com.opennotes.app
 
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
