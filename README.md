@@ -1,20 +1,20 @@
-# simplenotes
+# OpenNotes
 
 A no-bloat, local-first, open-source notes app.
 
 <p>
-  <a href="https://github.com/mathnotes-app/simplenotes/actions/workflows/ci.yml"><img src="https://github.com/mathnotes-app/simplenotes/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
-  <a href="https://github.com/mathnotes-app/simplenotes/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mathnotes-app/simplenotes" alt="license" /></a>
+  <a href="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml"><img src="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="https://github.com/mathnotes-app/OpenNotes/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mathnotes-app/OpenNotes" alt="license" /></a>
   <a href="https://github.com/mathnotes-app/mobile-ink"><img src="https://img.shields.io/badge/powered%20by-Mobile%20Ink-0a7cff" alt="Powered by Mobile Ink" /></a>
 </p>
 
-simplenotes is an iOS and Android notes app for people who want fast handwriting, PDFs, folders, and simple organization without the usual bloat. It is free, open source, and privacy focused: notes are stored on-device, the app does not collect analytics, and your notebooks never leave your device unless you choose to export or share them.
+OpenNotes is an iOS and Android notes app for people who want fast handwriting, PDFs, folders, and simple organization without the usual bloat. It is free, open source, and privacy focused: notes are stored on-device, the app does not collect analytics, and your notebooks never leave your device unless you choose to export or share them.
 
 The app is built on [`@mathnotes/mobile-ink`](https://github.com/mathnotes-app/mobile-ink), the open-source React Native ink engine extracted from MathNotes.
 
 ## Status
 
-simplenotes is early and moving quickly. The repo is public now so the app, the ink engine, and the issue tracker can be maintained in the open. App Store and Play Store submissions are planned after the first public assets and submission metadata are ready.
+OpenNotes is early and moving quickly. The repo is public now so the app, the ink engine, and the issue tracker can be maintained in the open. App Store and Play Store submissions are planned after the first public assets and submission metadata are ready.
 
 Screenshots and product images are coming soon.
 
@@ -59,9 +59,9 @@ npx expo run:ios --device
 
 ## Privacy
 
-simplenotes is designed to be local and private. The app does not include analytics SDKs, tracking, cloud sync, accounts, or server storage. Notes, imported PDFs, images, and thumbnails are stored on your device.
+OpenNotes is designed to be local and private. The app does not include analytics SDKs, tracking, cloud sync, accounts, or server storage. Notes, imported PDFs, images, and thumbnails are stored on your device.
 
-If you export, share, back up, or import files through another app or operating-system service, that service's behavior is outside simplenotes.
+If you export, share, back up, or import files through another app or operating-system service, that service's behavior is outside OpenNotes.
 
 ## Contributing
 

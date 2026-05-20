@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.simplenotes.app'
+    namespace 'com.opennotes.app'
     defaultConfig {
-        applicationId 'com.simplenotes.app'
+        applicationId 'com.opennotes.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

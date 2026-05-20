@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>simplenotes</string>
+    <string>OpenNotes</string>
     <key>CFBundleDocumentTypes</key>
     <array>
       <dict>
@@ -42,14 +42,14 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>simplenotes</string>
-          <string>com.simplenotes.app</string>
+          <string>opennotes</string>
+          <string>com.opennotes.app</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+simplenotes</string>
+          <string>exp+opennotes</string>
         </array>
       </dict>
     </array>
@@ -69,11 +69,9 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>simplenotes accesses the camera to let you capture images into notes.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <string>OpenNotes accesses the camera to let you capture images into notes.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>simplenotes accesses your photos to let you insert them into notes.</string>
+    <string>OpenNotes accesses your photos to let you insert them into notes.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
