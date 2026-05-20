@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "supportsTablet": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "OpenNotes needs access to your photo library so you can insert images into your notes.",
@@ -54,7 +54,7 @@
     },
     "android": {
       "package": "com.builderpro.opennotes",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7F7F4"

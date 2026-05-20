@@ -289,6 +289,6 @@ export function OverlayLayer({
 const styles = StyleSheet.create({
   pageHost: {
     position: 'absolute',
-    overflow: 'visible',
+    overflow: 'hidden',
   },
 });

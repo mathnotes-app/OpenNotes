@@ -14,6 +14,7 @@ export interface ToolButtonProps {
   descriptor: ToolDescriptor;
   active: boolean;
   color?: string;
+  compact?: boolean;
   onPress: () => void;
   onLongPress?: () => void;
 }
@@ -22,6 +23,7 @@ export function ToolButton({
   descriptor,
   active,
   color,
+  compact = false,
   onPress,
   onLongPress,
 }: ToolButtonProps) {
@@ -38,6 +40,7 @@ export function ToolButton({
       hitSlop={6}
       style={({ pressed }) => [
         styles.button,
+        compact && styles.buttonCompact,
         {
           backgroundColor: active
             ? theme.colors.accentMuted
@@ -50,11 +53,17 @@ export function ToolButton({
         active && styles.buttonActive,
       ]}
     >
-      <ToolIcon family={descriptor.iconFamily} name={descriptor.iconName} color={tint} />
+      <ToolIcon
+        family={descriptor.iconFamily}
+        name={descriptor.iconName}
+        color={tint}
+        size={compact ? 20 : 22}
+      />
       {descriptor.supportsColor && color ? (
         <View
           style={[
             styles.colorPip,
+            compact && styles.colorPipCompact,
             {
               backgroundColor: color,
               borderColor: theme.colors.toolbarBorder,
@@ -130,19 +139,21 @@ function ToolIcon({
   family,
   name,
   color,
+  size = 22,
 }: {
   family: ToolDescriptor['iconFamily'];
   name: string;
   color: string;
+  size?: number;
 }) {
   switch (family) {
     case 'ion':
-      return <Ionicons name={name as keyof typeof Ionicons.glyphMap} size={22} color={color} />;
+      return <Ionicons name={name as keyof typeof Ionicons.glyphMap} size={size} color={color} />;
     case 'material':
       return (
         <MaterialIcons
           name={name as keyof typeof MaterialIcons.glyphMap}
-          size={22}
+          size={size}
           color={color}
         />
       );
@@ -150,12 +161,12 @@ function ToolIcon({
       return (
         <MaterialCommunityIcons
           name={name as keyof typeof MaterialCommunityIcons.glyphMap}
-          size={22}
+          size={size}
           color={color}
         />
       );
     case 'feather':
-      return <Feather name={name as keyof typeof Feather.glyphMap} size={22} color={color} />;
+      return <Feather name={name as keyof typeof Feather.glyphMap} size={size} color={color} />;
   }
 }
 
@@ -167,6 +178,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.lg,
     margin: 1,
+  },
+  buttonCompact: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.md,
   },
   buttonActive: {
     shadowOffset: { width: 0, height: 1 },
@@ -180,6 +196,11 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 3,
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  colorPipCompact: {
+    bottom: 2,
+    width: 11,
+    height: 3,
   },
 });
 

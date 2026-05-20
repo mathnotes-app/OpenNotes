@@ -872,5 +872,5 @@ export default function NoteScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  canvasArea: { flex: 1, position: 'relative' },
+  canvasArea: { flex: 1, overflow: 'hidden', position: 'relative' },
 });
