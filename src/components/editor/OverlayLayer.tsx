@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   GestureResponderEvent,
+  Keyboard,
   Pressable,
   StyleSheet,
   View,
@@ -125,12 +126,13 @@ export function OverlayLayer({
 
   const handleBlankTap = useCallback(
     (event: GestureResponderEvent) => {
-      if (activeTool === 'text') {
-        handleTextToolTap(event);
+      if (selection) {
+        Keyboard.dismiss();
+        onSelectionChange(null);
         return;
       }
-      if (selection) {
-        onSelectionChange(null);
+      if (activeTool === 'text') {
+        handleTextToolTap(event);
       }
     },
     [activeTool, handleTextToolTap, onSelectionChange, selection],

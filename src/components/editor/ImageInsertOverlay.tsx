@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   Gesture,
   GestureDetector,
+  PointerType,
 } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -310,12 +311,12 @@ export function ImageInsertOverlay({
   ]);
 
   const dragGesture = Gesture.Pan()
-    .enabled(!isCropMode)
+    .enabled(isSelected && !isCropMode)
     .manualActivation(true)
     .minDistance(2)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
@@ -361,7 +362,7 @@ export function ImageInsertOverlay({
     .maxDuration(450)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
       }
     })
@@ -375,7 +376,7 @@ export function ImageInsertOverlay({
     .manualActivation(true)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
@@ -413,7 +414,7 @@ export function ImageInsertOverlay({
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        if (event.pointerType === 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }
@@ -757,7 +758,7 @@ function CropHandles({
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        if (event.pointerType === 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }
