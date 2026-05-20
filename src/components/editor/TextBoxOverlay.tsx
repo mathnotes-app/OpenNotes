@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   Gesture,
   GestureDetector,
+  PointerType,
 } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -219,12 +220,12 @@ export function TextBoxOverlay({
   );
 
   const dragGesture = Gesture.Pan()
-    .enabled(!isEditing)
+    .enabled(isSelected && !isEditing)
     .manualActivation(true)
     .minDistance(2)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
@@ -266,7 +267,7 @@ export function TextBoxOverlay({
     .maxDuration(450)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
       }
     })
@@ -277,10 +278,11 @@ export function TextBoxOverlay({
 
   const createResizeGesture = (handle: ResizeHandle) =>
     Gesture.Pan()
+      .enabled(isSelected && !isEditing)
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        if (event.pointerType === 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }

@@ -1,4 +1,4 @@
-package com.opennotes.app
+package com.builderpro.opennotes
 
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri

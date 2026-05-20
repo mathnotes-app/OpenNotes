@@ -27,7 +27,7 @@ const TOOLBAR_PAD = 6;
 const EDGE_MARGIN = 12;
 const DRAG_ACTIVATE_DISTANCE = 8;
 const BUTTON_FRAME = 38;
-const ACTION_BUTTON_COUNT = 2;
+const ACTION_BUTTON_COUNT = 3;
 const DIVIDER_FRAME = spacing.xs * 2 + StyleSheet.hairlineWidth;
 const ESTIMATED_HORIZONTAL_WIDTH =
   TOOLBAR_PAD * 2 +
@@ -178,6 +178,8 @@ export interface FloatingToolbarProps {
   topInset: number;
   onToolPress: (tool: ToolDescriptor, alreadyActive: boolean, anchor: ToolbarButtonAnchor) => void;
   onToolLongPress: (tool: ToolDescriptor, anchor: ToolbarButtonAnchor) => void;
+  fingerDrawingEnabled: boolean;
+  onToggleFingerDrawing: () => void;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -197,6 +199,8 @@ export function FloatingToolbar({
   topInset,
   onToolPress,
   onToolLongPress,
+  fingerDrawingEnabled,
+  onToggleFingerDrawing,
   onUndo,
   onRedo,
 }: FloatingToolbarProps) {
@@ -207,6 +211,7 @@ export function FloatingToolbar({
   const [dockedEdge, setDockedEdge] = useState<DockedEdge>('top');
   const orientation = orientationForEdge(dockedEdge);
   const isVertical = orientation === 'vertical';
+  const isCompactHorizontal = !isVertical && screenWidth < 430;
   const dockedEdgeRef = useRef(dockedEdge);
   const draggingRef = useRef(false);
   const pillLayoutRef = useRef<ToolbarLayout>({
@@ -460,6 +465,7 @@ export function FloatingToolbar({
             style={[
               styles.pill,
               isVertical ? styles.pillVertical : styles.pillHorizontal,
+              isCompactHorizontal && styles.pillCompact,
               {
                 backgroundColor: theme.colors.toolbarBackground,
                 borderColor: theme.colors.toolbarBorder,
@@ -487,6 +493,7 @@ export function FloatingToolbar({
                     descriptor={tool}
                     active={isActive}
                     color={tint}
+                    compact={isCompactHorizontal}
                     onPress={() => {
                       void Haptics.selectionAsync();
                       onToolPress(tool, isActive, anchorFor(tool.type));
@@ -508,8 +515,30 @@ export function FloatingToolbar({
               ]}
             />
 
-            <SmallIconButton iconName="arrow-undo-outline" onPress={onUndo} theme={theme} />
-            <SmallIconButton iconName="arrow-redo-outline" onPress={onRedo} theme={theme} />
+            <SmallIconButton
+              iconName="hand-left-outline"
+              active={fingerDrawingEnabled}
+              compact={isCompactHorizontal}
+              accessibilityLabel={
+                fingerDrawingEnabled ? 'Disable finger drawing' : 'Enable finger drawing'
+              }
+              onPress={onToggleFingerDrawing}
+              theme={theme}
+            />
+            <SmallIconButton
+              iconName="arrow-undo-outline"
+              compact={isCompactHorizontal}
+              accessibilityLabel="Undo"
+              onPress={onUndo}
+              theme={theme}
+            />
+            <SmallIconButton
+              iconName="arrow-redo-outline"
+              compact={isCompactHorizontal}
+              accessibilityLabel="Redo"
+              onPress={onRedo}
+              theme={theme}
+            />
           </View>
         </GestureDetector>
       </Animated.View>
@@ -519,10 +548,16 @@ export function FloatingToolbar({
 
 function SmallIconButton({
   iconName,
+  active = false,
+  compact = false,
+  accessibilityLabel,
   onPress,
   theme,
 }: {
   iconName: keyof typeof Ionicons.glyphMap;
+  active?: boolean;
+  compact?: boolean;
+  accessibilityLabel: string;
   onPress: () => void;
   theme: ReturnType<typeof useTheme>;
 }) {
@@ -533,12 +568,26 @@ function SmallIconButton({
         onPress();
       }}
       hitSlop={4}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: active }}
       style={({ pressed }) => [
         styles.smallButton,
-        { backgroundColor: pressed ? theme.colors.surfaceMuted : 'transparent' },
+        compact && styles.smallButtonCompact,
+        {
+          backgroundColor: active
+            ? theme.colors.accentMuted
+            : pressed
+              ? theme.colors.surfaceMuted
+              : 'transparent',
+        },
       ]}
     >
-      <Ionicons name={iconName} size={20} color={theme.colors.text} />
+      <Ionicons
+        name={iconName}
+        size={compact ? 18 : 20}
+        color={active ? theme.colors.accent : theme.colors.text}
+      />
     </Pressable>
   );
 }
@@ -565,6 +614,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  pillCompact: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
   pillHorizontal: {
     flexDirection: 'row',
   },
@@ -588,5 +641,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
     margin: 1,
+  },
+  smallButtonCompact: {
+    width: 30,
+    height: 30,
   },
 });

@@ -354,7 +354,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -374,7 +374,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.opennotes.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes;
 				PRODUCT_NAME = OpenNotes;
 				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -393,7 +393,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -408,7 +408,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.opennotes.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes;
 				PRODUCT_NAME = OpenNotes;
 				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
