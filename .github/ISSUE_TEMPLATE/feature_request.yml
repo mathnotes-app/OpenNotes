@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a focused improvement for simplenotes.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+      description: Describe the workflow or pain point.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Keep it focused on the simplest behavior that would solve the problem.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Library
+        - Editor / ink
+        - PDF import
+        - PDF export
+        - Text or image objects
+        - Folders
+        - Privacy / local storage
+        - Platform submission
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

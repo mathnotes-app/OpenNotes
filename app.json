@@ -1,0 +1,92 @@
+{
+  "expo": {
+    "name": "simplenotes",
+    "slug": "simplenotes",
+    "version": "0.1.0",
+    "scheme": "simplenotes",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.simplenotes.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "simplenotes needs access to your photo library so you can insert images into your notes.",
+        "NSCameraUsageDescription": "simplenotes needs camera access so you can capture images directly into your notes.",
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "PDF Document",
+            "CFBundleTypeRole": "Editor",
+            "LSItemContentTypes": [
+              "com.adobe.pdf"
+            ],
+            "LSHandlerRank": "Owner"
+          }
+        ],
+        "UTImportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.adobe.pdf",
+            "UTTypeConformsTo": [
+              "public.data",
+              "public.composite-content"
+            ],
+            "UTTypeDescription": "Portable Document Format (PDF)",
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "pdf"
+              ],
+              "public.mime-type": [
+                "application/pdf"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "android": {
+      "package": "com.simplenotes.app",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "intentFilters": [
+        {
+          "action": "android.intent.action.VIEW",
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ],
+          "data": {
+            "mimeType": "application/pdf"
+          }
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
+          "data": {
+            "mimeType": "application/pdf"
+          }
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "simplenotes accesses your photos to let you insert them into notes.",
+          "cameraPermission": "simplenotes accesses the camera to let you capture images into notes."
+        }
+      ]
+    ]
+  }
+}

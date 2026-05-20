@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a reproducible simplenotes bug.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please avoid attaching private notes, personal PDFs, or screenshots with sensitive information.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Library
+        - Editor / ink
+        - PDF import
+        - PDF export
+        - Text or image objects
+        - Folders
+        - Install or build
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS
+      placeholder: iPad Pro 12.9, iPadOS 18.5 / Pixel 8, Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or crash output
+      description: Paste relevant logs if you have them. Remove personal paths or private file names if needed.
+      render: shell
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
