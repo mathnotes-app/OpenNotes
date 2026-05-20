@@ -12,7 +12,9 @@ import {
   Keyboard,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -60,6 +62,7 @@ import type { ToolDescriptor } from '../../src/utils/toolPalette';
 
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
+const FINGER_DRAWING_PREF_KEY = 'opennotes.editor.fingerDrawingEnabled';
 
 type EditorAction =
   | { kind: 'insertImage' }
@@ -113,10 +116,15 @@ function mergePreviewIntoPage(
   };
 }
 
+function defaultFingerDrawingForViewport(width: number, height: number): boolean {
+  return Math.min(width, height) < 768;
+}
+
 export default function NoteScreen() {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const canvasRef = useRef<InfiniteInkCanvasRef | null>(null);
@@ -124,6 +132,7 @@ export default function NoteScreen() {
   const canvasReadyRef = useRef(false);
   const isMountedRef = useRef(true);
   const navigatingRef = useRef(false);
+  const fingerDrawingPrefLoadedRef = useRef(false);
   const storedPreviewByPageIdRef = useRef(new Map<string, PagePreviewSnapshot>());
   const lastPenToolRef = useRef<'pen' | 'highlighter' | 'crayon' | 'calligraphy'>('pen');
 
@@ -144,6 +153,13 @@ export default function NoteScreen() {
   const [action, setAction] = useState<EditorAction | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isPageSidebarOpen, setIsPageSidebarOpen] = useState(false);
+  const defaultFingerDrawingEnabled = useMemo(
+    () => defaultFingerDrawingForViewport(viewportWidth, viewportHeight),
+    [viewportHeight, viewportWidth],
+  );
+  const [fingerDrawingEnabled, setFingerDrawingEnabled] = useState(
+    defaultFingerDrawingEnabled,
+  );
   const [toolPopover, setToolPopover] = useState<{
     descriptor: ToolDescriptor;
     anchor: ToolbarButtonAnchor;
@@ -210,6 +226,38 @@ export default function NoteScreen() {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(FINGER_DRAWING_PREF_KEY)
+      .then((raw) => {
+        if (cancelled || !isMountedRef.current) return;
+        if (raw === 'true' || raw === 'false') {
+          setFingerDrawingEnabled(raw === 'true');
+        } else {
+          setFingerDrawingEnabled(defaultFingerDrawingEnabled);
+        }
+      })
+      .catch((error) => {
+        if (__DEV__) console.warn('[NoteScreen] finger drawing pref load failed', error);
+      })
+      .finally(() => {
+        if (!cancelled) fingerDrawingPrefLoadedRef.current = true;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultFingerDrawingEnabled]);
+
+  useEffect(() => {
+    if (!fingerDrawingPrefLoadedRef.current) return;
+    AsyncStorage.setItem(
+      FINGER_DRAWING_PREF_KEY,
+      fingerDrawingEnabled ? 'true' : 'false',
+    ).catch((error) => {
+      if (__DEV__) console.warn('[NoteScreen] finger drawing pref save failed', error);
+    });
+  }, [fingerDrawingEnabled]);
 
   // Initial load
   useEffect(() => {
@@ -659,7 +707,6 @@ export default function NoteScreen() {
     }, [handleBack]),
   );
 
-  const allowFingerDrawing = useMemo(() => false, []);
   const headerHeight = insets.top + EDITOR_HEADER_BAR_HEIGHT;
 
   const pagesForOverlay = useMemo(() => {
@@ -715,7 +762,7 @@ export default function NoteScreen() {
           toolState={toolState}
           backgroundType={metadata?.backgroundType ?? 'plain'}
           pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
-          fingerDrawingEnabled={allowFingerDrawing}
+          fingerDrawingEnabled={fingerDrawingEnabled}
           onReady={handleCanvasReady}
           onDrawingChange={handleDrawingChange}
           onCurrentPageChange={handleCurrentPageChange}
@@ -747,6 +794,11 @@ export default function NoteScreen() {
         activeTool={toolState.toolType as ToolDescriptor['type']}
         toolColors={toolColors}
         topInset={headerHeight}
+        fingerDrawingEnabled={fingerDrawingEnabled}
+        onToggleFingerDrawing={() => {
+          void Haptics.selectionAsync();
+          setFingerDrawingEnabled((value) => !value);
+        }}
         onToolPress={handleToolPress}
         onToolLongPress={handleToolLongPress}
         onUndo={handleUndo}
