@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,7 +40,19 @@ import {
   listFolders,
   renameFolder,
 } from '../src/services/foldersRepo';
+import {
+  recordReviewSignal,
+  requestReviewAfterPositiveMoment,
+} from '../src/services/reviewPromptService';
 import type { BackgroundType, FolderMetadata, NoteMetadata } from '../src/types/note';
+
+const LEGAL_URLS = {
+  privacy: 'https://mathnotes-app.github.io/OpenNotes/privacy/',
+  terms: 'https://mathnotes-app.github.io/OpenNotes/terms/',
+  support: 'https://mathnotes-app.github.io/OpenNotes/support/',
+  github: 'https://github.com/mathnotes-app/OpenNotes',
+  x: 'https://x.com/markpm39',
+};
 
 type Action =
   | { kind: 'newItem' }
@@ -78,6 +91,7 @@ export default function LibraryScreen() {
   useFocusEffect(
     useCallback(() => {
       void refresh();
+      void requestReviewAfterPositiveMoment();
     }, [refresh]),
   );
 
@@ -103,6 +117,7 @@ export default function LibraryScreen() {
   const openNote = useCallback(
     (id: string) => {
       void Haptics.selectionAsync();
+      void recordReviewSignal('note_opened');
       router.push(`/note/${id}`);
     },
     [router],
@@ -127,12 +142,16 @@ export default function LibraryScreen() {
           backgroundType,
           title: title.trim() || undefined,
         });
+        void recordReviewSignal('note_created');
         openNote(meta.id);
         return;
       }
 
       const meta = await createPdfNoteFromPicker({ folderId: null, title });
-      if (meta) openNote(meta.id);
+      if (meta) {
+        void recordReviewSignal('note_created');
+        openNote(meta.id);
+      }
     } catch (error) {
       if (__DEV__) console.warn('[LibraryScreen] create note failed', error);
       Alert.alert('Could not create note', 'Please try again.');
@@ -233,13 +252,13 @@ export default function LibraryScreen() {
             key: 'github',
             icon: 'logo-github',
             accessibilityLabel: 'Open OpenNotes on GitHub',
-            onPress: () => void openUrl('https://github.com/mathnotes-app/OpenNotes'),
+            onPress: () => void openUrl(LEGAL_URLS.github),
           },
           {
             key: 'x',
             icon: 'logo-x',
             accessibilityLabel: 'Open Mark Miller on X',
-            onPress: () => void openUrl('https://x.com/markpm39'),
+            onPress: () => void openUrl(LEGAL_URLS.x),
           },
           {
             key: 'about',
@@ -471,6 +490,14 @@ function AboutSheet({
   onClose: () => void;
 }) {
   const theme = useTheme();
+  const openUrl = useCallback(async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      if (__DEV__) console.warn('[AboutSheet] open link failed', error);
+      Alert.alert('Could not open link', 'Please try again.');
+    }
+  }, []);
 
   return (
     <Sheet visible={visible} onClose={onClose}>
@@ -506,7 +533,31 @@ function AboutSheet({
       <Text style={[typography.footnote, styles.aboutBody, { color: theme.colors.textSecondary }]}>
         OpenNotes is powered by the open source Mobile Ink engine.
       </Text>
+      <View style={styles.aboutLinks}>
+        <AboutLink label="Privacy" onPress={() => void openUrl(LEGAL_URLS.privacy)} />
+        <AboutLink label="Terms" onPress={() => void openUrl(LEGAL_URLS.terms)} />
+        <AboutLink label="Support" onPress={() => void openUrl(LEGAL_URLS.support)} />
+      </View>
     </Sheet>
+  );
+}
+
+function AboutLink({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.aboutLink,
+        { borderColor: theme.colors.divider },
+        pressed && { opacity: 0.65 },
+      ]}
+    >
+      <Text style={[typography.callout, styles.aboutLinkText, { color: theme.colors.accent }]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -580,5 +631,22 @@ const styles = StyleSheet.create({
   aboutBody: {
     lineHeight: 22,
     marginBottom: spacing.md,
+  },
+  aboutLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  aboutLink: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  aboutLinkText: {
+    fontWeight: '600',
   },
 });

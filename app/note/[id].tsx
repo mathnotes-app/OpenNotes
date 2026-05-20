@@ -53,6 +53,7 @@ import {
   type PickedImageResult,
 } from '../../src/services/imageInsertStorage';
 import { exportNotebookAsPdf } from '../../src/services/exportService';
+import { recordReviewSignal } from '../../src/services/reviewPromptService';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import type { NoteMetadata } from '../../src/types/note';
 import type { ToolDescriptor } from '../../src/utils/toolPalette';
@@ -188,6 +189,7 @@ export default function NoteScreen() {
       pages: mergedPages,
     };
     await saveNoteBody(id, merged);
+    void recordReviewSignal('note_saved');
   }, [id, mergeStoredPreviews, rememberPagePreviews]);
 
   const [autosaveEnabled, setAutosaveEnabled] = useState(true);
@@ -603,6 +605,8 @@ export default function NoteScreen() {
           'Export failed',
           result.error ?? 'Could not generate a PDF. Please try again.',
         );
+      } else {
+        void recordReviewSignal('note_exported');
       }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] export failed', error);

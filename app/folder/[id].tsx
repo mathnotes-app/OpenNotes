@@ -26,6 +26,7 @@ import {
   listFolders,
   renameFolder,
 } from '../../src/services/foldersRepo';
+import { recordReviewSignal } from '../../src/services/reviewPromptService';
 import type { BackgroundType, FolderMetadata, NoteMetadata } from '../../src/types/note';
 
 type Action =
@@ -81,12 +82,16 @@ export default function FolderScreen() {
           backgroundType,
           title: title.trim() || undefined,
         });
+        void recordReviewSignal('note_created');
         router.push(`/note/${meta.id}`);
         return;
       }
 
       const meta = await createPdfNoteFromPicker({ folderId: folder.id, title });
-      if (meta) router.push(`/note/${meta.id}`);
+      if (meta) {
+        void recordReviewSignal('note_created');
+        router.push(`/note/${meta.id}`);
+      }
     } catch (error) {
       if (__DEV__) console.warn('[FolderScreen] create note failed', error);
       Alert.alert('Could not create note', 'Please try again.');
@@ -162,7 +167,10 @@ export default function FolderScreen() {
               <NoteCard
                 key={note.id}
                 note={note}
-                onPress={() => router.push(`/note/${note.id}`)}
+                onPress={() => {
+                  void recordReviewSignal('note_opened');
+                  router.push(`/note/${note.id}`);
+                }}
                 onLongPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setAction({ kind: 'noteMenu', note });

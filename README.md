@@ -63,6 +63,12 @@ OpenNotes is designed to be local and private. The app does not include analytic
 
 If you export, share, back up, or import files through another app or operating-system service, that service's behavior is outside OpenNotes.
 
+Public legal and support pages:
+
+- [Privacy Policy](https://mathnotes-app.github.io/OpenNotes/privacy/)
+- [Terms of Use](https://mathnotes-app.github.io/OpenNotes/terms/)
+- [Support](https://mathnotes-app.github.io/OpenNotes/support/)
+
 ## Contributing
 
 Bug reports, feature requests, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), and please avoid attaching private notes or documents to public issues.
