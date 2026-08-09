@@ -358,7 +358,9 @@ export function TextBoxOverlay({
               value={localContent}
               onChangeText={handleContentChange}
               multiline
-              scrollEnabled={false}
+              // Keep the insertion point reachable when the text is longer
+              // than the box, particularly while the software keyboard is up.
+              scrollEnabled
               style={[
                 styles.input,
                 {
