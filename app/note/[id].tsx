@@ -10,6 +10,8 @@ import {
   Alert,
   BackHandler,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -529,8 +531,19 @@ export default function NoteScreen() {
         ...state,
         textBoxes: [...state.textBoxes, box],
       }));
+      const needsTrailingBlankPage = pageIndex >= enginePages.length - 1;
+      const ensureTrailingBlankPage = needsTrailingBlankPage
+        ? canvasRef.current?.addPage({ force: true, scroll: false })
+        : Promise.resolve();
+      void ensureTrailingBlankPage?.finally(() => {
+        // Wait for the keyboard and its layout resize before positioning the
+        // active line. This preserves the user's current page position.
+        setTimeout(() => {
+          canvasRef.current?.revealPagePosition(pageIndex, box.y, true);
+        }, 250);
+      });
     },
-    [mutateOverlay],
+    [enginePages.length, mutateOverlay],
   );
 
   const handleUpdateTextBox = useCallback(
@@ -752,7 +765,10 @@ export default function NoteScreen() {
         onExport={() => void handleExport()}
       />
 
-      <View style={styles.canvasArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.canvasArea}
+      >
         <InfiniteInkCanvas
           ref={canvasRef}
           style={styles.flex}
@@ -788,7 +804,7 @@ export default function NoteScreen() {
           onRemoveInsertedElement={handleRemoveInsertedElement}
           onCreateTextBoxId={textBoxId}
         />
-      </View>
+      </KeyboardAvoidingView>
 
       <FloatingToolbar
         activeTool={toolState.toolType as ToolDescriptor['type']}
