@@ -102,7 +102,9 @@ export function OverlayLayer({
         x: Math.max(0, coord.x - 6),
         y: Math.max(0, coord.y - 12),
         width: 240,
-        height: 36,
+        // Give a new note enough room for several lines before its internal
+        // editor needs to scroll.
+        height: 120,
         content: '',
         color: activeColor,
         fontSize: 18,
