@@ -274,19 +274,28 @@ export default function NoteScreen() {
         if (!cancelled && meta) setMetadata(meta);
         const body = await readNoteBody(id);
         if (cancelled) return;
-        if (body) {
-          rememberPagePreviews(body.pages);
-          setEnginePages(mergeStoredPreviews(body.pages));
-          const initialMap = new Map<string, PageOverlayState>();
-          for (const page of body.pages) {
-            initialMap.set(page.id, overlayFromPage(page));
-          }
-          setOverlayMap(initialMap);
-          if (canvasReadyRef.current) {
-            void canvasRef.current?.loadNotebookData(body);
-          } else {
-            pendingBodyRef.current = body;
-          }
+        const notebookData: SerializedNotebookData = body ?? {
+          version: '1.0',
+          pages: [
+            {
+              id: 'page-1',
+              title: 'Page 1',
+              data: '{"pages":{}}',
+              rotation: 0,
+            },
+          ],
+        };
+        rememberPagePreviews(notebookData.pages);
+        setEnginePages(mergeStoredPreviews(notebookData.pages));
+        const initialMap = new Map<string, PageOverlayState>();
+        for (const page of notebookData.pages) {
+          initialMap.set(page.id, overlayFromPage(page));
+        }
+        setOverlayMap(initialMap);
+        if (canvasReadyRef.current) {
+          void canvasRef.current?.loadNotebookData(notebookData);
+        } else {
+          pendingBodyRef.current = notebookData;
         }
       } catch (error) {
         if (__DEV__) console.warn('[NoteScreen] load failed', error);
