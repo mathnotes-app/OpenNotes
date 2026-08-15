@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   Keyboard,
@@ -15,10 +15,7 @@ import type {
 import { TextBoxOverlay } from './TextBoxOverlay';
 import { ImageInsertOverlay } from './ImageInsertOverlay';
 import type { ViewportTransformStore } from '../../hooks/useViewportTransform';
-import {
-  pageRectFromTransform,
-  screenToPageCoord,
-} from '../../hooks/useViewportTransform';
+import { screenToPageCoord } from '../../hooks/useViewportTransform';
 import type { SupportedTool } from '../../utils/toolPalette';
 
 const CONTENT_PADDING = 16;
@@ -70,19 +67,22 @@ export function OverlayLayer({
   onRemoveInsertedElement,
   onCreateTextBoxId,
 }: OverlayLayerProps) {
-  const [transform, setTransform] = useState<InfiniteInkViewportTransform | null>(
-    () => store.getSnapshot(),
-  );
+  const transformRef = useRef<InfiniteInkViewportTransform | null>(store.getSnapshot());
+  const [hasTransform, setHasTransform] = useState(() => transformRef.current !== null);
 
   useEffect(() => {
     const unsub = store.subscribe(() => {
-      setTransform(store.getSnapshot());
+      const next = store.getSnapshot();
+      if (!next) return;
+      transformRef.current = next;
+      setHasTransform(true);
     });
     return unsub;
   }, [store]);
 
   const handleTextToolTap = useCallback(
     (event: GestureResponderEvent) => {
+      const transform = transformRef.current;
       if (!transform || activeTool !== 'text') return;
       const { locationX, locationY } = event.nativeEvent;
       const coord = screenToPageCoord(
@@ -122,7 +122,6 @@ export function OverlayLayer({
       pageHeight,
       pageWidth,
       pages.length,
-      transform,
     ],
   );
 
@@ -140,7 +139,7 @@ export function OverlayLayer({
     [activeTool, handleTextToolTap, onSelectionChange, selection],
   );
 
-  if (!transform) {
+  if (!hasTransform) {
     return null;
   }
 
@@ -159,20 +158,6 @@ export function OverlayLayer({
       ) : null}
 
       {pages.map((page, pageIndex) => {
-        const rect = pageRectFromTransform(
-          transform,
-          pageIndex,
-          pageWidth,
-          pageHeight,
-          CONTENT_PADDING,
-          PAGE_GAP,
-        );
-        if (
-          rect.screenY + rect.height < -200 ||
-          rect.screenY > transform.containerHeight + 200
-        ) {
-          return null;
-        }
         const textBoxes = page.textBoxes ?? [];
         const elements = [...(page.insertedElements ?? [])].sort(
           (a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
@@ -184,10 +169,10 @@ export function OverlayLayer({
             style={[
               styles.pageHost,
               {
-                left: rect.screenX,
-                top: rect.screenY,
-                width: rect.width,
-                height: rect.height,
+                left: 0,
+                top: pageIndex * (pageHeight + PAGE_GAP),
+                width: pageWidth,
+                height: pageHeight,
               },
             ]}
           >
@@ -204,7 +189,7 @@ export function OverlayLayer({
                 <ImageInsertOverlay
                   key={el.id}
                   element={el}
-                  pageScale={rect.scale}
+                  pageScale={transformRef.current?.scale ?? 1}
                   screenLeft={0}
                   screenTop={0}
                   pageWidth={pageWidth}
@@ -250,7 +235,7 @@ export function OverlayLayer({
                 <TextBoxOverlay
                   key={tb.id}
                   textBox={tb}
-                  pageScale={rect.scale}
+                  pageScale={transformRef.current?.scale ?? 1}
                   screenLeft={0}
                   screenTop={0}
                   pageWidth={pageWidth}
