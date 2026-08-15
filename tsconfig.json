@@ -6,12 +6,6 @@
     "paths": {
       "@/*": [
         "src/*"
-      ],
-      "@mathnotes/mobile-ink": [
-        "../mobile-ink/src/index.ts"
-      ],
-      "@mathnotes/mobile-ink/*": [
-        "../mobile-ink/src/*"
       ]
     }
   },
