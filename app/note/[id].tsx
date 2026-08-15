@@ -793,25 +793,26 @@ export default function NoteScreen() {
           onCurrentPageChange={handleCurrentPageChange}
           onPagesChange={handlePagesChange}
           onPencilDoubleTap={handlePencilDoubleTap}
+          overlay={
+            <OverlayLayer
+              store={store}
+              pages={pagesForOverlay}
+              pageWidth={PAGE_WIDTH}
+              pageHeight={PAGE_HEIGHT}
+              activeTool={toolState.toolType as ToolDescriptor['type']}
+              activeColor={toolState.color}
+              selection={selection}
+              onSelectionChange={setSelection}
+              onCreateTextBox={handleCreateTextBox}
+              onUpdateTextBox={handleUpdateTextBox}
+              onRemoveTextBox={handleRemoveTextBox}
+              onUpdateInsertedElement={handleUpdateInsertedElement}
+              onDuplicateInsertedElement={handleDuplicateInsertedElement}
+              onRemoveInsertedElement={handleRemoveInsertedElement}
+              onCreateTextBoxId={textBoxId}
+            />
+          }
           onTransformChange={handleTransform}
-        />
-
-        <OverlayLayer
-          store={store}
-          pages={pagesForOverlay}
-          pageWidth={PAGE_WIDTH}
-          pageHeight={PAGE_HEIGHT}
-          activeTool={toolState.toolType as ToolDescriptor['type']}
-          activeColor={toolState.color}
-          selection={selection}
-          onSelectionChange={setSelection}
-          onCreateTextBox={handleCreateTextBox}
-          onUpdateTextBox={handleUpdateTextBox}
-          onRemoveTextBox={handleRemoveTextBox}
-          onUpdateInsertedElement={handleUpdateInsertedElement}
-          onDuplicateInsertedElement={handleDuplicateInsertedElement}
-          onRemoveInsertedElement={handleRemoveInsertedElement}
-          onCreateTextBoxId={textBoxId}
         />
       </KeyboardAvoidingView>
 
