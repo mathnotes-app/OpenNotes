@@ -323,16 +323,19 @@ export function TextBoxOverlay({
   const animatedStyle = useAnimatedStyle(() => ({
     left: screenLeft,
     top: screenTop,
-    width: width.value * pageScale,
-    height: height.value * pageScale,
+    // OverlayLayer is rendered inside InfiniteInkCanvas's transformed viewport.
+    // Positions and dimensions here must remain in page units; pageScale is only
+    // used above to translate screen-space gesture deltas back to page units.
+    width: width.value,
+    height: height.value,
     transform: [
-      { translateX: x.value * pageScale },
-      { translateY: y.value * pageScale },
+      { translateX: x.value },
+      { translateY: y.value },
       { scale: isDragging.value || isResizing.value ? 1.02 : 1 },
     ],
   }));
 
-  const fontSize = (textBox.fontSize ?? 18) * pageScale;
+  const fontSize = textBox.fontSize ?? 18;
   const color = textBox.color || theme.colors.text;
   const showChrome = isSelected || isEditing;
 

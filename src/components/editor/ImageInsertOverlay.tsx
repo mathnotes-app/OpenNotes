@@ -454,11 +454,13 @@ export function ImageInsertOverlay({
   const animatedStyle = useAnimatedStyle(() => ({
     left: screenLeft,
     top: screenTop,
-    width: width.value * pageScale,
-    height: height.value * pageScale,
+    // InfiniteInkCanvas already transforms this overlay with the page. Keep
+    // its layout in page units; pageScale is for screen-space gesture deltas.
+    width: width.value,
+    height: height.value,
     transform: [
-      { translateX: x.value * pageScale },
-      { translateY: y.value * pageScale },
+      { translateX: x.value },
+      { translateY: y.value },
       { rotate: `${rotation.value}deg` },
     ],
   }));
