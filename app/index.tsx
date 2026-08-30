@@ -42,6 +42,7 @@ import {
   renameFolder,
 } from '../src/services/foldersRepo';
 import type { BackgroundType, FolderMetadata, NoteMetadata } from '../src/types/note';
+import { t } from '../src/i18n';
 
 type Action =
   | { kind: 'newItem' }
@@ -160,7 +161,7 @@ export default function LibraryScreen() {
       }
     } catch (error) {
       if (__DEV__) console.warn('[LibraryScreen] create note failed', error);
-      Alert.alert('Could not create note', 'Please try again.');
+      Alert.alert(t.library.couldNotCreateNote, t.common.pleaseTryAgain);
     } finally {
       creatingNoteRef.current = false;
     }
@@ -172,12 +173,12 @@ export default function LibraryScreen() {
 
   const confirmDeleteNote = useCallback((note: NoteMetadata) => {
     Alert.alert(
-      'Delete note?',
-      `"${note.title}" will be permanently deleted.`,
+      t.library.deleteNoteTitle,
+      t.library.deleteNoteMessage(note.title),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: t.common.delete,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -185,7 +186,7 @@ export default function LibraryScreen() {
               await refresh();
             } catch (error) {
               if (__DEV__) console.warn('[LibraryScreen] delete note failed', error);
-              Alert.alert('Could not delete note', 'Please try again.');
+              Alert.alert(t.library.couldNotDeleteNote, t.common.pleaseTryAgain);
             }
           },
         },
@@ -195,12 +196,12 @@ export default function LibraryScreen() {
 
   const confirmDeleteFolderKeepNotes = useCallback((folder: FolderMetadata) => {
     Alert.alert(
-      'Delete folder?',
-      `"${folder.name}" will be deleted. Its notes will stay in your library.`,
+      t.library.deleteFolderTitle,
+      t.library.deleteFolderMessage(folder.name),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Delete Folder',
+          text: t.library.deleteFolderLabel,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -208,7 +209,7 @@ export default function LibraryScreen() {
               await refresh();
             } catch (error) {
               if (__DEV__) console.warn('[LibraryScreen] delete folder failed', error);
-              Alert.alert('Could not delete folder', 'Please try again.');
+              Alert.alert(t.library.couldNotDeleteFolder, t.common.pleaseTryAgain);
             }
           },
         },
@@ -217,14 +218,13 @@ export default function LibraryScreen() {
   }, [refresh]);
 
   const confirmDeleteFolderAndNotes = useCallback((folder: FolderMetadata, noteCount: number) => {
-    const noteText = noteCount === 1 ? '1 note' : `${noteCount} notes`;
     Alert.alert(
-      'Delete folder and notes?',
-      `"${folder.name}" and ${noteText} inside it will be permanently deleted.`,
+      t.library.deleteFolderAndNotesTitle,
+      t.library.deleteFolderAndNotesMessage(folder.name, t.library.noteCount(noteCount)),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Delete All',
+          text: t.library.deleteAllLabel,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -232,7 +232,7 @@ export default function LibraryScreen() {
               await refresh();
             } catch (error) {
               if (__DEV__) console.warn('[LibraryScreen] delete folder notes failed', error);
-              Alert.alert('Could not delete folder', 'Please try again.');
+              Alert.alert(t.library.couldNotDeleteFolder, t.common.pleaseTryAgain);
             }
           },
         },
@@ -248,7 +248,7 @@ export default function LibraryScreen() {
           {
             key: 'openNotes',
             icon: 'heart-outline',
-            accessibilityLabel: 'Support OpenNotes',
+            accessibilityLabel: t.library.supportA11y,
             onPress: () => setAction({ kind: 'openNotes' }),
           },
         ]}
@@ -259,8 +259,8 @@ export default function LibraryScreen() {
         </View>
       ) : sortedFolders.length === 0 && rootNotes.length === 0 ? (
         <EmptyState
-          title="No notes yet"
-          subtitle="Tap the plus button to create your first note or folder."
+          title={t.library.emptyTitle}
+          subtitle={t.library.emptySubtitle}
           iconName="document-outline"
         />
       ) : (
@@ -269,7 +269,7 @@ export default function LibraryScreen() {
           showsVerticalScrollIndicator={false}
         >
           {sortedFolders.length > 0 ? (
-            <LibrarySection title="Folders">
+            <LibrarySection title={t.library.foldersSection}>
               <View style={styles.list}>
                 {sortedFolders.map((folder) => (
                   <FolderCard
@@ -289,7 +289,7 @@ export default function LibraryScreen() {
           ) : null}
 
           {rootNotes.length > 0 ? (
-            <LibrarySection title={sortedFolders.length > 0 ? 'Notes' : ''}>
+            <LibrarySection title={sortedFolders.length > 0 ? t.library.notesSection : ''}>
               <View style={styles.list}>
                 {rootNotes.map((note) => (
                   <NoteCard
@@ -341,16 +341,16 @@ export default function LibraryScreen() {
 
       <ItemActionsMenu
         visible={action?.kind === 'newItem'}
-        title="Create"
+        title={t.library.createTitle}
         actions={[
           {
             key: 'note',
-            label: 'New Note',
+            label: t.library.newNote,
             onPress: () => setAction({ kind: 'createNoteBackground' }),
           },
           {
             key: 'folder',
-            label: 'New Folder',
+            label: t.library.newFolder,
             onPress: handleCreateFolder,
           },
         ]}
@@ -371,17 +371,17 @@ export default function LibraryScreen() {
             ? [
                 {
                   key: 'rename',
-                  label: 'Rename',
+                  label: t.common.rename,
                   onPress: () => setAction({ kind: 'renameNote', note: action.note }),
                 },
                 {
                   key: 'move',
-                  label: 'Move to Folder',
+                  label: t.library.moveToFolder,
                   onPress: () => setAction({ kind: 'moveNote', note: action.note }),
                 },
                 {
                   key: 'delete',
-                  label: 'Delete',
+                  label: t.common.delete,
                   destructive: true,
                   onPress: () => confirmDeleteNote(action.note),
                 },
@@ -399,19 +399,19 @@ export default function LibraryScreen() {
             ? [
                 {
                   key: 'rename',
-                  label: 'Rename',
+                  label: t.common.rename,
                   onPress: () =>
                     setAction({ kind: 'renameFolder', folder: action.folder }),
                 },
                 {
                   key: 'orphan',
-                  label: 'Delete (keep notes)',
+                  label: t.library.deleteKeepNotesLabel,
                   destructive: true,
                   onPress: () => confirmDeleteFolderKeepNotes(action.folder),
                 },
                 {
                   key: 'deleteNotes',
-                  label: 'Delete folder and all notes',
+                  label: t.library.deleteFolderAndNotesLabel,
                   destructive: true,
                   onPress: () =>
                     confirmDeleteFolderAndNotes(
@@ -427,9 +427,9 @@ export default function LibraryScreen() {
 
       <RenameDialog
         visible={action?.kind === 'renameNote'}
-        title="Rename note"
+        title={t.library.renameNoteTitle}
         initialValue={action?.kind === 'renameNote' ? action.note.title : ''}
-        placeholder="Note title"
+        placeholder={t.library.noteTitlePlaceholder}
         onCancel={() => setAction(null)}
         onConfirm={async (value) => {
           if (action?.kind === 'renameNote') {
@@ -442,9 +442,9 @@ export default function LibraryScreen() {
 
       <RenameDialog
         visible={action?.kind === 'renameFolder'}
-        title="Rename folder"
+        title={t.library.renameFolderTitle}
         initialValue={action?.kind === 'renameFolder' ? action.folder.name : ''}
-        placeholder="Folder name"
+        placeholder={t.library.folderNamePlaceholder}
         onCancel={() => setAction(null)}
         onConfirm={async (value) => {
           if (action?.kind === 'renameFolder') {
@@ -457,10 +457,10 @@ export default function LibraryScreen() {
 
       <RenameDialog
         visible={action?.kind === 'createFolder'}
-        title="New folder"
+        title={t.library.newFolderTitle}
         initialValue=""
-        placeholder="Folder name"
-        confirmLabel="Create"
+        placeholder={t.library.folderNamePlaceholder}
+        confirmLabel={t.common.create}
         onCancel={() => setAction(null)}
         onConfirm={async (value) => {
           if (!value.trim()) {

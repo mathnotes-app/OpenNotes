@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { t } from '../../src/i18n';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { LibraryHeader } from '../../src/components/library/LibraryHeader';
@@ -91,7 +92,7 @@ export default function FolderScreen() {
       }
     } catch (error) {
       if (__DEV__) console.warn('[FolderScreen] create note failed', error);
-      Alert.alert('Could not create note', 'Please try again.');
+      Alert.alert(t.library.couldNotCreateNote, t.common.pleaseTryAgain);
     } finally {
       creatingNoteRef.current = false;
     }
@@ -99,12 +100,12 @@ export default function FolderScreen() {
 
   const confirmDeleteNote = useCallback((note: NoteMetadata) => {
     Alert.alert(
-      'Delete note?',
-      `"${note.title}" will be permanently deleted.`,
+      t.library.deleteNoteTitle,
+      t.library.deleteNoteMessage(note.title),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: t.common.delete,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -112,7 +113,7 @@ export default function FolderScreen() {
               await refresh();
             } catch (error) {
               if (__DEV__) console.warn('[FolderScreen] delete note failed', error);
-              Alert.alert('Could not delete note', 'Please try again.');
+              Alert.alert(t.library.couldNotDeleteNote, t.common.pleaseTryAgain);
             }
           },
         },
@@ -127,7 +128,7 @@ export default function FolderScreen() {
         style={[styles.flex, { backgroundColor: theme.colors.background }]}
       >
         <LibraryHeader
-          title="Folder"
+          title={t.common.folder}
           showBack
           onBack={() => router.replace('/')}
         />
@@ -141,7 +142,7 @@ export default function FolderScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <LibraryHeader
-        title={folder?.name ?? 'Folder'}
+        title={folder?.name ?? t.common.folder}
         showBack
         onBack={() => router.replace('/')}
         rightIcon="create-outline"
@@ -150,8 +151,8 @@ export default function FolderScreen() {
 
       {notes.length === 0 ? (
         <EmptyState
-          title="Empty folder"
-          subtitle={`Tap the plus button to add a note to ${folder?.name ?? 'this folder'}.`}
+          title={t.library.emptyFolderTitle}
+          subtitle={t.library.emptyFolderSubtitle(folder?.name ?? t.library.thisFolder)}
           iconName="folder-open-outline"
         />
       ) : (
@@ -194,12 +195,12 @@ export default function FolderScreen() {
             ? [
                 {
                   key: 'rename',
-                  label: 'Rename',
+                  label: t.common.rename,
                   onPress: () => setAction({ kind: 'renameNote', note: action.note }),
                 },
                 {
                   key: 'moveRoot',
-                  label: 'Move to Root',
+                  label: t.library.moveToRoot,
                   onPress: async () => {
                     await moveNote(action.note.id, null);
                     await refresh();
@@ -207,12 +208,12 @@ export default function FolderScreen() {
                 },
                 {
                   key: 'move',
-                  label: 'Move to Folder',
+                  label: t.library.moveToFolder,
                   onPress: () => setAction({ kind: 'moveNote', note: action.note }),
                 },
                 {
                   key: 'delete',
-                  label: 'Delete',
+                  label: t.common.delete,
                   destructive: true,
                   onPress: () => confirmDeleteNote(action.note),
                 },
@@ -224,9 +225,9 @@ export default function FolderScreen() {
 
       <RenameDialog
         visible={action?.kind === 'renameNote'}
-        title="Rename note"
+        title={t.library.renameNoteTitle}
         initialValue={action?.kind === 'renameNote' ? action.note.title : ''}
-        placeholder="Note title"
+        placeholder={t.library.noteTitlePlaceholder}
         onCancel={() => setAction(null)}
         onConfirm={async (value) => {
           if (action?.kind === 'renameNote') {
@@ -239,9 +240,9 @@ export default function FolderScreen() {
 
       <RenameDialog
         visible={action?.kind === 'renameFolder'}
-        title="Rename folder"
+        title={t.library.renameFolderTitle}
         initialValue={folder?.name ?? ''}
-        placeholder="Folder name"
+        placeholder={t.library.folderNamePlaceholder}
         onCancel={() => setAction(null)}
         onConfirm={async (value) => {
           if (folder) {

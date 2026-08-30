@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { FolderMetadata } from '../../types/note';
@@ -68,7 +69,7 @@ export function FolderCard({ folder, noteCount, onPress, onLongPress, onMenuPres
         style={[typography.caption, styles.meta, { color: theme.colors.textTertiary }]}
         numberOfLines={1}
       >
-        {noteCount === 0 ? 'Empty' : `${noteCount} note${noteCount === 1 ? '' : 's'}`}
+        {noteCount === 0 ? t.library.folderEmpty : t.library.noteCount(noteCount)}
       </Text>
     </Pressable>
   );

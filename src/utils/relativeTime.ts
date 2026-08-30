@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -10,18 +12,16 @@ export function formatRelative(iso: string): string {
   const now = Date.now();
   const diff = now - then;
 
-  if (diff < 30 * SECOND) return 'just now';
+  if (diff < 30 * SECOND) return t.time.justNow;
   if (diff < HOUR) {
-    const m = Math.max(1, Math.floor(diff / MINUTE));
-    return `${m}m ago`;
+    return t.time.minutesAgo(Math.max(1, Math.floor(diff / MINUTE)));
   }
   if (diff < DAY) {
-    const h = Math.floor(diff / HOUR);
-    return `${h}h ago`;
+    return t.time.hoursAgo(Math.floor(diff / HOUR));
   }
   if (diff < WEEK) {
     const d = Math.floor(diff / DAY);
-    return d === 1 ? 'yesterday' : `${d}d ago`;
+    return d === 1 ? t.time.yesterday : t.time.daysAgo(d);
   }
 
   const date = new Date(iso);

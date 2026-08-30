@@ -10,6 +10,7 @@ import {
   setBackupEnabled,
 } from '../services/backupService';
 import { formatRelative } from '../utils/relativeTime';
+import { t } from '../i18n';
 
 export interface UseBackupResult {
   /** False on platforms without a backup implementation (Android, for now). */
@@ -76,20 +77,19 @@ export function useBackup(
     restorePromptShownRef.current = true;
 
     const when = availability.lastBackupAt
-      ? ` (backed up ${formatRelative(new Date(availability.lastBackupAt).toISOString())})`
-      : '';
-    const noun = availability.noteCount === 1 ? 'note' : 'notes';
+      ? formatRelative(new Date(availability.lastBackupAt).toISOString())
+      : null;
     Alert.alert(
-      'Restore your notes?',
-      `An iCloud backup with ${availability.noteCount} ${noun}${when} was found for this device's account.`,
+      t.backup.restoreTitle,
+      t.backup.restoreMessage(t.library.noteCount(availability.noteCount), when),
       [
         {
-          text: 'Not now',
+          text: t.common.notNow,
           style: 'cancel',
           onPress: () => scheduleBackupSync(),
         },
         {
-          text: 'Restore',
+          text: t.backup.restoreAction,
           onPress: () => {
             void (async () => {
               const result = await performBackupRestore();
@@ -97,13 +97,13 @@ export function useBackup(
               await refreshLibrary();
               scheduleBackupSync();
               if (result.status === 'ok') {
-                Alert.alert('Restore complete', `${result.restored} files restored.`);
+                Alert.alert(t.backup.restoreCompleteTitle, t.backup.restoreCompleteMessage(result.restored));
               } else {
                 Alert.alert(
-                  'Restore finished with problems',
+                  t.backup.restoreProblemsTitle,
                   result.status === 'partial'
-                    ? `${result.restored} files restored, ${result.failed} could not be read from iCloud. Try again later for the rest.`
-                    : 'iCloud is not reachable right now. Try again later.',
+                    ? t.backup.restorePartialMessage(result.restored, result.failed)
+                    : t.backup.restoreUnavailableMessage,
                 );
               }
             })();
@@ -129,12 +129,12 @@ export function useBackup(
       return;
     }
     Alert.alert(
-      'Turn off iCloud backup?',
-      'Your notes will exist only on this device. Deleting the app will permanently delete them.',
+      t.backup.turnOffTitle,
+      t.backup.turnOffMessage,
       [
-        { text: 'Keep backup on', style: 'cancel' },
+        { text: t.backup.keepOn, style: 'cancel' },
         {
-          text: 'Turn off',
+          text: t.backup.turnOffConfirm,
           style: 'destructive',
           onPress: () => setBackupPreference(false),
         },
@@ -144,10 +144,10 @@ export function useBackup(
 
   const backupSubtitle =
     enabled === false
-      ? 'Off — notes exist only on this device'
+      ? t.backup.statusOff
       : available === false
-        ? 'iCloud unavailable — sign in to iCloud to protect your notes'
-        : 'Automatic — your notes survive app deletion';
+        ? t.backup.statusUnavailable
+        : t.backup.statusAutomatic;
 
   return {
     backupSupported: BACKUP_SUPPORTED,

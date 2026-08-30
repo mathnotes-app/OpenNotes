@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -28,7 +29,7 @@ export function RenameDialog({
   title,
   initialValue,
   placeholder,
-  confirmLabel = 'Save',
+  confirmLabel = t.common.save,
   onCancel,
   onConfirm,
 }: RenameDialogProps) {
@@ -92,7 +93,7 @@ export function RenameDialog({
                 style={[styles.button, { backgroundColor: theme.colors.surfaceMuted }]}
                 onPress={onCancel}
               >
-                <Text style={[typography.headline, { color: theme.colors.text }]}>Cancel</Text>
+                <Text style={[typography.headline, { color: theme.colors.text }]}>{t.common.cancel}</Text>
               </Pressable>
               <Pressable
                 style={[styles.button, { backgroundColor: theme.colors.accent }]}

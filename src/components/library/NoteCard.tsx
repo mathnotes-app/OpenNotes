@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { formatRelative } from '../../utils/relativeTime';
@@ -74,7 +75,7 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress }: NoteCardPr
         style={[typography.footnote, styles.title, { color: theme.colors.text }]}
         numberOfLines={2}
       >
-        {note.title || 'Untitled'}
+        {note.title || t.common.untitled}
       </Text>
       <Text
         style={[typography.caption, styles.meta, { color: theme.colors.textTertiary }]}

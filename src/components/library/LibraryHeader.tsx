@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -38,7 +39,7 @@ export function LibraryHeader({
           key: 'primary',
           icon: rightIcon,
           label: rightLabel,
-          accessibilityLabel: rightLabel ?? 'Header action',
+          accessibilityLabel: rightLabel ?? t.library.headerActionA11y,
           onPress: onRightPress,
         }]
       : [];
@@ -61,7 +62,7 @@ export function LibraryHeader({
             style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
           >
             <Ionicons name="chevron-back" size={28} color={theme.colors.accent} />
-            <Text style={[typography.body, { color: theme.colors.accent }]}>Library</Text>
+            <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>
           </Pressable>
         ) : null}
       </View>

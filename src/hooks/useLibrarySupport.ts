@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { OPEN_NOTES_LINKS, openExternalLink } from '../services/externalLinks';
+import { t } from '../i18n';
 import {
   claimCommunityPrompt,
   requestAutomaticReviewIfEligible,
@@ -71,7 +72,7 @@ export function useLibrarySupport({
       onClose();
     } catch (error) {
       if (__DEV__) console.warn('[useLibrarySupport] join failed', error);
-      Alert.alert('Could not update community status', 'Please try again.');
+      Alert.alert(t.community.couldNotUpdateTitle, t.common.pleaseTryAgain);
     } finally {
       actionInFlightRef.current = false;
     }
@@ -84,13 +85,13 @@ export function useLibrarySupport({
       const requested = await requestManualReview();
       if (!requested) {
         Alert.alert(
-          'Ratings are not available yet',
-          'The rating option becomes available when OpenNotes is installed from an app store.',
+          t.community.ratingsUnavailableTitle,
+          t.community.ratingsUnavailableMessage,
         );
       }
     } catch (error) {
       if (__DEV__) console.warn('[useLibrarySupport] review failed', error);
-      Alert.alert('Could not open ratings', 'Please try again later.');
+      Alert.alert(t.community.couldNotOpenRatingsTitle, t.common.pleaseTryAgainLater);
     } finally {
       actionInFlightRef.current = false;
     }

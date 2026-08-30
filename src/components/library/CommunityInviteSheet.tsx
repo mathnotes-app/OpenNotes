@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import { Sheet } from '../ui/Sheet';
 
@@ -34,14 +35,13 @@ export function CommunityInviteSheet({
           maxFontSizeMultiplier={2}
           style={[styles.title, { color: theme.colors.text }]}
         >
-          Help shape OpenNotes.
+          {t.community.title}
         </Text>
         <Text
           maxFontSizeMultiplier={2}
           style={[styles.body, { color: theme.colors.textSecondary }]}
         >
-          Share ideas, vote on what comes next, and meet people who believe notes
-          should stay free.
+          {t.community.body}
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -61,7 +61,7 @@ export function CommunityInviteSheet({
             numberOfLines={1}
             style={styles.primaryText}
           >
-            Join the community
+            {t.community.join}
           </Text>
         </Pressable>
         <Pressable
@@ -74,7 +74,7 @@ export function CommunityInviteSheet({
             numberOfLines={1}
             style={[styles.laterText, { color: theme.colors.textSecondary }]}
           >
-            Not now
+            {t.common.notNow}
           </Text>
         </Pressable>
       </ScrollView>

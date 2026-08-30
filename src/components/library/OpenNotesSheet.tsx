@@ -6,6 +6,7 @@ import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { Sheet } from '../ui/Sheet';
 import { OPEN_NOTES_LINKS, openExternalLink } from '../../services/externalLinks';
+import { t } from '../../i18n';
 
 interface OpenNotesSheetProps {
   visible: boolean;
@@ -45,13 +46,13 @@ export function OpenNotesSheet({
           maxFontSizeMultiplier={2}
           style={[styles.title, { color: theme.colors.text }]}
         >
-          Free notes need a little help.
+          {t.sheet.title}
         </Text>
         <Text
           maxFontSizeMultiplier={2}
           style={[styles.subtitle, { color: theme.colors.textSecondary }]}
         >
-          Everything here is optional. Writing notes never depends on it.
+          {t.sheet.subtitle}
         </Text>
 
         <View
@@ -65,28 +66,28 @@ export function OpenNotesSheet({
         >
           <SupportRow
             icon="people-outline"
-            title="Join the community"
-            subtitle="Ideas, updates, and conversations"
+            title={t.sheet.joinTitle}
+            subtitle={t.sheet.joinSubtitle}
             onPress={onJoinCommunity}
           />
           <SupportRow
             icon="star-outline"
-            title="Rate OpenNotes"
-            subtitle="Leave an App Store review"
+            title={t.sheet.rateTitle}
+            subtitle={t.sheet.rateSubtitle}
             onPress={onRate}
           />
           <SupportRow
             icon="logo-github"
-            title="Star on GitHub"
-            subtitle="Follow the open-source project"
+            title={t.sheet.githubTitle}
+            subtitle={t.sheet.githubSubtitle}
             onPress={() => {
               void openExternalLink(OPEN_NOTES_LINKS.github, 'OpenNotesSheet');
             }}
           />
           <SupportRow
             icon="book-outline"
-            title="Our mission"
-            subtitle="Why OpenNotes stays free and private"
+            title={t.sheet.missionTitle}
+            subtitle={t.sheet.missionSubtitle}
             onPress={onViewIntroduction}
             isLast
           />
@@ -104,13 +105,13 @@ export function OpenNotesSheet({
           >
           <SupportRow
             icon="cloud-outline"
-            title="iCloud backup"
+            title={t.backup.rowTitle}
             subtitle={backupSubtitle}
             isLast
             trailing={
               backupEnabled !== null ? (
                 <Switch
-                  accessibilityLabel="iCloud backup"
+                  accessibilityLabel={t.backup.rowTitle}
                   value={backupEnabled}
                   onValueChange={onToggleBackup}
                 />
@@ -122,19 +123,19 @@ export function OpenNotesSheet({
 
         <View style={styles.utilityLinks}>
           <UtilityLink
-            label="Privacy"
+            label={t.sheet.privacy}
             onPress={() => {
               void openExternalLink(OPEN_NOTES_LINKS.privacy, 'OpenNotesSheet');
             }}
           />
           <UtilityLink
-            label="Terms"
+            label={t.sheet.terms}
             onPress={() => {
               void openExternalLink(OPEN_NOTES_LINKS.terms, 'OpenNotesSheet');
             }}
           />
           <UtilityLink
-            label="Support"
+            label={t.sheet.support}
             onPress={() => {
               void openExternalLink(OPEN_NOTES_LINKS.support, 'OpenNotesSheet');
             }}

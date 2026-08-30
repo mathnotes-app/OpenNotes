@@ -11,7 +11,8 @@ import { Sheet } from '../ui/Sheet';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { BACKGROUND_LABELS, BACKGROUND_TYPES } from '../../types/note';
+import { BACKGROUND_TYPES } from '../../types/note';
+import { t } from '../../i18n';
 import type { BackgroundType } from '../../types/note';
 
 export interface CreateNoteBackgroundSheetProps {
@@ -41,12 +42,12 @@ export function CreateNoteBackgroundSheet({
     <Sheet visible={visible} onClose={onClose}>
       <View style={styles.content}>
         <Text style={[typography.title, styles.title, { color: theme.colors.text }]}>
-          New note
+          {t.library.newNoteSheetTitle}
         </Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Title"
+          placeholder={t.library.titlePlaceholder}
           placeholderTextColor={theme.colors.textTertiary}
           returnKeyType="done"
           style={[
@@ -87,7 +88,7 @@ export function CreateNoteBackgroundSheet({
               adjustsFontSizeToFit
               minimumFontScale={0.85}
             >
-              {BACKGROUND_LABELS[type]}
+              {t.library.backgrounds[type]}
             </Text>
           </Pressable>
         ))}

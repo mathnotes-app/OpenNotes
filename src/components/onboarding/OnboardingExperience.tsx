@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
+import { t } from '../../i18n';
 
 interface OnboardingSlideItem {
   key: string;
@@ -28,33 +29,33 @@ interface OnboardingSlideItem {
 const SLIDES: OnboardingSlideItem[] = [
   {
     key: 'free',
-    title: 'Notes should\nbe free.',
-    body: 'So OpenNotes is. Write by hand, mark up PDFs, and keep every page without a subscription.',
+    title: t.onboarding.slides.free.title,
+    body: t.onboarding.slides.free.body,
     image: require('../../../assets/onboarding/write-freely.png'),
-    imageLabel: 'Paper and an aluminum stylus drawing a blue line',
+    imageLabel: t.onboarding.slides.free.imageLabel,
   },
   {
     key: 'privacy',
-    title: 'And they should\nstay yours.',
-    body: 'No account. No tracking. Your notes stay on your device until you decide otherwise.',
+    title: t.onboarding.slides.privacy.title,
+    body: t.onboarding.slides.privacy.body,
     image: require('../../../assets/onboarding/private-by-design.png'),
-    imageLabel: 'A note secured inside a glass archival case',
+    imageLabel: t.onboarding.slides.privacy.imageLabel,
   },
   {
     key: 'mission',
-    title: 'Built for everyone.',
-    body: 'OpenNotes is free, private, and built in the open. That is the promise.',
+    title: t.onboarding.slides.mission.title,
+    body: t.onboarding.slides.mission.body,
     image: require('../../../assets/onboarding/help-it-grow.png'),
-    imageLabel: 'An open notebook with three woven bookmarks meeting at its binding',
+    imageLabel: t.onboarding.slides.mission.imageLabel,
   },
 ];
 
 const BACKUP_SLIDE: OnboardingSlideItem = {
   key: 'backup',
-  title: 'Safe, even from\ndisasters.',
-  body: 'A lost iPad, a hard crash, a deleted app — with iCloud backup your notes survive them all, in your own iCloud. Nothing ever leaves your Apple account.',
+  title: t.onboarding.slides.backup.title,
+  body: t.onboarding.slides.backup.body,
   image: require('../../../assets/onboarding/private-by-design.png'),
-  imageLabel: 'A note protected inside a clear case, safe from harm',
+  imageLabel: t.onboarding.slides.backup.imageLabel,
 };
 
 export interface OnboardingExperienceProps {
@@ -149,7 +150,7 @@ export function OnboardingExperience({
         <View style={styles.header}>
           <View
             accessibilityRole="tablist"
-            accessibilityLabel="Introduction progress"
+            accessibilityLabel={t.onboarding.progressA11y}
             style={styles.progress}
           >
             {slides.map((slide, index) => (
@@ -169,7 +170,7 @@ export function OnboardingExperience({
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Skip introduction"
+            accessibilityLabel={t.onboarding.skipA11y}
             onPress={finish}
             hitSlop={10}
             style={({ pressed }) => [styles.skip, pressed && styles.pressed]}
@@ -179,7 +180,7 @@ export function OnboardingExperience({
               numberOfLines={1}
               style={[styles.skipText, { color: theme.colors.textSecondary }]}
             >
-              Skip
+              {t.onboarding.skip}
             </Text>
           </Pressable>
         </View>
@@ -223,10 +224,10 @@ export function OnboardingExperience({
               style={styles.primaryButtonText}
             >
               {isBackupPage
-                ? 'Enable iCloud backup'
+                ? t.onboarding.enableBackup
                 : isLastPage
-                  ? 'Start writing'
-                  : 'Continue'}
+                  ? t.onboarding.startWriting
+                  : t.common.continue}
             </Text>
             <Ionicons
               name={
@@ -251,7 +252,7 @@ export function OnboardingExperience({
                 numberOfLines={1}
                 style={[styles.secondaryButtonText, { color: theme.colors.textSecondary }]}
               >
-                Continue without backup
+                {t.onboarding.continueWithoutBackup}
               </Text>
             </Pressable>
           ) : null}

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Sheet } from '../ui/Sheet';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { FolderMetadata } from '../../types/note';
@@ -41,7 +42,7 @@ export function FolderPickerSheet({
       >
         {allowMoveToRoot ? (
           <Row
-            label="Root"
+            label={t.library.root}
             iconName="folder-open"
             active={currentFolderId === null}
             onPress={() => {
