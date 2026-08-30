@@ -6,10 +6,13 @@ import {
   BACKUP_SUBDIR,
   checkRestoreAvailable,
   isSafeRelPath,
+  mergeBackupCatalog,
   noteIdForRel,
   restoreFromBackup,
+  resumeRestoreIfIncomplete,
   syncBackup,
 } from '../src/services/backupEngine.ts';
+import { RECOVERED_NOTE_TITLE } from '../src/services/catalogStore.ts';
 
 const CONTAINER = '/icloud/Documents';
 const BACKUP_DIR = `${CONTAINER}/${BACKUP_SUBDIR}`;
@@ -424,7 +427,9 @@ test('restore copies everything, installs the catalog, and round-trips a full ba
   const result = await restoreFromBackup(fresh);
   assert.deepEqual(result, { status: 'ok', restored: 3 });
   assert.equal(fresh.localFiles.get('notebook-bodies/note-a.body').contents, 'body-a');
-  assert.equal(fresh.localCatalog, catalogRaw(['note-a']));
+  const restoredCatalog = JSON.parse(fresh.localCatalog);
+  assert.deepEqual(restoredCatalog.notes.map((n) => n.id), ['note-a']);
+  assert.equal(restoredCatalog.notes[0].title, 'Title note-a');
 });
 
 test('EDGE: restore never overwrites files that already exist locally', async () => {
@@ -440,7 +445,7 @@ test('EDGE: restore never overwrites files that already exist locally', async ()
   assert.equal(env.localFiles.get('notebook-bodies/note-a.body').contents, 'local-version');
 });
 
-test('EDGE: restore never overwrites a non-empty local catalog', async () => {
+test('EDGE: restore merges into a non-empty local catalog without clobbering local notes', async () => {
   const env = makeEnv({
     localCatalog: catalogRaw(['note-local']),
     backup: {
@@ -449,7 +454,10 @@ test('EDGE: restore never overwrites a non-empty local catalog', async () => {
     },
   });
   await restoreFromBackup(env);
-  assert.equal(env.localCatalog, catalogRaw(['note-local']));
+  const merged = JSON.parse(env.localCatalog);
+  const ids = merged.notes.map((n) => n.id).sort();
+  assert.deepEqual(ids, ['note-backup', 'note-local']);
+  assert.equal(merged.notes.find((n) => n.id === 'note-local').title, 'Title note-local');
 });
 
 test('EDGE: evicted (undownloadable) files are counted as failures, rest still restores', async () => {
@@ -477,6 +485,111 @@ test('EDGE: restore with corrupt backup catalog still restores body files', asyn
   const result = await restoreFromBackup(env);
   assert.deepEqual(result, { status: 'ok', restored: 1 });
   assert.equal(env.localCatalog, null);
+});
+
+test('mergeBackupCatalog: stubs healed, user notes kept, backup-only added, tombstones respected', () => {
+  const local = JSON.parse(catalogRaw(['note-user', 'note-stub']));
+  local.notes[1].title = RECOVERED_NOTE_TITLE;
+  local.deletedNoteIds = { 'note-deleted': '2026-08-30T00:00:00.000Z' };
+  const backup = JSON.parse(catalogRaw(['note-stub', 'note-cloud-only', 'note-deleted']));
+  const merged = mergeBackupCatalog(JSON.stringify(local), JSON.stringify(backup));
+  const titles = Object.fromEntries(merged.notes.map((n) => [n.id, n.title]));
+  assert.equal(titles['note-user'], 'Title note-user');
+  assert.equal(titles['note-stub'], 'Title note-stub');
+  assert.equal(titles['note-cloud-only'], 'Title note-cloud-only');
+  assert.equal('note-deleted' in titles, false);
+  assert.deepEqual(Object.keys(merged.deletedNoteIds), ['note-deleted']);
+});
+
+test('DEVICE REPRO: partial restore (cloud metadata race) resumes to completion on later launches', async () => {
+  // Fresh install on a real device: catalog synced fast, bodies were still
+  // cloud-only. The restore installed titles but no content. The resume pass
+  // must detect notes-without-bodies and pull them once downloadable.
+  const backup = {
+    [`${BACKUP_DIR}/${BACKUP_CATALOG_NAME}`]: catalogRaw(['note-a', 'note-b']),
+    [`${BACKUP_DIR}/${BACKUP_MANIFEST_NAME}`]: JSON.stringify({
+      version: 1,
+      files: {
+        'notebook-bodies/note-a.body': { size: 1, mtimeMs: 1 },
+        'notebook-bodies/note-b.body': { size: 1, mtimeMs: 1 },
+      },
+      lastBackupAt: 5,
+      noteCount: 2,
+    }),
+    [`${BACKUP_DIR}/notebook-bodies/note-a.body`]: 'body-a',
+    [`${BACKUP_DIR}/notebook-bodies/note-b.body`]: 'body-b',
+  };
+  const undownloadable = new Set([
+    'notebook-bodies/note-a.body',
+    'notebook-bodies/note-b.body',
+  ]);
+  const env = makeEnv({ backup, undownloadableRels: undownloadable });
+
+  const first = await restoreFromBackup(env);
+  assert.equal(first.status, 'partial');
+  assert.equal(first.restored, 0);
+  // Titles arrived via catalog merge, content did not - the reported state.
+  assert.equal(JSON.parse(env.localCatalog).notes.length, 2);
+  assert.equal(env.localFiles.size, 0);
+
+  // Next launch, iCloud metadata has synced: resume completes the restore.
+  undownloadable.clear();
+  const resumed = await resumeRestoreIfIncomplete(env);
+  assert.equal(resumed.status, 'ok');
+  assert.equal(resumed.restored, 2);
+  assert.equal(env.localFiles.get('notebook-bodies/note-a.body').contents, 'body-a');
+
+  // Fully healed: nothing further to resume.
+  assert.equal(await resumeRestoreIfIncomplete(env), null);
+});
+
+test('EDGE: resume does nothing for an empty library (prompt path owns that) or complete one', async () => {
+  const empty = makeEnv({
+    backup: { [`${BACKUP_DIR}/notebook-bodies/note-a.body`]: 'a' },
+  });
+  assert.equal(await resumeRestoreIfIncomplete(empty), null);
+
+  const complete = makeEnv({
+    local: { 'notebook-bodies/note-a.body': localFile('a') },
+    localCatalog: catalogRaw(['note-a']),
+    backup: { [`${BACKUP_DIR}/notebook-bodies/note-a.body`]: 'a' },
+  });
+  assert.equal(await resumeRestoreIfIncomplete(complete), null);
+});
+
+test('EDGE: a manifest-only rel (file gone from iCloud) never causes an endless resume loop', async () => {
+  const env = makeEnv({
+    local: { 'notebook-bodies/note-a.body': localFile('a') },
+    localCatalog: catalogRaw(['note-a', 'note-gone']),
+    backup: {
+      [`${BACKUP_DIR}/${BACKUP_MANIFEST_NAME}`]: JSON.stringify({
+        version: 1,
+        files: { 'notebook-bodies/note-gone.body': { size: 1, mtimeMs: 1 } },
+        lastBackupAt: 1,
+        noteCount: 2,
+      }),
+    },
+  });
+  // The file exists only in the stale manifest, not in any listing: gone.
+  assert.equal(await resumeRestoreIfIncomplete(env), null);
+});
+
+test('EDGE: stub titles heal from the backup catalog even when all bodies are present', async () => {
+  // The device race running the other way: bodies synced first, catalog was
+  // cloud-only during the first restore, reconciliation created stubs.
+  const local = JSON.parse(catalogRaw(['note-a']));
+  local.notes[0].title = RECOVERED_NOTE_TITLE;
+  const env = makeEnv({
+    local: { 'notebook-bodies/note-a.body': localFile('a') },
+    localCatalog: JSON.stringify(local),
+    backup: {
+      [`${BACKUP_DIR}/${BACKUP_CATALOG_NAME}`]: catalogRaw(['note-a']),
+      [`${BACKUP_DIR}/notebook-bodies/note-a.body`]: 'a',
+    },
+  });
+  const result = await resumeRestoreIfIncomplete(env);
+  assert.equal(result.status, 'ok');
+  assert.equal(JSON.parse(env.localCatalog).notes[0].title, 'Title note-a');
 });
 
 test('EDGE: an env that throws unexpectedly yields partial, not a crash', async () => {

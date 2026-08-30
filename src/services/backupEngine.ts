@@ -8,7 +8,7 @@
 // Sync pushes local changes to the mirror. Restore pulls the mirror into an
 // EMPTY library (never over existing notes) - after which the catalog's own
 // reconciliation pass rebuilds anything the mirrored catalog missed.
-import { parseCatalog } from './catalogStore.ts';
+import { RECOVERED_NOTE_TITLE, parseCatalog, type Catalog } from './catalogStore.ts';
 
 export const BACKUP_SUBDIR = 'OpenNotesBackup';
 export const BACKUP_MANIFEST_NAME = 'manifest.json';
@@ -143,6 +143,36 @@ function parseManifest(raw: string | null, warn: BackupEnv['warn']): BackupManif
     warn('[backupEngine] backup manifest corrupt; performing full re-mirror');
     return null;
   }
+}
+
+const META_DOWNLOAD_TIMEOUT_MS = 10000;
+
+/**
+ * Reads a backup-side JSON file, forcing an iCloud download first - on a
+ * fresh install the manifest/catalog can be cloud-only just like data files.
+ * A failed download degrades to null, which every caller already handles.
+ */
+async function readBackupMeta(
+  env: BackupEnv,
+  backupDir: string,
+  name: string,
+): Promise<string | null> {
+  const abs = `${backupDir}/${name}`;
+  try {
+    await env.ensureDownloaded(abs, META_DOWNLOAD_TIMEOUT_MS);
+  } catch {
+    // Best effort; the read below returns null if the file never landed.
+  }
+  return env.readBackupFile(abs);
+}
+
+async function backupDataRels(
+  env: BackupEnv,
+  backupDir: string,
+  manifest: BackupManifest | null,
+): Promise<{ rels: Set<string>; listed: Set<string> }> {
+  const listed = new Set(await env.listBackupDataFiles(backupDir));
+  return { rels: new Set([...Object.keys(manifest?.files ?? {}), ...listed]), listed };
 }
 
 function localNoteCount(catalogRaw: string | null): number | null {
@@ -293,11 +323,11 @@ export async function checkRestoreAvailable(env: BackupEnv): Promise<RestoreAvai
     const backupDir = backupDirPath(containerDir);
 
     const manifest = parseManifest(
-      await env.readBackupFile(`${backupDir}/${BACKUP_MANIFEST_NAME}`),
+      await readBackupMeta(env, backupDir, BACKUP_MANIFEST_NAME),
       env.warn,
     );
     const backupCatalog = parseCatalog(
-      (await env.readBackupFile(`${backupDir}/${BACKUP_CATALOG_NAME}`)) ?? '',
+      (await readBackupMeta(env, backupDir, BACKUP_CATALOG_NAME)) ?? '',
     );
 
     const bodyCount =
@@ -319,10 +349,60 @@ export async function checkRestoreAvailable(env: BackupEnv): Promise<RestoreAvai
 }
 
 /**
+ * Merges the backup catalog into the local one. Backup metadata wins for
+ * notes the local catalog is missing or only knows as recovery stubs; notes
+ * the user created locally are kept untouched, as are local tombstones.
+ * Returns the merged catalog, or null when nothing changes.
+ */
+export function mergeBackupCatalog(
+  localRaw: string | null,
+  backupRaw: string | null,
+): Catalog | null {
+  const backup = backupRaw ? parseCatalog(backupRaw) : null;
+  if (!backup || (backup.notes.length === 0 && backup.folders.length === 0)) return null;
+  const local = (localRaw ? parseCatalog(localRaw) : null) ?? {
+    version: 1 as const,
+    notes: [],
+    folders: [],
+    deletedNoteIds: {},
+  };
+
+  let changed = false;
+  const localById = new Map(local.notes.map((n) => [n.id, n]));
+  const backupById = new Map(backup.notes.map((n) => [n.id, n]));
+  const notes = local.notes.map((note) => {
+    const backupNote = backupById.get(note.id);
+    if (backupNote && note.title === RECOVERED_NOTE_TITLE) {
+      changed = true;
+      return backupNote;
+    }
+    return note;
+  });
+  for (const backupNote of backup.notes) {
+    if (!localById.has(backupNote.id) && !local.deletedNoteIds[backupNote.id]) {
+      notes.push(backupNote);
+      changed = true;
+    }
+  }
+
+  const localFolderIds = new Set(local.folders.map((f) => f.id));
+  const folders = [...local.folders];
+  for (const backupFolder of backup.folders) {
+    if (!localFolderIds.has(backupFolder.id)) {
+      folders.push(backupFolder);
+      changed = true;
+    }
+  }
+
+  if (!changed) return null;
+  return { version: 1, notes, folders, deletedNoteIds: local.deletedNoteIds };
+}
+
+/**
  * Copies every backup data file into the local Documents dir (skipping any
- * that already exist locally), then installs the backup catalog if the local
- * one is still empty. Files that fail to download or copy are counted, not
- * fatal - catalog reconciliation recovers whatever did arrive.
+ * that already exist locally), then merges the backup catalog into the local
+ * one. Files that fail to download or copy are counted, not fatal - the
+ * restore is resumable: a later run copies only what is still missing.
  */
 export async function restoreFromBackup(env: BackupEnv): Promise<RestoreResult> {
   try {
@@ -331,11 +411,10 @@ export async function restoreFromBackup(env: BackupEnv): Promise<RestoreResult> 
     const backupDir = backupDirPath(containerDir);
 
     const manifest = parseManifest(
-      await env.readBackupFile(`${backupDir}/${BACKUP_MANIFEST_NAME}`),
+      await readBackupMeta(env, backupDir, BACKUP_MANIFEST_NAME),
       env.warn,
     );
-    const listed = await env.listBackupDataFiles(backupDir);
-    const rels = new Set<string>([...Object.keys(manifest?.files ?? {}), ...listed]);
+    const { rels } = await backupDataRels(env, backupDir, manifest);
 
     let restored = 0;
     let failed = 0;
@@ -362,16 +441,14 @@ export async function restoreFromBackup(env: BackupEnv): Promise<RestoreResult> 
       }
     }
 
-    const backupCatalogRaw = await env.readBackupFile(`${backupDir}/${BACKUP_CATALOG_NAME}`);
-    if (backupCatalogRaw && parseCatalog(backupCatalogRaw)) {
-      const localCount = localNoteCount(await env.readLocalCatalog());
-      if (localCount === null || localCount === 0) {
-        const ok = await env.writeLocalCatalog(backupCatalogRaw);
-        if (!ok) {
-          // Not counted as user-visible failure: reconciliation rebuilds the
-          // catalog from the restored body files on next load.
-          env.warn('[backupEngine] local catalog install failed; relying on reconciliation');
-        }
+    const backupCatalogRaw = await readBackupMeta(env, backupDir, BACKUP_CATALOG_NAME);
+    const merged = mergeBackupCatalog(await env.readLocalCatalog(), backupCatalogRaw);
+    if (merged) {
+      const ok = await env.writeLocalCatalog(JSON.stringify(merged));
+      if (!ok) {
+        // Not counted as user-visible failure: reconciliation rebuilds the
+        // catalog from the restored body files on next load.
+        env.warn('[backupEngine] local catalog merge write failed; relying on reconciliation');
       }
     }
 
@@ -380,5 +457,66 @@ export async function restoreFromBackup(env: BackupEnv): Promise<RestoreResult> 
   } catch (error) {
     env.warn('[backupEngine] restore failed unexpectedly', error);
     return { status: 'partial', restored: 0, failed: 1 };
+  }
+}
+
+/**
+ * Detects and completes an interrupted restore: backup data files that are
+ * still missing locally for notes the local catalog knows about (the state a
+ * partial restore leaves behind - titles present, content absent). Returns
+ * null when there is nothing to resume. Never throws.
+ */
+export async function resumeRestoreIfIncomplete(env: BackupEnv): Promise<RestoreResult | null> {
+  try {
+    if (!(await env.isEnabled())) return null;
+    const containerDir = await env.getContainerDir();
+    if (!containerDir) return null;
+    const backupDir = backupDirPath(containerDir);
+
+    const localCatalog = parseCatalog((await env.readLocalCatalog()) ?? '');
+    if (!localCatalog || localCatalog.notes.length === 0) return null;
+    const localIds = new Set(localCatalog.notes.map((n) => n.id));
+
+    const manifest = parseManifest(
+      await readBackupMeta(env, backupDir, BACKUP_MANIFEST_NAME),
+      env.warn,
+    );
+    const { listed } = await backupDataRels(env, backupDir, manifest);
+
+    // Only files iCloud still claims to have count as pending - a rel that
+    // exists solely in a stale manifest is gone, not downloadable, and must
+    // not put the resume path into a retry-forever loop.
+    let resumable = false;
+    for (const rel of listed) {
+      if (!isSafeRelPath(rel)) continue;
+      const noteId = noteIdForRel(rel);
+      if (!noteId || !localIds.has(noteId)) continue;
+      if (!(await env.localFileExists(rel))) {
+        resumable = true;
+        break;
+      }
+    }
+
+    // Also heal metadata-only damage: recovery stubs whose real titles are
+    // still in the backup catalog (the race running the other way - bodies
+    // synced first, catalog was cloud-only during the first restore).
+    if (!resumable && localCatalog.notes.some((n) => n.title === RECOVERED_NOTE_TITLE)) {
+      const backupCatalog = parseCatalog(
+        (await readBackupMeta(env, backupDir, BACKUP_CATALOG_NAME)) ?? '',
+      );
+      if (backupCatalog) {
+        const backupIds = new Set(backupCatalog.notes.map((n) => n.id));
+        resumable = localCatalog.notes.some(
+          (n) => n.title === RECOVERED_NOTE_TITLE && backupIds.has(n.id),
+        );
+      }
+    }
+
+    if (!resumable) return null;
+    env.warn('[backupEngine] resuming incomplete restore');
+    return await restoreFromBackup(env);
+  } catch (error) {
+    env.warn('[backupEngine] resume check failed', error);
+    return null;
   }
 }

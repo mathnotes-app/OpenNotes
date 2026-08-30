@@ -6,6 +6,7 @@ import {
   DATA_DIRS,
   checkRestoreAvailable,
   restoreFromBackup,
+  resumeRestoreIfIncomplete,
   syncBackup,
   type BackupEnv,
   type BackupFileInfo,
@@ -33,6 +34,10 @@ type ICloudBackupModuleType = {
   listFilesRecursive?: (
     dir: string,
   ) => Promise<Array<{ rel: string; size: number; mtimeMs: number }>>;
+  listCloudFiles?: (
+    dir: string,
+    timeoutMs: number,
+  ) => Promise<Array<{ rel: string; size: number; downloaded: boolean }>>;
 };
 
 const ICloudBackupModule = NativeModules.ICloudBackupModule as
@@ -209,16 +214,32 @@ const env: BackupEnv = {
   },
 
   async listBackupDataFiles(backupDir: string): Promise<string[]> {
-    if (!ICloudBackupModule?.listFilesRecursive) return [];
-    const out: string[] = [];
-    for (const dir of DATA_DIRS) {
-      const entries = await ICloudBackupModule.listFilesRecursive(`${backupDir}/${dir}`);
-      for (const entry of entries) {
-        if (entry.rel.endsWith('.tmp')) continue;
-        out.push(normalizeICloudPlaceholder(`${dir}/${entry.rel}`));
+    const out = new Set<string>();
+    // The filesystem walk sees materialized files (and the dev override dir).
+    if (ICloudBackupModule?.listFilesRecursive) {
+      for (const dir of DATA_DIRS) {
+        const entries = await ICloudBackupModule.listFilesRecursive(`${backupDir}/${dir}`);
+        for (const entry of entries) {
+          if (entry.rel.endsWith('.tmp')) continue;
+          out.add(normalizeICloudPlaceholder(`${dir}/${entry.rel}`));
+        }
       }
     }
-    return out;
+    // The metadata query sees items iCloud knows about but has not yet
+    // synced to disk - the fresh-install state - and nudges the sync along.
+    if (ICloudBackupModule?.listCloudFiles) {
+      try {
+        const cloud = await ICloudBackupModule.listCloudFiles(backupDir, 15000);
+        for (const entry of cloud) {
+          const rel = normalizeICloudPlaceholder(entry.rel);
+          if (rel.endsWith('.tmp')) continue;
+          if (DATA_DIRS.some((d) => rel.startsWith(`${d}/`))) out.add(rel);
+        }
+      } catch (error) {
+        env.warn('[backupService] cloud metadata listing failed', error);
+      }
+    }
+    return [...out];
   },
 
   async ensureDownloaded(absPath: string, timeoutMs: number): Promise<boolean> {
@@ -322,6 +343,14 @@ export function checkBackupRestoreAvailable(): Promise<RestoreAvailability | nul
 
 export function performBackupRestore(): Promise<RestoreResult> {
   return restoreFromBackup(env);
+}
+
+/**
+ * Completes an interrupted restore (notes known locally whose content files
+ * are still only in the backup). Returns null when nothing was missing.
+ */
+export function resumeBackupRestoreIfIncomplete(): Promise<RestoreResult | null> {
+  return resumeRestoreIfIncomplete(env);
 }
 
 // Timers do not fire while backgrounded; push any pending sync out before the

@@ -6,6 +6,7 @@ import {
   isBackupAvailable,
   isBackupEnabled,
   performBackupRestore,
+  resumeBackupRestoreIfIncomplete,
   scheduleBackupSync,
   setBackupEnabled,
 } from '../services/backupService';
@@ -65,6 +66,14 @@ export function useBackup(
     if (restorePromptShownRef.current) return;
     const availability = await checkBackupRestoreAvailable();
     if (!availability || restorePromptShownRef.current) {
+      // Heal any interrupted restore first: notes whose titles arrived but
+      // whose content files are still only in iCloud (a fresh install can
+      // race the metadata sync). Copies only what is missing; silent.
+      const resumed = await resumeBackupRestoreIfIncomplete();
+      if (resumed && resumed.status !== 'unavailable' && resumed.restored > 0) {
+        await catalogStore.invalidate();
+        await refreshLibrary();
+      }
       // No restore pending: safe to start the catch-up push. It retries a
       // backup that failed last session and mirrors pre-existing data after
       // an app update; a no-op copy-wise when the mirror is current. It is
