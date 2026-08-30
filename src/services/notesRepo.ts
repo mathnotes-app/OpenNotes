@@ -2,6 +2,7 @@ import type { SerializedNotebookData } from '@mathnotes/mobile-ink';
 import type { BackgroundType, NoteMetadata } from '../types/note';
 import { noteId as makeNoteId } from '../utils/id';
 import { catalogStore } from './catalogEnv';
+import { pruneTombstones } from './catalogStore';
 import { deleteBody, readBody, writeBody, type BodyReadResult } from './noteBodyStorage';
 import { deletePdfForNote } from './pdfStorage';
 import { deleteImagesForNote } from './imageInsertStorage';
@@ -113,22 +114,32 @@ async function deleteNoteFiles(id: string): Promise<void> {
 export async function deleteNote(id: string): Promise<void> {
   // Remove the catalog entry first so the note disappears from the library
   // even if a file delete fails; the body delete prevents the recovery scan
-  // from resurrecting it.
+  // from resurrecting it. The tombstone is what allows backup sync to delete
+  // the mirrored copy - files merely missing locally are never propagated.
+  const now = new Date().toISOString();
   await catalogStore.mutate((catalog) => ({
     ...catalog,
     notes: catalog.notes.filter((n) => n.id !== id),
+    deletedNoteIds: {
+      ...pruneTombstones(catalog.deletedNoteIds, now),
+      [id]: now,
+    },
   }));
   await deleteNoteFiles(id);
 }
 
 export async function deleteAllNotesInFolder(folderId: string): Promise<void> {
   let targets: NoteMetadata[] = [];
+  const now = new Date().toISOString();
   await catalogStore.mutate((catalog) => {
     targets = catalog.notes.filter((n) => n.folderId === folderId);
     if (targets.length === 0) return null;
+    const deletedNoteIds = pruneTombstones(catalog.deletedNoteIds, now);
+    for (const note of targets) deletedNoteIds[note.id] = now;
     return {
       ...catalog,
       notes: catalog.notes.filter((n) => n.folderId !== folderId),
+      deletedNoteIds,
     };
   });
   await Promise.all(targets.map((n) => deleteNoteFiles(n.id)));

@@ -23,6 +23,7 @@ import { CommunityInviteSheet } from '../src/components/library/CommunityInviteS
 import { OpenNotesSheet } from '../src/components/library/OpenNotesSheet';
 import { LibrarySection } from '../src/components/library/LibrarySection';
 import { useOnboarding } from '../src/hooks/useOnboarding';
+import { useBackup } from '../src/hooks/useBackup';
 import { useLibrarySupport } from '../src/hooks/useLibrarySupport';
 import { useTheme } from '../src/hooks/useTheme';
 import { spacing } from '../src/theme/spacing';
@@ -89,6 +90,8 @@ export default function LibraryScreen() {
     () => setAction({ kind: 'community' }),
     [],
   );
+  const { backupSupported, backupEnabled, backupSubtitle, toggleBackup } =
+    useBackup(refresh);
   const { dismissCommunity, joinCommunity, rateOpenNotes } = useLibrarySupport({
     canShowAutomaticPrompt:
       onboarding.ready && !onboarding.visible && action === null,
@@ -312,6 +315,10 @@ export default function LibraryScreen() {
           setAction(null);
           onboarding.show();
         }}
+        backupSupported={backupSupported}
+        backupEnabled={backupEnabled}
+        backupSubtitle={backupSubtitle}
+        onToggleBackup={toggleBackup}
       />
 
       <CommunityInviteSheet

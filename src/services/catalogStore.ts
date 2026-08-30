@@ -32,6 +32,29 @@ export interface Catalog {
   version: 1;
   notes: NoteMetadata[];
   folders: FolderMetadata[];
+  /**
+   * Tombstones: note ids the user deliberately deleted, with deletion time.
+   * Backup sync propagates deletions ONLY for tombstoned ids - a file merely
+   * missing locally (fresh install, partial restore) must never delete its
+   * backup copy. Pruned after TOMBSTONE_TTL_MS.
+   */
+  deletedNoteIds: Record<string, string>;
+}
+
+export const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** Removes tombstones old enough that every backup has long since synced. */
+export function pruneTombstones(
+  tombstones: Record<string, string>,
+  nowIso: string,
+): Record<string, string> {
+  const cutoff = Date.parse(nowIso) - TOMBSTONE_TTL_MS;
+  const out: Record<string, string> = {};
+  for (const [id, deletedAt] of Object.entries(tombstones)) {
+    const t = Date.parse(deletedAt);
+    if (!Number.isNaN(t) && t >= cutoff) out[id] = deletedAt;
+  }
+  return out;
 }
 
 export interface KeyValueStore {
@@ -62,6 +85,9 @@ export interface CatalogEnv {
   now(): string;
   warn(message: string, error?: unknown): void;
 }
+
+/** Filename of the durable catalog inside the app Documents directory. */
+export const CATALOG_FILENAME = 'notes-catalog.json';
 
 export const NOTES_INDEX_KEY = '@opennotes:notes:index';
 export const NOTE_KEY_PREFIX = '@opennotes:note:';
@@ -141,7 +167,15 @@ export function parseCatalog(raw: string): Catalog | null {
       folders.push(folder);
     }
   }
-  return { version: 1, notes, folders };
+  const deletedNoteIds: Record<string, string> = {};
+  if (typeof v.deletedNoteIds === 'object' && v.deletedNoteIds !== null) {
+    for (const [id, deletedAt] of Object.entries(v.deletedNoteIds as Record<string, unknown>)) {
+      if (isNonEmptyString(id) && isNonEmptyString(deletedAt)) {
+        deletedNoteIds[id] = deletedAt;
+      }
+    }
+  }
+  return { version: 1, notes, folders, deletedNoteIds };
 }
 
 function parseIndex(raw: string | null): string[] {
@@ -273,6 +307,17 @@ async function reconcileCatalog(
   const recovered = await Promise.all(orphanIds.map((id) => recoverNote(env, id)));
   if (recovered.length > 0) changed = true;
 
+  // A recovered note whose id was tombstoned gets its tombstone dropped:
+  // the body file's presence wins over a recorded deletion (bias toward
+  // resurrecting data, never toward losing it).
+  let deletedNoteIds = catalog.deletedNoteIds;
+  const resurrected = recovered.filter((n) => deletedNoteIds[n.id]);
+  if (resurrected.length > 0) {
+    deletedNoteIds = { ...deletedNoteIds };
+    for (const note of resurrected) delete deletedNoteIds[note.id];
+    changed = true;
+  }
+
   const folderIds = new Set(catalog.folders.map((f) => f.id));
   const notes = [...catalog.notes, ...recovered].map((note) => {
     if (note.folderId !== null && !folderIds.has(note.folderId)) {
@@ -283,7 +328,9 @@ async function reconcileCatalog(
   });
 
   return {
-    catalog: changed ? { version: 1, notes, folders: catalog.folders } : catalog,
+    catalog: changed
+      ? { version: 1, notes, folders: catalog.folders, deletedNoteIds }
+      : catalog,
     changed,
   };
 }
@@ -351,6 +398,11 @@ export interface CatalogStore {
    * change (nothing is persisted). Mutators must not modify the input catalog.
    */
   mutate(fn: (catalog: Catalog) => Catalog | null): Promise<Catalog>;
+  /**
+   * Drops the in-memory cache so the next read reloads (and reconciles) from
+   * disk. Used after a restore writes files behind the store's back.
+   */
+  invalidate(): Promise<void>;
 }
 
 export function createCatalogStore(env: CatalogEnv): CatalogStore {
@@ -407,7 +459,7 @@ export function createCatalogStore(env: CatalogEnv): CatalogStore {
           env.warn,
         ),
       ]);
-      catalog = { version: 1, notes, folders };
+      catalog = { version: 1, notes, folders, deletedNoteIds: {} };
     }
 
     const reconciled = await reconcileCatalog(env, catalog);
@@ -475,6 +527,11 @@ export function createCatalogStore(env: CatalogEnv): CatalogStore {
   return {
     getCatalog(): Promise<Catalog> {
       return queue.enqueue(loadLocked);
+    },
+    invalidate(): Promise<void> {
+      return queue.enqueue(async () => {
+        cached = null;
+      });
     },
     mutate(fn: (catalog: Catalog) => Catalog | null): Promise<Catalog> {
       return queue.enqueue(async () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
@@ -13,6 +13,12 @@ interface OpenNotesSheetProps {
   onJoinCommunity: () => void;
   onRate: () => void;
   onViewIntroduction: () => void;
+  /** Hides the backup row entirely on unsupported platforms. */
+  backupSupported: boolean;
+  /** null while loading; the switch is hidden until known. */
+  backupEnabled: boolean | null;
+  backupSubtitle: string;
+  onToggleBackup: (enabled: boolean) => void;
 }
 
 export function OpenNotesSheet({
@@ -21,6 +27,10 @@ export function OpenNotesSheet({
   onJoinCommunity,
   onRate,
   onViewIntroduction,
+  backupSupported,
+  backupEnabled,
+  backupSubtitle,
+  onToggleBackup,
 }: OpenNotesSheetProps) {
   const theme = useTheme();
 
@@ -82,6 +92,34 @@ export function OpenNotesSheet({
           />
         </View>
 
+        {backupSupported ? (
+          <View
+            style={[
+              styles.actions,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.divider,
+              },
+            ]}
+          >
+          <SupportRow
+            icon="cloud-outline"
+            title="iCloud backup"
+            subtitle={backupSubtitle}
+            isLast
+            trailing={
+              backupEnabled !== null ? (
+                <Switch
+                  accessibilityLabel="iCloud backup"
+                  value={backupEnabled}
+                  onValueChange={onToggleBackup}
+                />
+              ) : null
+            }
+          />
+          </View>
+        ) : null}
+
         <View style={styles.utilityLinks}>
           <UtilityLink
             label="Privacy"
@@ -113,25 +151,29 @@ function SupportRow({
   subtitle,
   onPress,
   isLast = false,
+  trailing,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
-  onPress: () => void;
+  onPress?: () => void;
   isLast?: boolean;
+  /** Right-side accessory; defaults to a chevron for pressable rows. */
+  trailing?: React.ReactNode;
 }) {
   const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      disabled={!onPress}
       style={({ pressed }) => [
         styles.row,
         !isLast && {
           borderBottomColor: theme.colors.divider,
           borderBottomWidth: StyleSheet.hairlineWidth,
         },
-        pressed && { backgroundColor: theme.colors.surfaceMuted },
+        pressed && onPress && { backgroundColor: theme.colors.surfaceMuted },
       ]}
     >
       <View style={[styles.rowIcon, { backgroundColor: theme.colors.accent }]}>
@@ -151,7 +193,11 @@ function SupportRow({
           {subtitle}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+      {trailing !== undefined ? (
+        trailing
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+      )}
     </Pressable>
   );
 }

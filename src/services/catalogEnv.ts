@@ -1,11 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { writeStringAtomic } from './atomicFile';
-import { createCatalogStore, type CatalogEnv, type CatalogStore } from './catalogStore';
+import { scheduleBackupSync } from './backupService';
+import {
+  CATALOG_FILENAME,
+  createCatalogStore,
+  type CatalogEnv,
+  type CatalogStore,
+} from './catalogStore';
 import { bodyModifiedAt, listBodyIds, readBody } from './noteBodyStorage';
 import { pdfUriForNote } from './pdfStorage';
-
-const CATALOG_FILENAME = 'notes-catalog.json';
 
 function catalogPath(): string {
   return `${FileSystem.documentDirectory ?? ''}${CATALOG_FILENAME}`;
@@ -21,8 +25,14 @@ const env: CatalogEnv = {
     return FileSystem.readAsStringAsync(path);
   },
 
-  writeCatalogFile(json: string): Promise<boolean> {
-    return writeStringAtomic(catalogPath(), json);
+  async writeCatalogFile(json: string): Promise<boolean> {
+    const ok = await writeStringAtomic(catalogPath(), json);
+    if (ok) {
+      // The catalog persists on every data mutation (note bodies update their
+      // metadata too), so this is the single choke point for backup pushes.
+      scheduleBackupSync();
+    }
+    return ok;
   },
 
   async preserveCorruptCatalogFile(): Promise<void> {

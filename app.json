@@ -18,6 +18,16 @@
       "icon": "./assets/icon.png",
       "buildNumber": "9",
       "supportsTablet": true,
+      "usesIcloudStorage": true,
+      "entitlements": {
+        "com.apple.developer.icloud-container-identifiers": [
+          "iCloud.com.builderpro.opennotes"
+        ],
+        "com.apple.developer.icloud-services": ["CloudDocuments"],
+        "com.apple.developer.ubiquity-container-identifiers": [
+          "iCloud.com.builderpro.opennotes"
+        ]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "OpenNotes needs access to your photo library so you can insert images into your notes.",

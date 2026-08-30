@@ -19,7 +19,8 @@
     "android": "expo run:android",
     "test:lifecycle": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs",
     "test:catalog": "node --experimental-strip-types --test scripts/catalogStore.test.mjs",
-    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/catalogStore.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs",
+    "test:backup": "node --experimental-strip-types --test scripts/backupEngine.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

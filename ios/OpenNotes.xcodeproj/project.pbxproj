@@ -13,6 +13,8 @@
 		4788858903E15B3CAEB129E6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */; };
 		7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */; };
 		7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */; };
+		7D3A801A2E1A4CC89B1B09C1 /* ICloudBackupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */; };
+		7D3A801B2E1A4CC89B1B09C1 /* ICloudBackupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */; };
 		9C2FD7C620026BB779139CCD /* libPods-OpenNotes.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7A85B485F4321855B927960 /* libPods-OpenNotes.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
@@ -25,6 +27,8 @@
 		575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = OpenNotes/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFUtilsModule.swift; path = OpenNotes/PDFUtilsModule.swift; sourceTree = "<group>"; };
 		7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PDFUtilsModule.m; path = OpenNotes/PDFUtilsModule.m; sourceTree = "<group>"; };
+		7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ICloudBackupModule.swift; path = OpenNotes/ICloudBackupModule.swift; sourceTree = "<group>"; };
+		7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ICloudBackupModule.m; path = OpenNotes/ICloudBackupModule.m; sourceTree = "<group>"; };
 		9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-OpenNotes/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		A7A85B485F4321855B927960 /* libPods-OpenNotes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OpenNotes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = OpenNotes/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -54,6 +58,8 @@
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */,
 				7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */,
+				7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */,
+				7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */,
 				F11748442D0722820044C1D9 /* OpenNotes-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -338,6 +344,8 @@
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */,
 				7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */,
+				7D3A801A2E1A4CC89B1B09C1 /* ICloudBackupModule.swift in Sources */,
+				7D3A801B2E1A4CC89B1B09C1 /* ICloudBackupModule.m in Sources */,
 				4788858903E15B3CAEB129E6 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
