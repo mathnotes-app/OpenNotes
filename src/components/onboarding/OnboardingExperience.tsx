@@ -17,7 +17,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 
-const SLIDES = [
+interface OnboardingSlideItem {
+  key: string;
+  title: string;
+  body: string;
+  image: number;
+  imageLabel: string;
+}
+
+const SLIDES: OnboardingSlideItem[] = [
   {
     key: 'free',
     title: 'Notes should\nbe free.',
@@ -39,22 +47,43 @@ const SLIDES = [
     image: require('../../../assets/onboarding/help-it-grow.png'),
     imageLabel: 'An open notebook with three woven bookmarks meeting at its binding',
   },
-] as const;
+];
+
+const BACKUP_SLIDE: OnboardingSlideItem = {
+  key: 'backup',
+  title: 'Safe, even from\ndisasters.',
+  body: 'A lost iPad, a hard crash, a deleted app — with iCloud backup your notes survive them all, in your own iCloud. Nothing ever leaves your Apple account.',
+  image: require('../../../assets/onboarding/private-by-design.png'),
+  imageLabel: 'A note protected inside a clear case, safe from harm',
+};
 
 export interface OnboardingExperienceProps {
   visible: boolean;
   onComplete: () => void | Promise<void>;
+  /** Shows the iCloud backup question as the final slide (iOS only). */
+  showBackupSlide?: boolean;
+  /** Called with the user's explicit choice on the backup slide. */
+  onChooseBackup?: (enabled: boolean) => void;
 }
 
 export function OnboardingExperience({
   visible,
   onComplete,
+  showBackupSlide = false,
+  onChooseBackup,
 }: OnboardingExperienceProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height, fontScale } = useWindowDimensions();
-  const listRef = useRef<FlatList<(typeof SLIDES)[number]>>(null);
+  const listRef = useRef<FlatList<OnboardingSlideItem>>(null);
   const [page, setPage] = useState(0);
+
+  const slides = useMemo(
+    () => (showBackupSlide ? [...SLIDES, BACKUP_SLIDE] : SLIDES),
+    [showBackupSlide],
+  );
+  const isLastPage = page === slides.length - 1;
+  const isBackupPage = showBackupSlide && isLastPage;
 
   useEffect(() => {
     if (!visible) return;
@@ -70,7 +99,8 @@ export function OnboardingExperience({
   }, [onComplete]);
 
   const next = useCallback(() => {
-    if (page === SLIDES.length - 1) {
+    if (isLastPage) {
+      if (isBackupPage) onChooseBackup?.(true);
       finish();
       return;
     }
@@ -78,10 +108,15 @@ export function OnboardingExperience({
     void Haptics.selectionAsync();
     setPage(nextPage);
     listRef.current?.scrollToIndex({ index: nextPage, animated: true });
-  }, [finish, page]);
+  }, [finish, isBackupPage, isLastPage, onChooseBackup, page]);
+
+  const declineBackup = useCallback(() => {
+    onChooseBackup?.(false);
+    finish();
+  }, [finish, onChooseBackup]);
 
   const renderSlide = useCallback(
-    ({ item, index }: ListRenderItemInfo<(typeof SLIDES)[number]>) => (
+    ({ item, index }: ListRenderItemInfo<OnboardingSlideItem>) => (
       <OnboardingSlide
         active={page === index}
         fontScale={fontScale}
@@ -117,7 +152,7 @@ export function OnboardingExperience({
             accessibilityLabel="Introduction progress"
             style={styles.progress}
           >
-            {SLIDES.map((slide, index) => (
+            {slides.map((slide, index) => (
               <View
                 key={slide.key}
                 accessibilityRole="tab"
@@ -151,7 +186,7 @@ export function OnboardingExperience({
 
         <FlatList
           ref={listRef}
-          data={SLIDES}
+          data={slides}
           renderItem={renderSlide}
           keyExtractor={(item) => item.key}
           horizontal
@@ -187,14 +222,39 @@ export function OnboardingExperience({
               numberOfLines={1}
               style={styles.primaryButtonText}
             >
-              {page === SLIDES.length - 1 ? 'Start writing' : 'Continue'}
+              {isBackupPage
+                ? 'Enable iCloud backup'
+                : isLastPage
+                  ? 'Start writing'
+                  : 'Continue'}
             </Text>
             <Ionicons
-              name={page === SLIDES.length - 1 ? 'checkmark' : 'arrow-forward'}
+              name={
+                isBackupPage
+                  ? 'cloud-outline'
+                  : isLastPage
+                    ? 'checkmark'
+                    : 'arrow-forward'
+              }
               color="#FFFFFF"
               size={19}
             />
           </Pressable>
+          {isBackupPage ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={declineBackup}
+              style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+            >
+              <Text
+                maxFontSizeMultiplier={1.5}
+                numberOfLines={1}
+                style={[styles.secondaryButtonText, { color: theme.colors.textSecondary }]}
+              >
+                Continue without backup
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -210,7 +270,7 @@ function OnboardingSlide({
 }: {
   active: boolean;
   fontScale: number;
-  item: (typeof SLIDES)[number];
+  item: OnboardingSlideItem;
   viewportHeight: number;
   width: number;
 }) {
@@ -388,5 +448,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: -0.2,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    minHeight: 44,
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

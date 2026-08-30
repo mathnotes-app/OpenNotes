@@ -90,8 +90,13 @@ export default function LibraryScreen() {
     () => setAction({ kind: 'community' }),
     [],
   );
-  const { backupSupported, backupEnabled, backupSubtitle, toggleBackup } =
-    useBackup(refresh);
+  const {
+    backupSupported,
+    backupEnabled,
+    backupSubtitle,
+    toggleBackup,
+    setBackupPreference,
+  } = useBackup(refresh, onboarding.ready && !onboarding.visible);
   const { dismissCommunity, joinCommunity, rateOpenNotes } = useLibrarySupport({
     canShowAutomaticPrompt:
       onboarding.ready && !onboarding.visible && action === null,
@@ -330,6 +335,8 @@ export default function LibraryScreen() {
       <OnboardingExperience
         visible={onboarding.ready && onboarding.visible}
         onComplete={onboarding.finish}
+        showBackupSlide={backupSupported}
+        onChooseBackup={setBackupPreference}
       />
 
       <ItemActionsMenu

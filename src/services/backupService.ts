@@ -14,6 +14,7 @@ import {
   type RestoreResult,
 } from './backupEngine';
 import { CATALOG_FILENAME } from './catalogStore';
+import { hasCompletedOnboarding } from './onboardingService';
 
 const ENABLED_KEY = '@opennotes:backup:enabled';
 const SYNC_DEBOUNCE_MS = 8000;
@@ -261,12 +262,30 @@ function startSync(): Promise<BackupSyncResult> {
   return promise;
 }
 
+/**
+ * True once the user has been asked the backup question. Automatic syncs
+ * (debounced pushes, background flushes) must not mirror anything before
+ * onboarding presents the choice; explicit user actions bypass this via
+ * flushBackupSync.
+ */
+async function autoSyncAllowed(): Promise<boolean> {
+  try {
+    return await hasCompletedOnboarding();
+  } catch {
+    return false;
+  }
+}
+
+async function startSyncIfConsented(): Promise<void> {
+  if (await autoSyncAllowed()) await startSync();
+}
+
 /** Debounced backup push; called after every successful catalog persist. */
 export function scheduleBackupSync(): void {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
-    void startSync();
+    void startSyncIfConsented();
   }, SYNC_DEBOUNCE_MS);
 }
 
@@ -309,6 +328,8 @@ export function performBackupRestore(): Promise<RestoreResult> {
 // app is suspended, mirroring the autosave hook's behavior.
 AppState.addEventListener('change', (state) => {
   if ((state === 'background' || state === 'inactive') && syncTimer) {
-    void flushBackupSync();
+    clearTimeout(syncTimer);
+    syncTimer = null;
+    void startSyncIfConsented();
   }
 });

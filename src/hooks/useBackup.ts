@@ -17,6 +17,11 @@ export interface UseBackupResult {
   backupEnabled: boolean | null;
   backupSubtitle: string;
   toggleBackup: (enabled: boolean) => void;
+  /**
+   * Sets the preference directly, without the confirmation dialog. For flows
+   * where the user is already answering an explicit question (onboarding).
+   */
+  setBackupPreference: (enabled: boolean) => void;
 }
 
 const BACKUP_SUPPORTED = Platform.OS === 'ios';
@@ -25,8 +30,15 @@ const BACKUP_SUPPORTED = Platform.OS === 'ios';
  * Backup state for the library screen: the enable switch, a status line, and
  * a one-time restore offer when the library is empty but a backup exists
  * (fresh install after the app was deleted).
+ *
+ * `canAutoSync` gates the automatic restore-check/startup-sync until
+ * onboarding has finished, so nothing is mirrored before a fresh user has
+ * answered the backup question. An explicit choice always syncs immediately.
  */
-export function useBackup(refreshLibrary: () => Promise<void>): UseBackupResult {
+export function useBackup(
+  refreshLibrary: () => Promise<void>,
+  canAutoSync = true,
+): UseBackupResult {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
   const restorePromptShownRef = useRef(false);
@@ -102,14 +114,18 @@ export function useBackup(refreshLibrary: () => Promise<void>): UseBackupResult 
   }, [refreshLibrary]);
 
   useEffect(() => {
-    if (!BACKUP_SUPPORTED) return;
+    if (!BACKUP_SUPPORTED || !canAutoSync) return;
     void offerRestore();
-  }, [offerRestore]);
+  }, [canAutoSync, offerRestore]);
+
+  const setBackupPreference = useCallback((next: boolean) => {
+    setEnabled(next);
+    void setBackupEnabled(next);
+  }, []);
 
   const toggleBackup = useCallback((next: boolean) => {
     if (next) {
-      setEnabled(true);
-      void setBackupEnabled(true);
+      setBackupPreference(true);
       return;
     }
     Alert.alert(
@@ -120,14 +136,11 @@ export function useBackup(refreshLibrary: () => Promise<void>): UseBackupResult 
         {
           text: 'Turn off',
           style: 'destructive',
-          onPress: () => {
-            setEnabled(false);
-            void setBackupEnabled(false);
-          },
+          onPress: () => setBackupPreference(false),
         },
       ],
     );
-  }, []);
+  }, [setBackupPreference]);
 
   const backupSubtitle =
     enabled === false
@@ -141,5 +154,6 @@ export function useBackup(refreshLibrary: () => Promise<void>): UseBackupResult 
     backupEnabled: enabled,
     backupSubtitle,
     toggleBackup,
+    setBackupPreference,
   };
 }
