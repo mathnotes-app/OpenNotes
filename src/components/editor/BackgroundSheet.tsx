@@ -5,8 +5,9 @@ import { Sheet } from '../ui/Sheet';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { BACKGROUND_LABELS, BACKGROUND_TYPES } from '../../types/note';
+import { BACKGROUND_TYPES } from '../../types/note';
 import type { BackgroundType } from '../../types/note';
+import { t } from '../../i18n';
 
 export interface BackgroundSheetProps {
   visible: boolean;
@@ -34,7 +35,7 @@ export function BackgroundSheet({
   return (
     <Sheet visible={visible} onClose={onClose}>
       <Text style={[typography.title, { color: theme.colors.text, marginBottom: spacing.md }]}>
-        Background
+        {t.editor.backgroundTitle}
       </Text>
       <View style={styles.grid}>
         {BACKGROUND_TYPES.map((type) => {
@@ -70,7 +71,7 @@ export function BackgroundSheet({
                   },
                 ]}
               >
-                {BACKGROUND_LABELS[type]}
+                {t.library.backgrounds[type]}
               </Text>
             </Pressable>
           );

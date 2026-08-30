@@ -6,6 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import type { AutosaveStatus } from '../../hooks/useAutosave';
+import { t } from '../../i18n';
 
 export const EDITOR_HEADER_BAR_HEIGHT = 48;
 
@@ -54,7 +55,7 @@ export function EditorHeader({
           style={({ pressed }) => [styles.sideButton, pressed && { opacity: 0.5 }]}
         >
           <Ionicons name="chevron-back" size={26} color={theme.colors.accent} />
-          <Text style={[typography.body, { color: theme.colors.accent }]}>Library</Text>
+          <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>
         </Pressable>
 
         <Pressable
@@ -75,14 +76,14 @@ export function EditorHeader({
             ]}
             numberOfLines={1}
           >
-            Page {currentPage + 1} of {pageCount} · {statusLabel(status)}
+            {t.editor.pageStatus(currentPage + 1, pageCount, statusLabel(status))}
           </Text>
         </Pressable>
 
         <View style={styles.rightActions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Pages"
+            accessibilityLabel={t.editor.pagesA11y}
             onPress={onTogglePageSidebar}
             disabled={pageCount < 2}
             hitSlop={10}
@@ -98,7 +99,7 @@ export function EditorHeader({
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Export"
+            accessibilityLabel={t.editor.exportA11y}
             onPress={onExport}
             disabled={isExporting}
             hitSlop={10}
@@ -122,15 +123,15 @@ export function EditorHeader({
 function statusLabel(status: AutosaveStatus): string {
   switch (status) {
     case 'idle':
-      return 'ready';
+      return t.editor.statusReady;
     case 'pending':
-      return 'unsaved changes';
+      return t.editor.statusPending;
     case 'saving':
-      return 'saving…';
+      return t.editor.statusSaving;
     case 'saved':
-      return 'saved';
+      return t.editor.statusSaved;
     case 'error':
-      return 'save failed';
+      return t.editor.statusError;
   }
 }
 

@@ -22,6 +22,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { TOOL_DESCRIPTORS } from '../../utils/toolPalette';
 import type { SupportedTool, ToolDescriptor } from '../../utils/toolPalette';
+import { t } from '../../i18n';
 
 const TOOLBAR_PAD = 6;
 const EDGE_MARGIN = 12;
@@ -520,7 +521,7 @@ export function FloatingToolbar({
               active={fingerDrawingEnabled}
               compact={isCompactHorizontal}
               accessibilityLabel={
-                fingerDrawingEnabled ? 'Disable finger drawing' : 'Enable finger drawing'
+                fingerDrawingEnabled ? t.editor.disableFingerDrawing : t.editor.enableFingerDrawing
               }
               onPress={onToggleFingerDrawing}
               theme={theme}
@@ -528,14 +529,14 @@ export function FloatingToolbar({
             <SmallIconButton
               iconName="arrow-undo-outline"
               compact={isCompactHorizontal}
-              accessibilityLabel="Undo"
+              accessibilityLabel={t.editor.undo}
               onPress={onUndo}
               theme={theme}
             />
             <SmallIconButton
               iconName="arrow-redo-outline"
               compact={isCompactHorizontal}
-              accessibilityLabel="Redo"
+              accessibilityLabel={t.editor.redo}
               onPress={onRedo}
               theme={theme}
             />

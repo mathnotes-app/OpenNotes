@@ -63,6 +63,7 @@ import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
+import { t } from '../../src/i18n';
 import { typography } from '../../src/theme/typography';
 import type { NoteMetadata } from '../../src/types/note';
 import type { ToolDescriptor } from '../../src/utils/toolPalette';
@@ -335,12 +336,12 @@ export default function NoteScreen() {
 
   const startBlankAfterLoadFailure = useCallback(() => {
     Alert.alert(
-      'Start with a blank note?',
-      'The existing contents of this note could not be read. Starting blank will replace them the next time the note saves.',
+      t.editor.startBlankTitle,
+      t.editor.startBlankBody,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Start blank',
+          text: t.editor.startBlankConfirm,
           style: 'destructive',
           onPress: () => {
             setBodyLoadFailed(false);
@@ -715,13 +716,13 @@ export default function NoteScreen() {
       });
       if (!result.ok) {
         Alert.alert(
-          'Export failed',
-          result.error ?? 'Could not generate a PDF. Please try again.',
+          t.editor.exportFailedTitle,
+          result.error ?? t.editor.exportFailedBody,
         );
       }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] export failed', error);
-      Alert.alert('Export failed', 'Could not generate a PDF. Please try again.');
+      Alert.alert(t.editor.exportFailedTitle, t.editor.exportFailedBody);
     } finally {
       if (isMountedRef.current) setIsExporting(false);
     }
@@ -757,17 +758,17 @@ export default function NoteScreen() {
       return;
     }
     Alert.alert(
-      "Couldn't save your note",
-      'Your latest changes could not be written to storage. Leaving now will discard them.',
+      t.editor.saveFailedTitle,
+      t.editor.saveFailedBody,
       [
-        { text: 'Try again', onPress: () => void attempt() },
+        { text: t.editor.tryAgain, onPress: () => void attempt() },
         {
-          text: 'Leave anyway',
+          text: t.editor.leaveAnyway,
           style: 'destructive',
           onPress: () => navigateHome(),
         },
         {
-          text: 'Stay',
+          text: t.editor.stay,
           style: 'cancel',
           onPress: () => {
             exitRef.current = 'editing';
@@ -829,7 +830,7 @@ export default function NoteScreen() {
         ]}
       >
         <Text style={[typography.title, { color: theme.colors.text, textAlign: 'center' }]}>
-          Couldn't open this note
+          {t.editor.couldNotOpenTitle}
         </Text>
         <Text
           style={[
@@ -842,26 +843,25 @@ export default function NoteScreen() {
             },
           ]}
         >
-          The note's contents could not be read from storage. Nothing has been
-          changed; your data is still on this device.
+          {t.editor.couldNotOpenBody}
         </Text>
         <Pressable
           onPress={retryLoad}
           style={[styles.errorButton, { backgroundColor: theme.colors.accent }]}
         >
-          <Text style={[typography.headline, styles.errorButtonLabel]}>Try again</Text>
+          <Text style={[typography.headline, styles.errorButtonLabel]}>{t.editor.tryAgain}</Text>
         </Pressable>
         <Pressable
           onPress={() => void handleBack()}
           style={[styles.errorButton, { backgroundColor: theme.colors.surfaceMuted }]}
         >
           <Text style={[typography.headline, { color: theme.colors.text }]}>
-            Back to library
+            {t.editor.backToLibrary}
           </Text>
         </Pressable>
         <Pressable onPress={startBlankAfterLoadFailure} style={styles.errorTextButton}>
           <Text style={[typography.subhead, { color: theme.colors.destructive }]}>
-            Start with a blank note
+            {t.editor.startBlankLink}
           </Text>
         </Pressable>
       </View>
@@ -881,7 +881,7 @@ export default function NoteScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <EditorHeader
-        title={metadata?.title ?? 'Untitled'}
+        title={metadata?.title ?? t.common.untitled}
         status={autosaveStatus}
         currentPage={currentPageIndex}
         pageCount={Math.max(1, enginePages.length)}
@@ -983,16 +983,16 @@ export default function NoteScreen() {
 
       <ItemActionsMenu
         visible={action?.kind === 'insertImage'}
-        title="Insert image"
+        title={t.editor.insertImageTitle}
         actions={[
           {
             key: 'library',
-            label: 'Choose from Photos',
+            label: t.editor.chooseFromPhotos,
             onPress: () => void handleInsertFromLibrary(),
           },
           {
             key: 'camera',
-            label: 'Take Photo',
+            label: t.editor.takePhoto,
             onPress: () => void handleInsertFromCamera(),
           },
         ]}
@@ -1004,9 +1004,9 @@ export default function NoteScreen() {
 
       <RenameDialog
         visible={action?.kind === 'rename'}
-        title="Rename note"
+        title={t.library.renameNoteTitle}
         initialValue={metadata?.title ?? ''}
-        placeholder="Note title"
+        placeholder={t.library.noteTitlePlaceholder}
         onCancel={() => setAction(null)}
         onConfirm={(value) => void handleRename(value)}
       />

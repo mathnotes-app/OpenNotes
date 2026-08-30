@@ -1,4 +1,5 @@
 import type { InkToolType } from '@mathnotes/mobile-ink';
+import { t } from '../i18n';
 
 export type SupportedTool = Exclude<InkToolType, 'snip' | 'mark'>;
 
@@ -16,7 +17,7 @@ export interface ToolDescriptor {
 export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   {
     type: 'pen',
-    label: 'Pen',
+    label: t.tools.pen,
     iconFamily: 'mci',
     iconName: 'pen',
     defaultWidth: 3,
@@ -26,7 +27,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'highlighter',
-    label: 'Highlighter',
+    label: t.tools.highlighter,
     iconFamily: 'mci',
     iconName: 'marker',
     defaultWidth: 14,
@@ -36,7 +37,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'crayon',
-    label: 'Crayon',
+    label: t.tools.crayon,
     iconFamily: 'mci',
     iconName: 'grease-pencil',
     defaultWidth: 6,
@@ -46,7 +47,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'calligraphy',
-    label: 'Calligraphy',
+    label: t.tools.calligraphy,
     iconFamily: 'mci',
     iconName: 'fountain-pen-tip',
     defaultWidth: 4,
@@ -56,7 +57,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'eraser',
-    label: 'Eraser',
+    label: t.tools.eraser,
     iconFamily: 'mci',
     iconName: 'eraser',
     defaultWidth: 18,
@@ -66,7 +67,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'select',
-    label: 'Lasso',
+    label: t.tools.lasso,
     iconFamily: 'mci',
     iconName: 'lasso',
     defaultWidth: 0,
@@ -76,7 +77,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'text',
-    label: 'Text',
+    label: t.tools.text,
     iconFamily: 'mci',
     iconName: 'format-text',
     defaultWidth: 0,
@@ -86,7 +87,7 @@ export const TOOL_DESCRIPTORS: ToolDescriptor[] = [
   },
   {
     type: 'insert',
-    label: 'Image',
+    label: t.tools.image,
     iconFamily: 'ion',
     iconName: 'image-outline',
     defaultWidth: 0,

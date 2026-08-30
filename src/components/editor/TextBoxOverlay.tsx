@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { InkTextBox } from '@mathnotes/mobile-ink';
 import { useTheme } from '../../hooks/useTheme';
+import { t } from '../../i18n';
 
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 100;
@@ -374,7 +375,7 @@ export function TextBoxOverlay({
                   backgroundColor: 'transparent',
                 },
               ]}
-              placeholder="Type..."
+              placeholder={t.editor.typePlaceholder}
               placeholderTextColor={theme.colors.textTertiary}
               autoCapitalize="sentences"
               textAlignVertical="top"
@@ -397,7 +398,7 @@ export function TextBoxOverlay({
                   fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
                 }}
               >
-                {textBox.content || 'Tap to add text'}
+                {textBox.content || t.editor.tapToAddText}
               </Text>
             </View>
           )}
