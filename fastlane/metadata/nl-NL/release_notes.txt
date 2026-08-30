@@ -1,0 +1,3 @@
+- Optionele iCloud-back-up: je notities staan in je eigen iCloud en overleven een verloren apparaat of verwijderde app
+- Kies back-up aan of uit in de nieuwe introductiestap, of op elk moment via het supportmenu
+- Grote betrouwbaarheidsverbeteringen bij het bewaren, terugzetten en herstellen van notities

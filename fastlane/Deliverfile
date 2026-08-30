@@ -1,0 +1,18 @@
+# Uploads App Store metadata (all locales under fastlane/metadata/).
+# Usage: fastlane deliver
+# First run will ask you to sign in to App Store Connect (2FA). To run
+# non-interactively later, create an App Store Connect API key and set
+# api_key_path here (https://docs.fastlane.tools/app-store-connect-api/).
+
+app_identifier "com.builderpro.opennotes"
+team_id "U2CPXQV7AJ"
+
+# Metadata only: never touch the binary or screenshots from this config.
+skip_binary_upload true
+skip_screenshots true
+skip_app_version_update true
+
+# Metadata is reviewed locally in git; precheck mostly duplicates that.
+precheck_include_in_app_purchases false
+
+force true

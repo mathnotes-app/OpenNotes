@@ -1,0 +1,3 @@
+OpenNotes est une app de notes simple, gratuite et open source, pensée pour l'écriture manuscrite, les PDF et une organisation claire. Créez des carnets, importez des PDF, écrivez avec l'Apple Pencil, ajoutez images ou texte, classez vos notes en dossiers et exportez votre travail quand vous en avez besoin.
+
+OpenNotes est local-first et respecte votre vie privée. Pas de compte, pas d'analyse, pas de suivi. Vos notes restent sur votre appareil, avec une sauvegarde facultative dans votre propre iCloud pour survivre à un iPad perdu ou à une app supprimée. Rien ne nous est jamais envoyé : vos notes restent dans votre compte Apple, illisibles pour quiconque d'autre.

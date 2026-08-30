@@ -1,0 +1,3 @@
+- Respaldo opcional en iCloud: tus notas se guardan en tu propio iCloud y sobreviven a un dispositivo perdido o una app borrada
+- Activa o desactiva el respaldo en el nuevo paso de bienvenida, o cuando quieras desde el menú de ayuda
+- Grandes mejoras de confiabilidad al guardar, restaurar y recuperar notas

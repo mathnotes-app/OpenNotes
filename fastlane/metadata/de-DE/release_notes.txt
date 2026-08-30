@@ -1,0 +1,3 @@
+- Optionales iCloud-Backup: Deine Notizen liegen in deiner eigenen iCloud und überstehen ein verlorenes Gerät oder eine gelöschte App
+- Backup beim neuen Onboarding-Schritt oder jederzeit im Support-Menü ein- und ausschalten
+- Deutlich zuverlässigeres Speichern, Wiederherstellen und Retten von Notizen

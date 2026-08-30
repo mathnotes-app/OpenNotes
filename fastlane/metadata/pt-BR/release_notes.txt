@@ -1,0 +1,3 @@
+- Backup opcional no iCloud: suas notas ficam no seu próprio iCloud e sobrevivem a um aparelho perdido ou a um app apagado
+- Ative ou desative o backup na nova etapa de boas-vindas, ou quando quiser no menu de suporte
+- Grandes melhorias de confiabilidade ao salvar, restaurar e recuperar notas

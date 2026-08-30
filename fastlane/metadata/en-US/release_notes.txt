@@ -1,0 +1,3 @@
+- Optional iCloud backup: your notes are stored in your own iCloud and survive a lost device or a deleted app
+- Choose backup on or off during the new onboarding step, or any time from the support menu
+- Major reliability improvements for saving, restoring, and recovering notes
