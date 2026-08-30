@@ -21,6 +21,7 @@ import { HIGHLIGHTER_COLORS, STROKE_COLORS } from '../../theme/colors';
 import { TOOL_BY_TYPE, WIDTH_RANGE } from '../../utils/toolPalette';
 import type { SupportedTool } from '../../utils/toolPalette';
 import type { DockedEdge } from './FloatingToolbar';
+import { t } from '../../i18n';
 
 const CARD_WIDTH = 288;
 const CARD_PADDING = 12;
@@ -148,7 +149,7 @@ export function ToolSettingsPopover({
                         },
                       ]}
                     >
-                      {mode === 'pixel' ? 'Pixel' : 'Object'}
+                      {mode === 'pixel' ? t.editor.eraserPixel : t.editor.eraserObject}
                     </Text>
                   </Pressable>
                 );

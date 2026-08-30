@@ -14,6 +14,7 @@ import type { NotebookPage } from '@mathnotes/mobile-ink';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { t } from '../../i18n';
 
 const SIDEBAR_WIDTH = 136;
 const THUMBNAIL_WIDTH = 78;
@@ -81,7 +82,7 @@ export function PageSidebar({
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Close page sidebar"
+        accessibilityLabel={t.editor.closePageSidebarA11y}
         onPress={onClose}
         style={[StyleSheet.absoluteFill, { top: topInset }]}
       />
@@ -103,7 +104,7 @@ export function PageSidebar({
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close pages"
+            accessibilityLabel={t.editor.closePagesA11y}
             hitSlop={8}
             onPress={onClose}
             style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.5 }]}
@@ -114,7 +115,7 @@ export function PageSidebar({
 
         <View style={styles.jumpRow}>
           <TextInput
-            accessibilityLabel="Jump to page"
+            accessibilityLabel={t.editor.jumpToPageA11y}
             value={draftPage}
             keyboardType="number-pad"
             returnKeyType="done"
@@ -149,7 +150,7 @@ export function PageSidebar({
               <Pressable
                 key={page.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Go to page ${index + 1}`}
+                accessibilityLabel={t.editor.goToPageA11y(index + 1)}
                 onPress={() => jumpToPageNumber(index + 1)}
                 style={({ pressed }) => [
                   styles.thumbButton,

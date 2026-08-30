@@ -2,7 +2,7 @@
   "expo": {
     "name": "OpenNotes",
     "slug": "open-notes",
-    "version": "1.2",
+    "version": "1.3",
     "scheme": "opennotes",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "supportsTablet": true,
       "usesIcloudStorage": true,
       "entitlements": {
@@ -65,7 +65,7 @@
     },
     "android": {
       "package": "com.builderpro.opennotes",
-      "versionCode": 9,
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7F7F4"

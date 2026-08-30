@@ -1,6 +1,7 @@
 import type { SerializedNotebookData } from '@mathnotes/mobile-ink';
 import type { BackgroundType, NoteMetadata } from '../types/note';
 import { noteId as makeNoteId } from '../utils/id';
+import { t } from '../i18n';
 import { catalogStore } from './catalogEnv';
 import { pruneTombstones } from './catalogStore';
 import { deleteBody, readBody, writeBody, type BodyReadResult } from './noteBodyStorage';
@@ -30,7 +31,7 @@ export async function createNote(opts: {
   const now = new Date().toISOString();
   const meta: NoteMetadata = {
     id: makeNoteId(),
-    title: opts.title ?? 'Untitled',
+    title: opts.title ?? t.common.untitled,
     folderId: opts.folderId ?? null,
     createdAt: now,
     updatedAt: now,
@@ -96,7 +97,7 @@ export async function moveNote(id: string, folderId: string | null): Promise<Not
 }
 
 export async function renameNote(id: string, title: string): Promise<NoteMetadata | null> {
-  return updateMetadata(id, { title: title.trim() || 'Untitled' });
+  return updateMetadata(id, { title: title.trim() || t.common.untitled });
 }
 
 export async function setNoteBackground(

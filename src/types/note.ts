@@ -15,15 +15,6 @@ export const BACKGROUND_TYPES: BackgroundType[] = [
   'pdf',
 ];
 
-export const BACKGROUND_LABELS: Record<BackgroundType, string> = {
-  plain: 'Plain',
-  lined: 'Lined',
-  grid: 'Grid',
-  dotted: 'Dotted',
-  graph: 'Graph',
-  pdf: 'PDF',
-};
-
 export interface FolderMetadata {
   id: string;
   name: string;
