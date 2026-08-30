@@ -3,6 +3,7 @@ import { Alert, Platform } from 'react-native';
 import { catalogStore } from '../services/catalogEnv';
 import {
   checkBackupRestoreAvailable,
+  getBackupUploadStatus,
   isBackupAvailable,
   isBackupEnabled,
   performBackupRestore,
@@ -43,6 +44,7 @@ export function useBackup(
 ): UseBackupResult {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [pendingUploads, setPendingUploads] = useState(0);
   const restorePromptShownRef = useRef(false);
 
   useEffect(() => {
@@ -56,6 +58,10 @@ export function useBackup(
       if (cancelled) return;
       setEnabled(isEnabled);
       setAvailable(isAvailable);
+      if (isEnabled && isAvailable) {
+        const status = await getBackupUploadStatus();
+        if (!cancelled && status) setPendingUploads(status.pending);
+      }
     })();
     return () => {
       cancelled = true;
@@ -156,7 +162,9 @@ export function useBackup(
       ? t.backup.statusOff
       : available === false
         ? t.backup.statusUnavailable
-        : t.backup.statusAutomatic;
+        : pendingUploads > 0
+          ? t.backup.statusUploading(pendingUploads)
+          : t.backup.statusAutomatic;
 
   return {
     backupSupported: BACKUP_SUPPORTED,

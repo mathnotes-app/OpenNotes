@@ -98,6 +98,8 @@ export const de: Strings = {
   backup: {
     rowTitle: 'iCloud-Backup',
     statusAutomatic: 'Automatisch — deine Notizen überstehen das Löschen der App',
+    statusUploading: (pending: number) =>
+      `Sichert — ${pending} ${pending === 1 ? 'Datei wird' : 'Dateien werden'} noch zu iCloud hochgeladen`,
     statusUnavailable: 'iCloud nicht verfügbar — melde dich bei iCloud an, um deine Notizen zu schützen',
     statusOff: 'Aus — Notizen existieren nur auf diesem Gerät',
     turnOffTitle: 'iCloud-Backup ausschalten?',

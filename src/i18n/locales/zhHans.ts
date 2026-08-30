@@ -98,6 +98,8 @@ export const zhHans: Strings = {
   backup: {
     rowTitle: 'iCloud 备份',
     statusAutomatic: '自动 — 即使删除应用，笔记也会保留',
+    statusUploading: (pending: number) =>
+      `备份中 — 还有 ${pending} 个文件正在上传到 iCloud`,
     statusUnavailable: 'iCloud 不可用 — 请登录 iCloud 以保护你的笔记',
     statusOff: '已关闭 — 笔记仅存在于此设备',
     turnOffTitle: '关闭 iCloud 备份？',

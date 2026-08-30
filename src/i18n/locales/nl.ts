@@ -98,6 +98,8 @@ export const nl: Strings = {
   backup: {
     rowTitle: 'iCloud-back-up',
     statusAutomatic: 'Automatisch — je notities overleven het verwijderen van de app',
+    statusUploading: (pending: number) =>
+      `Back-up bezig — ${pending} bestand${pending === 1 ? ' wordt' : 'en worden'} nog geüpload naar iCloud`,
     statusUnavailable: 'iCloud niet beschikbaar — log in bij iCloud om je notities te beschermen',
     statusOff: 'Uit — notities bestaan alleen op dit apparaat',
     turnOffTitle: 'iCloud-back-up uitzetten?',

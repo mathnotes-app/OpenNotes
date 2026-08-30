@@ -49,10 +49,12 @@ class ICloudBackupModule: NSObject {
           at: toUrl.deletingLastPathComponent(),
           withIntermediateDirectories: true
         )
-        if FileManager.default.fileExists(atPath: toUrl.path) {
-          try FileManager.default.removeItem(at: toUrl)
+        try Self.coordinatedWrite(toUrl, options: .forReplacing) { url in
+          if FileManager.default.fileExists(atPath: url.path) {
+            try FileManager.default.removeItem(at: url)
+          }
+          try FileManager.default.copyItem(at: fromUrl, to: url)
         }
-        try FileManager.default.copyItem(at: fromUrl, to: toUrl)
         resolver(true)
       } catch {
         rejecter("E_COPY", "Copy failed: \(fromUrl.lastPathComponent)", error)
@@ -71,7 +73,16 @@ class ICloudBackupModule: NSObject {
           at: url.deletingLastPathComponent(),
           withIntermediateDirectories: true
         )
-        try contents.write(to: url, atomically: true, encoding: .utf8)
+        guard let data = contents.data(using: .utf8) else {
+          rejecter("E_WRITE", "Write failed (encoding): \(url.lastPathComponent)", nil)
+          return
+        }
+        // Deliberately NOT String.write(atomically:) - the rename-into-place
+        // it performs is what left files invisible to the sync daemon. The
+        // file coordinator provides the crash consistency instead.
+        try Self.coordinatedWrite(url, options: .forReplacing) { coordUrl in
+          try data.write(to: coordUrl, options: [])
+        }
         resolver(true)
       } catch {
         rejecter("E_WRITE", "Write failed: \(url.lastPathComponent)", error)
@@ -105,7 +116,9 @@ class ICloudBackupModule: NSObject {
       let url = URL(fileURLWithPath: Self.plainPath(path))
       do {
         if FileManager.default.fileExists(atPath: url.path) {
-          try FileManager.default.removeItem(at: url)
+          try Self.coordinatedWrite(url, options: .forDeleting) { coordUrl in
+            try FileManager.default.removeItem(at: coordUrl)
+          }
         }
         resolver(true)
       } catch {
@@ -152,6 +165,25 @@ class ICloudBackupModule: NSObject {
     }
   }
 
+  /// All mutations inside the ubiquity container are file-coordinated:
+  /// uncoordinated writes (and atomic rename-into-place in particular) are
+  /// not reliably picked up by the iCloud sync daemon - observed in
+  /// production as "directories sync, files never upload".
+  private static func coordinatedWrite(
+    _ url: URL, options: NSFileCoordinator.WritingOptions,
+    _ body: (URL) throws -> Void
+  ) throws {
+    var coordError: NSError?
+    var innerError: Error?
+    NSFileCoordinator(filePresenter: nil).coordinate(
+      writingItemAt: url, options: options, error: &coordError
+    ) { coordinatedUrl in
+      do { try body(coordinatedUrl) } catch { innerError = error }
+    }
+    if let error = coordError { throw error }
+    if let error = innerError { throw error }
+  }
+
   private static func plainPath(_ path: String) -> String {
     if path.hasPrefix("file://"), let url = URL(string: path) {
       return url.path
@@ -184,6 +216,67 @@ class ICloudBackupModule: NSObject {
         Thread.sleep(forTimeInterval: 0.4)
       }
       resolver(fileManager.fileExists(atPath: url.path))
+    }
+  }
+
+  /// Reports how many files under `dir` iCloud has actually uploaded to the
+  /// server, via NSMetadataUbiquitousItemIsUploadedKey. This is the only
+  /// honest signal that a backup is durable - a file sitting in the local
+  /// container replica is NOT safe until uploaded.
+  @objc
+  func uploadStatus(_ dir: String,
+                    timeoutMs: NSNumber,
+                    resolver: @escaping RCTPromiseResolveBlock,
+                    rejecter: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      let resolvedBase = URL(fileURLWithPath: Self.plainPath(dir))
+        .resolvingSymlinksInPath().path
+      let basePath = resolvedBase.hasSuffix("/") ? resolvedBase : resolvedBase + "/"
+      let query = NSMetadataQuery()
+      query.searchScopes = [
+        NSMetadataQueryUbiquitousDocumentsScope,
+        NSMetadataQueryUbiquitousDataScope,
+      ]
+      query.predicate = NSPredicate(format: "%K LIKE '*'", NSMetadataItemFSNameKey)
+
+      var finished = false
+      var observer: NSObjectProtocol?
+      func complete() {
+        guard !finished else { return }
+        finished = true
+        query.disableUpdates()
+        query.stop()
+        if let obs = observer { NotificationCenter.default.removeObserver(obs) }
+        var total = 0
+        var uploaded = 0
+        var pending: [String] = []
+        for case let item as NSMetadataItem in query.results {
+          guard let rawPath = item.value(forAttribute: NSMetadataItemPathKey) as? String
+          else { continue }
+          let itemPath = URL(fileURLWithPath: rawPath).resolvingSymlinksInPath().path
+          guard itemPath.hasPrefix(basePath) else { continue }
+          var isDir: ObjCBool = false
+          if FileManager.default.fileExists(atPath: itemPath, isDirectory: &isDir),
+             isDir.boolValue { continue }
+          total += 1
+          let isUploaded = (item.value(
+            forAttribute: NSMetadataUbiquitousItemIsUploadedKey) as? NSNumber)?.boolValue ?? false
+          if isUploaded {
+            uploaded += 1
+          } else {
+            pending.append(String(itemPath.dropFirst(basePath.count)))
+          }
+        }
+        resolver(["total": total, "uploaded": uploaded, "pending": pending])
+      }
+
+      observer = NotificationCenter.default.addObserver(
+        forName: .NSMetadataQueryDidFinishGathering, object: query, queue: .main
+      ) { _ in complete() }
+      DispatchQueue.main.asyncAfter(
+        deadline: .now() + timeoutMs.doubleValue / 1000.0
+      ) { complete() }
+      query.start()
     }
   }
 

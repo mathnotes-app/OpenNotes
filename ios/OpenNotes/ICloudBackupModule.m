@@ -32,6 +32,11 @@ RCT_EXTERN_METHOD(ensureDownloaded:(NSString *)path
                   resolver:(RCTPromiseResolveBlock)resolver
                   rejecter:(RCTPromiseRejectBlock)rejecter)
 
+RCT_EXTERN_METHOD(uploadStatus:(NSString *)dir
+                  timeoutMs:(nonnull NSNumber *)timeoutMs
+                  resolver:(RCTPromiseResolveBlock)resolver
+                  rejecter:(RCTPromiseRejectBlock)rejecter)
+
 RCT_EXTERN_METHOD(listCloudFiles:(NSString *)dir
                   timeoutMs:(nonnull NSNumber *)timeoutMs
                   resolver:(RCTPromiseResolveBlock)resolver

@@ -98,6 +98,8 @@ export const zhHant: Strings = {
   backup: {
     rowTitle: 'iCloud 備份',
     statusAutomatic: '自動 — 即使刪除 App，筆記也會保留',
+    statusUploading: (pending: number) =>
+      `備份中 — 還有 ${pending} 個檔案正在上傳到 iCloud`,
     statusUnavailable: 'iCloud 無法使用 — 請登入 iCloud 以保護你的筆記',
     statusOff: '已關閉 — 筆記僅存在於此裝置',
     turnOffTitle: '關閉 iCloud 備份？',

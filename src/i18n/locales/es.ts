@@ -98,6 +98,8 @@ export const es: Strings = {
   backup: {
     rowTitle: 'Copia en iCloud',
     statusAutomatic: 'Automática — tus notas sobreviven si borras la app',
+    statusUploading: (pending: number) =>
+      `Copiando — ${pending} archivo${pending === 1 ? '' : 's'} aún subiendo a iCloud`,
     statusUnavailable: 'iCloud no disponible — inicia sesión en iCloud para proteger tus notas',
     statusOff: 'Desactivada — las notas solo existen en este dispositivo',
     turnOffTitle: '¿Desactivar la copia en iCloud?',

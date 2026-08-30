@@ -107,6 +107,8 @@ export const ru: Strings = {
   backup: {
     rowTitle: 'Копия в iCloud',
     statusAutomatic: 'Автоматически — заметки переживут удаление приложения',
+    statusUploading: (pending: number) =>
+      `Копирование — ещё ${pending} файл(ов) загружается в iCloud`,
     statusUnavailable: 'iCloud недоступен — войдите в iCloud, чтобы защитить заметки',
     statusOff: 'Выключено — заметки существуют только на этом устройстве',
     turnOffTitle: 'Выключить копию в iCloud?',

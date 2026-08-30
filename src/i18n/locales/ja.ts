@@ -98,6 +98,8 @@ export const ja: Strings = {
   backup: {
     rowTitle: 'iCloudバックアップ',
     statusAutomatic: '自動 — アプリを削除してもノートは残ります',
+    statusUploading: (pending: number) =>
+      `バックアップ中 — ${pending}個のファイルをiCloudにアップロード中`,
     statusUnavailable: 'iCloudを利用できません — iCloudにサインインしてノートを守りましょう',
     statusOff: 'オフ — ノートはこの端末にのみ存在します',
     turnOffTitle: 'iCloudバックアップをオフにしますか?',

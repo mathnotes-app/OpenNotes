@@ -38,6 +38,10 @@ type ICloudBackupModuleType = {
     dir: string,
     timeoutMs: number,
   ) => Promise<Array<{ rel: string; size: number; downloaded: boolean }>>;
+  uploadStatus?: (
+    dir: string,
+    timeoutMs: number,
+  ) => Promise<{ total: number; uploaded: number; pending: string[] }>;
 };
 
 const ICloudBackupModule = NativeModules.ICloudBackupModule as
@@ -326,6 +330,32 @@ export async function isBackupEnabled(): Promise<boolean> {
 /** True when an iCloud container (or dev override) is reachable right now. */
 export async function isBackupAvailable(): Promise<boolean> {
   return (await env.getContainerDir()) !== null;
+}
+
+export interface BackupUploadStatus {
+  total: number;
+  uploaded: number;
+  pending: number;
+}
+
+/**
+ * Asks iCloud how much of the mirrored backup has actually reached the
+ * server. Local container copies are NOT durable until uploaded - this is
+ * the only honest basis for telling the user their notes are safe. Returns
+ * null when unknowable (no module, dev override, container unavailable).
+ */
+export async function getBackupUploadStatus(): Promise<BackupUploadStatus | null> {
+  if (!ICloudBackupModule?.uploadStatus) return null;
+  if (await devContainerOverride()) return null;
+  const containerDir = await env.getContainerDir();
+  if (!containerDir) return null;
+  try {
+    const status = await ICloudBackupModule.uploadStatus(containerDir, 10000);
+    return { total: status.total, uploaded: status.uploaded, pending: status.pending.length };
+  } catch (error) {
+    env.warn('[backupService] upload status query failed', error);
+    return null;
+  }
 }
 
 export async function setBackupEnabled(enabled: boolean): Promise<void> {

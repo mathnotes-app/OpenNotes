@@ -98,6 +98,8 @@ export const ko: Strings = {
   backup: {
     rowTitle: 'iCloud 백업',
     statusAutomatic: '자동 — 앱을 삭제해도 노트가 남습니다',
+    statusUploading: (pending: number) =>
+      `백업 중 — 파일 ${pending}개를 iCloud에 업로드하는 중`,
     statusUnavailable: 'iCloud 사용 불가 — iCloud에 로그인해 노트를 보호하세요',
     statusOff: '꺼짐 — 노트가 이 기기에만 존재합니다',
     turnOffTitle: 'iCloud 백업을 끌까요?',
