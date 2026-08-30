@@ -10,7 +10,12 @@ team_id "U2CPXQV7AJ"
 # Metadata only: never touch the binary or screenshots from this config.
 skip_binary_upload true
 skip_screenshots true
-skip_app_version_update true
+
+# Metadata attaches to an EDITABLE version in App Store Connect. Creating the
+# draft version if it does not exist yet is required - without it deliver
+# loops on "Cannot find edit app store version". Keep this in sync with the
+# version being prepared for release.
+app_version "1.3"
 
 # Metadata is reviewed locally in git; precheck mostly duplicates that.
 precheck_include_in_app_purchases false
