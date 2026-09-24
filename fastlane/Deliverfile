@@ -15,7 +15,7 @@ skip_screenshots true
 # draft version if it does not exist yet is required - without it deliver
 # loops on "Cannot find edit app store version". Keep this in sync with the
 # version being prepared for release.
-app_version "1.3"
+app_version "1.3.1"
 
 # Metadata is reviewed locally in git; precheck mostly duplicates that.
 precheck_include_in_app_purchases false
