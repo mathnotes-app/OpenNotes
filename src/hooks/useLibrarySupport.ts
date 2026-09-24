@@ -4,9 +4,11 @@ import { useFocusEffect } from 'expo-router';
 import { OPEN_NOTES_LINKS, openExternalLink } from '../services/externalLinks';
 import { t } from '../i18n';
 import {
-  claimCommunityPrompt,
-  requestAutomaticReviewIfEligible,
   requestManualReview,
+  requestReviewAfterPositiveMoment,
+} from '../services/reviewPromptService';
+import {
+  claimCommunityPrompt,
   resolveCommunityPrompt,
 } from '../services/lifecycleService';
 
@@ -38,7 +40,7 @@ export function useLibrarySupport({
             if (active) onShowCommunity();
             return;
           }
-          await requestAutomaticReviewIfEligible();
+          if (active) await requestReviewAfterPositiveMoment();
         } catch (error) {
           if (__DEV__) console.warn('[useLibrarySupport] prompt failed', error);
         }

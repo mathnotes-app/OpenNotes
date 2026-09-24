@@ -1,22 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import * as StoreReview from 'expo-store-review';
 import {
   createLifecycleState,
   normalizeLifecycleState,
   recordUniqueNoteSave,
   shouldOfferCommunity,
-  shouldRequestReview,
   type CommunityPromptState,
   type LifecycleState,
 } from './lifecyclePolicy';
 import { createPromiseQueue } from '../utils/promiseQueue';
 
 const LIFECYCLE_KEY = '@opennotes:lifecycle:v1';
-const APP_VERSION = Constants.expoConfig?.version ?? 'unknown';
 
 const stateQueue = createPromiseQueue();
-let reviewRequest: Promise<boolean> | null = null;
 let communityPromptClaimedThisSession = false;
 
 function withStateLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -71,46 +66,6 @@ export async function resolveCommunityPrompt(
       ...state,
       communityPromptState: resolution,
       communityHandledAt: new Date().toISOString(),
-    });
-  });
-}
-
-export function requestAutomaticReviewIfEligible(): Promise<boolean> {
-  if (reviewRequest) return reviewRequest;
-  reviewRequest = requestAutomaticReview().finally(() => {
-    reviewRequest = null;
-  });
-  return reviewRequest;
-}
-
-async function requestAutomaticReview(): Promise<boolean> {
-  const state = await withStateLock(readStateUnlocked);
-  if (!shouldRequestReview(state, APP_VERSION, Date.now())) return false;
-
-  const available = await StoreReview.isAvailableAsync();
-  if (!available || !(await StoreReview.hasAction())) return false;
-
-  await StoreReview.requestReview();
-  await markReviewRequested();
-  return true;
-}
-
-export async function requestManualReview(): Promise<boolean> {
-  const available = await StoreReview.isAvailableAsync();
-  if (!available || !(await StoreReview.hasAction())) return false;
-
-  await StoreReview.requestReview();
-  await markReviewRequested();
-  return true;
-}
-
-async function markReviewRequested(): Promise<void> {
-  await withStateLock(async () => {
-    const state = await readStateUnlocked();
-    if (state.reviewPromptedVersions.includes(APP_VERSION)) return;
-    await writeStateUnlocked({
-      ...state,
-      reviewPromptedVersions: [...state.reviewPromptedVersions, APP_VERSION],
     });
   });
 }
