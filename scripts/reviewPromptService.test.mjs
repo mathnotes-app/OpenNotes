@@ -58,73 +58,58 @@ function harness(initial) {
     ...exports, calls, store,
     advance(ms) { now += ms; },
     state() { return JSON.parse(raw); },
-    async signals(...signals) {
-      await Promise.all(signals.map(exports.recordReviewSignal));
-    },
   };
 }
 
-test('creator use prompts at 15 minutes without five unique notes or Discord', async () => {
+test('first successful save qualifies immediately without a timer or other actions', async () => {
   const h = harness();
-  await h.signals('note_created', 'note_created', 'note_saved', 'note_saved', 'note_saved');
-  h.advance(15 * minute - 1);
-  await h.requestReviewAfterPositiveMoment();
-  assert.equal(h.calls.length, 0);
-  h.advance(1);
+  await h.recordReviewSave();
+  assert.equal(h.calls.length, 0, 'saving only records eligibility');
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 1);
   assert.equal(h.state().pendingPositiveMoment, false);
 });
 
-test('steady use and successful export independently qualify', async () => {
-  for (const signals of [
-    [...Array(5).fill('note_saved'), ...Array(3).fill('note_opened')],
-    ['note_exported', 'note_saved', 'note_saved'],
-  ]) {
-    const h = harness();
-    await h.signals(...signals);
-    h.advance(15 * minute);
+test('no automatic prompt before a successful save, even after seven days', async () => {
+  for (const initial of [undefined, {
+    notesCreated: 20,
+    notesOpened: 20,
+    notesExported: 1,
+    pendingPositiveMoment: true,
+  }]) {
+    const h = harness(initial);
+    h.advance(7 * day);
     await h.requestReviewAfterPositiveMoment();
-    assert.equal(h.calls.length, 1);
+    assert.equal(h.calls.length, 0);
   }
 });
 
-test('insufficient usage does not prompt even after seven days', async () => {
+test('concurrent saves and library checks preserve counts and request only once', async () => {
   const h = harness();
-  await h.signals('note_created', 'note_opened', 'note_saved');
-  h.advance(7 * day);
-  await h.requestReviewAfterPositiveMoment();
-  assert.equal(h.calls.length, 0);
-});
-
-test('concurrent signals and requests preserve counts and request only once', async () => {
-  const h = harness();
-  await h.signals('note_created', 'note_created', ...Array(8).fill('note_saved'));
+  await Promise.all(Array.from({ length: 8 }, () => h.recordReviewSave()));
   assert.equal(h.state().notesSaved, 8);
-  h.advance(15 * minute);
   await Promise.all(Array.from({ length: 5 }, () => h.requestReviewAfterPositiveMoment()));
   assert.equal(h.calls.length, 1);
 });
 
 test('cooldown requires 120 days and a new action, with a three-request cap', async () => {
   const h = harness();
-  await h.signals('note_exported', 'note_saved', 'note_saved');
-  h.advance(15 * minute);
+  await h.recordReviewSave();
   await h.requestReviewAfterPositiveMoment();
   h.advance(120 * day);
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 1);
-  await h.signals('note_saved');
+  await h.recordReviewSave();
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 2);
-  await h.signals('note_saved');
+  await h.recordReviewSave();
   h.advance(120 * day - 1);
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 2);
   h.advance(1);
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 3);
-  await h.signals('note_saved');
+  await h.recordReviewSave();
   h.advance(120 * day);
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 3);
@@ -132,8 +117,7 @@ test('cooldown requires 120 days and a new action, with a three-request cap', as
 
 test('unavailable or failed native requests remain eligible for retry', async () => {
   const h = harness();
-  await h.signals('note_exported', 'note_saved', 'note_saved');
-  h.advance(15 * minute);
+  await h.recordReviewSave();
   h.store.available = false;
   await h.requestReviewAfterPositiveMoment();
   h.store.available = true;
@@ -169,8 +153,7 @@ test('restored service honors review history from the original release', async (
 test('manual rating works immediately and starts the automatic cooldown', async () => {
   const h = harness();
   assert.equal(await h.requestManualReview(), true);
-  await h.signals('note_exported', 'note_saved', 'note_saved');
-  h.advance(15 * minute);
+  await h.recordReviewSave();
   await h.requestReviewAfterPositiveMoment();
   assert.equal(h.calls.length, 1);
   h.advance(120 * day);

@@ -60,7 +60,6 @@ import {
   type PickedImageResult,
 } from '../../src/services/imageInsertStorage';
 import { exportNotebookAsPdf } from '../../src/services/exportService';
-import { recordReviewSignal } from '../../src/services/reviewPromptService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
@@ -224,7 +223,6 @@ export default function NoteScreen() {
     if (!result.ok) {
       throw new Error('Note body storage did not complete successfully.');
     }
-    void recordReviewSignal('note_saved');
     await recordSuccessfulNoteSave(id);
   }, [id, mergeStoredPreviews, rememberPagePreviews]);
 
@@ -721,8 +719,6 @@ export default function NoteScreen() {
           t.editor.exportFailedTitle,
           result.error ?? t.editor.exportFailedBody,
         );
-      } else {
-        void recordReviewSignal('note_exported');
       }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] export failed', error);

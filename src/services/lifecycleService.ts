@@ -8,6 +8,7 @@ import {
   type LifecycleState,
 } from './lifecyclePolicy';
 import { createPromiseQueue } from '../utils/promiseQueue';
+import { recordReviewSave } from './reviewPromptService';
 
 const LIFECYCLE_KEY = '@opennotes:lifecycle:v1';
 
@@ -40,6 +41,7 @@ async function writeStateUnlocked(state: LifecycleState): Promise<void> {
 
 export async function recordSuccessfulNoteSave(noteId: string): Promise<void> {
   if (!noteId) return;
+  await recordReviewSave();
   await withStateLock(async () => {
     const state = await readStateUnlocked();
     const next = recordUniqueNoteSave(state, noteId, new Date().toISOString());

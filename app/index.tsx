@@ -41,7 +41,6 @@ import {
   listFolders,
   renameFolder,
 } from '../src/services/foldersRepo';
-import { recordReviewSignal } from '../src/services/reviewPromptService';
 import type { BackgroundType, FolderMetadata, NoteMetadata } from '../src/types/note';
 import { t } from '../src/i18n';
 
@@ -128,7 +127,6 @@ export default function LibraryScreen() {
   const openNote = useCallback(
     (id: string) => {
       void Haptics.selectionAsync();
-      void recordReviewSignal('note_opened');
       router.push(`/note/${id}`);
     },
     [router],
@@ -153,14 +151,12 @@ export default function LibraryScreen() {
           backgroundType,
           title: title.trim() || undefined,
         });
-        void recordReviewSignal('note_created');
         openNote(meta.id);
         return;
       }
 
       const meta = await createPdfNoteFromPicker({ folderId: null, title });
       if (meta) {
-        void recordReviewSignal('note_created');
         openNote(meta.id);
       }
     } catch (error) {
