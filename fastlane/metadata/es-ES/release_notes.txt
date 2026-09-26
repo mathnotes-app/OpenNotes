@@ -1,3 +1,1 @@
-- Copia de seguridad opcional en iCloud: tus notas se guardan en tu propio iCloud y sobreviven a un dispositivo perdido o una app borrada
-- Activa o desactiva la copia en el nuevo paso de bienvenida, o cuando quieras desde el menú de ayuda
-- Grandes mejoras de fiabilidad al guardar, restaurar y recuperar notas
+Corregido el texto que aparecía lejos del punto donde tocabas. Las exportaciones a PDF ahora incluyen las imágenes insertadas y conservan las proporciones de las páginas.

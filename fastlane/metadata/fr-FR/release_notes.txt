@@ -1,3 +1,1 @@
-- Sauvegarde iCloud facultative : vos notes sont stockées dans votre propre iCloud et survivent à un appareil perdu ou à une app supprimée
-- Activez ou non la sauvegarde lors du nouvel écran d'accueil, ou à tout moment depuis le menu d'aide
-- Fiabilité fortement améliorée pour l'enregistrement, la restauration et la récupération des notes
+Le texte apparaît désormais à l’endroit où vous touchez la page. Les exports PDF incluent les images insérées et conservent les proportions des pages.

@@ -1,3 +1,1 @@
-- Backup iCloud facoltativo: le tue note sono salvate nel tuo iCloud personale e sopravvivono a un dispositivo perso o a un'app eliminata
-- Attiva o disattiva il backup nel nuovo passaggio di benvenuto, o in qualsiasi momento dal menu di supporto
-- Grandi miglioramenti di affidabilità nel salvataggio, ripristino e recupero delle note
+Corretto il testo che appariva lontano dal punto toccato. Le esportazioni PDF ora includono le immagini inserite e mantengono le proporzioni delle pagine.
