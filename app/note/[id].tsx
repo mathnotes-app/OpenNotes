@@ -17,6 +17,7 @@ import {
   Text,
   View,
   useWindowDimensions,
+  StatusBar
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -71,6 +72,7 @@ import type { ToolDescriptor } from '../../src/utils/toolPalette';
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const FINGER_DRAWING_PREF_KEY = 'opennotes.editor.fingerDrawingEnabled';
+
 
 type EditorAction =
   | { kind: 'insertImage' }
@@ -167,6 +169,7 @@ export default function NoteScreen() {
   const [selection, setSelection] = useState<OverlaySelection | null>(null);
   const [action, setAction] = useState<EditorAction | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPageSidebarOpen, setIsPageSidebarOpen] = useState(false);
   const defaultFingerDrawingEnabled = useMemo(
     () => defaultFingerDrawingForViewport(viewportWidth, viewportHeight),
@@ -780,6 +783,7 @@ export default function NoteScreen() {
 
   const handleBack = useCallback(async () => {
     if (exitRef.current !== 'editing') return;
+    StatusBar.setHidden(false, "fade");
     exitRef.current = 'confirming';
     Keyboard.dismiss();
     setAction(null);
@@ -800,7 +804,7 @@ export default function NoteScreen() {
     }, [handleBack]),
   );
 
-  const headerHeight = insets.top + EDITOR_HEADER_BAR_HEIGHT;
+  const headerHeight = isFullscreen ? insets.top : insets.top + EDITOR_HEADER_BAR_HEIGHT;
 
   const pagesForOverlay = useMemo(() => {
     return enginePages.map((page) => {
@@ -887,6 +891,7 @@ export default function NoteScreen() {
         pageCount={Math.max(1, enginePages.length)}
         isExporting={isExporting}
         isPageSidebarOpen={isPageSidebarOpen}
+        isFullscreen={isFullscreen}
         onBack={() => void handleBack()}
         onRename={() => setAction({ kind: 'rename' })}
         onTogglePageSidebar={() => setIsPageSidebarOpen((value) => !value)}
@@ -939,10 +944,16 @@ export default function NoteScreen() {
         activeTool={toolState.toolType as ToolDescriptor['type']}
         toolColors={toolColors}
         topInset={headerHeight}
+        isFullscreen={isFullscreen}
         fingerDrawingEnabled={fingerDrawingEnabled}
         onToggleFingerDrawing={() => {
           void Haptics.selectionAsync();
           setFingerDrawingEnabled((value) => !value);
+        }}
+        onToggleFullscreen={() => {
+          void Haptics.selectionAsync();
+          StatusBar.setHidden(!isFullscreen, "fade");
+          setIsFullscreen((value) => !value);
         }}
         onToolPress={handleToolPress}
         onToolLongPress={handleToolLongPress}

@@ -181,6 +181,8 @@ export const it: Strings = {
     goToPageA11y: (page: number) => `Vai alla pagina ${page}`,
     undo: 'Annulla',
     redo: 'Ripeti',
+    enableFullscreen: 'Attiva schermo intero',
+    disableFullscreen: 'Disattiva schermo intero',
     enableFingerDrawing: 'Attiva disegno col dito',
     disableFingerDrawing: 'Disattiva disegno col dito',
     tapToAddText: 'Tocca per aggiungere testo',
