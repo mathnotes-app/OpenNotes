@@ -181,6 +181,8 @@ export const ja: Strings = {
     goToPageA11y: (page: number) => `${page}ページへ移動`,
     undo: '取り消す',
     redo: 'やり直す',
+    enableFullscreen: '全画面表示を有効にする',
+    disableFullscreen: '全画面表示を無効にする',
     enableFingerDrawing: '指での描画を有効にする',
     disableFingerDrawing: '指での描画を無効にする',
     tapToAddText: 'タップしてテキストを追加',

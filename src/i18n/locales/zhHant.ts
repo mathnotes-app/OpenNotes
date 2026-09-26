@@ -178,6 +178,8 @@ export const zhHant: Strings = {
     goToPageA11y: (page: number) => `前往第 ${page} 頁`,
     undo: '還原',
     redo: '重做',
+    enableFullscreen: '啟用全螢幕模式',
+    disableFullscreen: '停用全螢幕模式',
     enableFingerDrawing: '開啟手指繪圖',
     disableFingerDrawing: '關閉手指繪圖',
     tapToAddText: '點一下以加入文字',

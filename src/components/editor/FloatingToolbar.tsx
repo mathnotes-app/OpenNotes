@@ -180,7 +180,9 @@ export interface FloatingToolbarProps {
   onToolPress: (tool: ToolDescriptor, alreadyActive: boolean, anchor: ToolbarButtonAnchor) => void;
   onToolLongPress: (tool: ToolDescriptor, anchor: ToolbarButtonAnchor) => void;
   fingerDrawingEnabled: boolean;
+  isFullscreen: boolean;
   onToggleFingerDrawing: () => void;
+  onToggleFullscreen: () => void;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -201,7 +203,9 @@ export function FloatingToolbar({
   onToolPress,
   onToolLongPress,
   fingerDrawingEnabled,
+  isFullscreen,
   onToggleFingerDrawing,
+  onToggleFullscreen,
   onUndo,
   onRedo,
 }: FloatingToolbarProps) {
@@ -526,6 +530,18 @@ export function FloatingToolbar({
               onPress={onToggleFingerDrawing}
               theme={theme}
             />
+
+            <SmallIconButton
+              iconName="expand"
+              active={isFullscreen}
+              compact={isCompactHorizontal}
+              accessibilityLabel={
+                isFullscreen ? t.editor.disableFullscreen : t.editor.enableFullscreen
+              }
+              onPress={onToggleFullscreen}
+              theme={theme}
+            />
+
             <SmallIconButton
               iconName="arrow-undo-outline"
               compact={isCompactHorizontal}

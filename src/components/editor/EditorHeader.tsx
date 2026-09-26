@@ -17,6 +17,7 @@ export interface EditorHeaderProps {
   pageCount: number;
   isExporting: boolean;
   isPageSidebarOpen: boolean;
+  isFullscreen: boolean;
   onBack: () => void;
   onRename: () => void;
   onTogglePageSidebar: () => void;
@@ -30,6 +31,7 @@ export function EditorHeader({
   pageCount,
   isExporting,
   isPageSidebarOpen,
+  isFullscreen,
   onBack,
   onRename,
   onTogglePageSidebar,
@@ -37,6 +39,8 @@ export function EditorHeader({
 }: EditorHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  if (isFullscreen) return
+
   return (
     <View
       style={[
