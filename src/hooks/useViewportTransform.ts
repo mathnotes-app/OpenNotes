@@ -83,29 +83,24 @@ export interface PageCoord {
   y: number;
 }
 
-export function screenToPageCoord(
-  transform: InfiniteInkViewportTransform,
-  screenX: number,
-  screenY: number,
+export function contentToPageCoord(
+  contentX: number,
+  contentY: number,
   pageWidth: number,
   pageHeight: number,
-  contentPadding: number,
   pageGap: number,
   pageCount: number,
 ): PageCoord | null {
-  const scale = transform.scale;
-  if (!Number.isFinite(scale) || scale <= 0) return null;
-  const contentX = (screenX - transform.translateX) / scale;
-  const contentY = (screenY - transform.translateY) / scale;
-  const localX = contentX - contentPadding;
-  if (localX < 0 || localX > pageWidth) return null;
+  if (
+    !Number.isFinite(contentX) || !Number.isFinite(contentY) ||
+    pageWidth <= 0 || pageHeight <= 0 || pageCount <= 0 ||
+    contentX < 0 || contentX > pageWidth || contentY < 0
+  ) return null;
   const stride = pageHeight + pageGap;
-  const fromTop = contentY - contentPadding;
-  if (fromTop < 0) return null;
-  const pageIndex = Math.min(pageCount - 1, Math.floor(fromTop / stride));
-  const offsetWithinPage = fromTop - pageIndex * stride;
-  if (offsetWithinPage > pageHeight) return null;
-  return { pageIndex, x: localX, y: offsetWithinPage };
+  const pageIndex = Math.floor(contentY / stride);
+  const offsetWithinPage = contentY - pageIndex * stride;
+  if (pageIndex >= pageCount || offsetWithinPage >= pageHeight) return null;
+  return { pageIndex, x: contentX, y: offsetWithinPage };
 }
 
 export function useViewportSubscribe(

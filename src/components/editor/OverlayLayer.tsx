@@ -15,10 +15,9 @@ import type {
 import { TextBoxOverlay } from './TextBoxOverlay';
 import { ImageInsertOverlay } from './ImageInsertOverlay';
 import type { ViewportTransformStore } from '../../hooks/useViewportTransform';
-import { screenToPageCoord } from '../../hooks/useViewportTransform';
+import { contentToPageCoord } from '../../hooks/useViewportTransform';
 import type { SupportedTool } from '../../utils/toolPalette';
 
-const CONTENT_PADDING = 16;
 const PAGE_GAP = 0;
 
 export interface OverlaySelection {
@@ -82,16 +81,15 @@ export function OverlayLayer({
 
   const handleTextToolTap = useCallback(
     (event: GestureResponderEvent) => {
-      const transform = transformRef.current;
-      if (!transform || activeTool !== 'text') return;
+      if (activeTool !== 'text') return;
       const { locationX, locationY } = event.nativeEvent;
-      const coord = screenToPageCoord(
-        transform,
+      // Native touch coordinates are already local to the transformed page
+      // content, inside the canvas padding. Do not invert the viewport again.
+      const coord = contentToPageCoord(
         locationX,
         locationY,
         pageWidth,
         pageHeight,
-        CONTENT_PADDING,
         PAGE_GAP,
         pages.length,
       );
