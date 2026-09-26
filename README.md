@@ -1,6 +1,17 @@
 # OpenNotes
 
-A no-bloat, local-first, open-source notes app.
+Free, open-source handwritten notes and PDF annotation for iPad and iPhone.
+
+[Download on the App Store](https://apps.apple.com/app/id6771224004) · [Drawing engine](https://github.com/mathnotes-app/mobile-ink) · [Report a bug](https://github.com/mathnotes-app/OpenNotes/issues)
+
+Write with Apple Pencil, mark up PDFs, and organize your notebooks into folders. No account required. The app and its native drawing engine are both open source under Apache-2.0.
+
+<p>
+  <img src="docs/assets/handwritten-notes.png" alt="Handwritten biology notes in OpenNotes on iPad" width="360" />
+  <img src="docs/assets/pdf-annotation.png" alt="An imported PDF with handwritten annotations and highlights" width="360" />
+</p>
+
+Screenshots from the app with sample notebooks.
 
 <p>
   <a href="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml"><img src="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
@@ -8,15 +19,7 @@ A no-bloat, local-first, open-source notes app.
   <a href="https://github.com/mathnotes-app/mobile-ink"><img src="https://img.shields.io/badge/powered%20by-Mobile%20Ink-0a7cff" alt="Powered by Mobile Ink" /></a>
 </p>
 
-OpenNotes is an iOS and Android notes app for people who want fast handwriting, PDFs, folders, and simple organization without the usual bloat. It is free, open source, and privacy focused: notes are stored on-device, the app does not collect analytics, and your notebooks never leave your device unless you choose to export or share them.
-
-The app is built on [`@mathnotes/mobile-ink`](https://github.com/mathnotes-app/mobile-ink), the open-source React Native ink engine extracted from MathNotes.
-
-## Status
-
-OpenNotes is early and moving quickly. The repo is public now so the app, the ink engine, and the issue tracker can be maintained in the open. App Store and Play Store submissions are planned after the first public assets and submission metadata are ready.
-
-Screenshots and product images are coming soon.
+The iPad and iPhone app is available on the App Store. This repository also includes an Android project you can build from source.
 
 ## Features
 
@@ -27,6 +30,12 @@ Screenshots and product images are coming soon.
 - Image and text objects on top of handwritten pages.
 - PDF export for sharing notebooks outside the app.
 - Local-first storage with no account system and no analytics.
+
+## Building a Drawing App?
+
+OpenNotes is a complete app built with [`@mathnotes/mobile-ink`](https://github.com/mathnotes-app/mobile-ink), the React Native ink engine extracted from MathNotes. The engine provides native drawing, selection, zoom, scrolling, and a continuous notebook canvas. OpenNotes adds the library, folders, document storage, and import/export flows.
+
+Use this repository to explore a working integration, or start with the engine's [quickstart](https://github.com/mathnotes-app/mobile-ink#quickstart) to add handwriting to your own app.
 
 ## Development
 
@@ -59,7 +68,9 @@ npx expo run:ios --device
 
 ## Privacy
 
-OpenNotes is designed to be local and private. The app does not include analytics SDKs, tracking, cloud sync, accounts, or server storage. Notes, imported PDFs, images, and thumbnails are stored on your device.
+OpenNotes stores notes, imported PDFs, images, and thumbnails on your device. It does not require an app account or include analytics SDKs or tracking.
+
+On iOS, iCloud backup is enabled by default when available and can be turned off in the app. It backs up notebook data to your iCloud account; it is separate from live collaboration or document sync between devices.
 
 If you export, share, back up, or import files through another app or operating-system service, that service's behavior is outside OpenNotes.
 
@@ -71,7 +82,7 @@ Public legal and support pages:
 
 ## Contributing
 
-Bug reports, feature requests, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), and please avoid attaching private notes or documents to public issues.
+Bug reports, feature requests, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Useful contributions include reproducing a bug on your device, improving translations, documenting setup problems, or fixing an issue. Include your device, OS version, and steps to reproduce when reporting a bug, and please avoid attaching private notes or documents to public issues.
 
 For ink-engine bugs or reusable canvas work, the engine repo is [`mathnotes-app/mobile-ink`](https://github.com/mathnotes-app/mobile-ink).
 
