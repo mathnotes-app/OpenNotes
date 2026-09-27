@@ -1,7 +1,7 @@
 import { Alert, Linking } from 'react-native';
 
 export const OPEN_NOTES_LINKS = {
-  community: 'https://discord.gg/VWKmgMgYu',
+  community: 'https://discord.gg/HssszDWrnC',
   github: 'https://github.com/mathnotes-app/OpenNotes',
   privacy: 'https://mathnotes-app.github.io/OpenNotes/privacy/',
   support: 'https://mathnotes-app.github.io/OpenNotes/support/',
