@@ -11,7 +11,7 @@ Write with Apple Pencil, mark up PDFs, and organize your notebooks into folders.
   <img src="docs/assets/pdf-annotation.png" alt="An imported PDF with handwritten annotations and highlights" width="360" />
 </p>
 
-Screenshots from the app with sample notebooks.
+Illustrative app images with AI-edited sample handwriting.
 
 <p>
   <a href="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml"><img src="https://github.com/mathnotes-app/OpenNotes/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
