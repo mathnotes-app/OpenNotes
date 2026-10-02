@@ -14,4 +14,8 @@ RCT_EXTERN_METHOD(getPageCountFromBase64:(NSString *)base64Data
                   resolver:(RCTPromiseResolveBlock)resolver
                   rejecter:(RCTPromiseRejectBlock)rejecter)
 
+RCT_EXTERN_METHOD(mergePdfFiles:(NSArray<NSString *> *)fileUris
+                  resolver:(RCTPromiseResolveBlock)resolver
+                  rejecter:(RCTPromiseRejectBlock)rejecter)
+
 @end

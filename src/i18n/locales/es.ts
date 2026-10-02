@@ -205,4 +205,12 @@ export const es: Strings = {
     yesterday: 'ayer',
     daysAgo: (d: number) => `hace ${d} d`,
   },
+  crash: {
+    screenTitle: 'Algo salió mal',
+    screenBody: 'OpenNotes encontró un error inesperado. Las notas ya guardadas están a salvo en este dispositivo.',
+    shareDetails: 'Compartir detalles del error',
+    promptTitle: 'OpenNotes se cerró inesperadamente',
+    promptBody: 'Compartir los detalles del error ayuda a solucionar el problema. El informe incluye el mensaje de error, la versión de la app y el tipo de dispositivo, no tus notas.',
+    share: 'Compartir',
+  },
 };

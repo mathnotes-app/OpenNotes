@@ -8,20 +8,23 @@ class PDFUtilsModule: NSObject {
     return false
   }
 
+  /// A file URL for a file:// URI or a plain absolute path.
+  private static func localFileURL(_ path: String) -> URL? {
+    if path.hasPrefix("file://") {
+      guard let url = URL(string: path), url.isFileURL else { return nil }
+      return url
+    }
+    return URL(fileURLWithPath: path)
+  }
+
   @objc
   func getPageCount(_ filePath: String,
                     resolver: @escaping RCTPromiseResolveBlock,
                     rejecter: @escaping RCTPromiseRejectBlock) {
     DispatchQueue.global(qos: .userInitiated).async {
-      let url: URL
-      if filePath.hasPrefix("file://") {
-        guard let parsedUrl = URL(string: filePath) else {
-          rejecter("E_INVALID_PATH", "Invalid file URL: \(filePath)", nil)
-          return
-        }
-        url = parsedUrl
-      } else {
-        url = URL(fileURLWithPath: filePath)
+      guard let url = PDFUtilsModule.localFileURL(filePath) else {
+        rejecter("E_INVALID_PATH", "Invalid file URL: \(filePath)", nil)
+        return
       }
 
       guard FileManager.default.fileExists(atPath: url.path) else {
@@ -118,6 +121,71 @@ class PDFUtilsModule: NSObject {
       }
 
       resolver(document.numberOfPages)
+    }
+  }
+
+  /// Concatenates PDFs into one new file in tmp/pdf-export and resolves its
+  /// file:// URI. Pages are streamed one at a time so memory stays flat no
+  /// matter how many pages the inputs hold; page content is copied as-is.
+  @objc
+  func mergePdfFiles(_ fileUris: [String],
+                     resolver: @escaping RCTPromiseResolveBlock,
+                     rejecter: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.global(qos: .userInitiated).async {
+      guard !fileUris.isEmpty else {
+        rejecter("E_NO_INPUT", "No PDF files to merge", nil)
+        return
+      }
+
+      var sourceUrls: [URL] = []
+      for uri in fileUris {
+        guard let url = PDFUtilsModule.localFileURL(uri) else {
+          rejecter("E_INVALID_URL", "Invalid PDF file URL: \(uri)", nil)
+          return
+        }
+        sourceUrls.append(url)
+      }
+
+      let exportDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("pdf-export")
+      do {
+        // Earlier exports have been shared already; don't let them pile up.
+        try? FileManager.default.removeItem(at: exportDir)
+        try FileManager.default.createDirectory(at: exportDir, withIntermediateDirectories: true)
+      } catch {
+        rejecter("E_WRITE_FAILED", "Could not create export directory: \(error.localizedDescription)", error)
+        return
+      }
+      let destination = exportDir.appendingPathComponent("\(UUID().uuidString).pdf")
+
+      guard let context = CGContext(destination as CFURL, mediaBox: nil, nil) else {
+        rejecter("E_WRITE_FAILED", "Could not create merged PDF", nil)
+        return
+      }
+
+      var failure: String?
+      for url in sourceUrls {
+        guard let document = CGPDFDocument(url as CFURL), document.numberOfPages > 0 else {
+          failure = "Could not read \(url.lastPathComponent)"
+          break
+        }
+        for pageNumber in 1...document.numberOfPages {
+          autoreleasepool {
+            guard let page = document.page(at: pageNumber) else { return }
+            var mediaBox = page.getBoxRect(.mediaBox)
+            context.beginPage(mediaBox: &mediaBox)
+            context.drawPDFPage(page)
+            context.endPage()
+          }
+        }
+      }
+      context.closePDF()
+
+      if let failure {
+        try? FileManager.default.removeItem(at: destination)
+        rejecter("E_READ_FAILED", failure, nil)
+        return
+      }
+      resolver(destination.absoluteString)
     }
   }
 }

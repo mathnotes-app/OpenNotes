@@ -205,4 +205,12 @@ export const ja: Strings = {
     yesterday: '昨日',
     daysAgo: (d: number) => `${d}日前`,
   },
+  crash: {
+    screenTitle: '問題が発生しました',
+    screenBody: 'OpenNotes で予期しないエラーが発生しました。保存済みのノートはこのデバイスに安全に残っています。',
+    shareDetails: 'エラーの詳細を共有',
+    promptTitle: 'OpenNotes が予期せず終了しました',
+    promptBody: 'エラーの詳細を共有すると問題の解決に役立ちます。レポートにはエラーメッセージ、アプリのバージョン、デバイスの種類が含まれ、ノートの内容は含まれません。',
+    share: '共有',
+  },
 };

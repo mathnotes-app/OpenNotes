@@ -1,1 +1,1 @@
-Tekst verschijnt nu op de plek waar je tikt. PDF-exports bevatten nu ingevoegde afbeeldingen en behouden de paginaverhoudingen.
+Geïmporteerde pdf's verdwijnen na een app-update niet meer uit notities. Crashes bij het verwijderen van een selectie na Ongedaan maken en bij het exporteren van lange notitieboeken naar pdf zijn opgelost. Als OpenNotes onverwacht sluit, kun je nu de foutdetails delen om ons te helpen het op te lossen.

@@ -1,1 +1,1 @@
-Le texte apparaît désormais à l’endroit où vous touchez la page. Les exports PDF incluent les images insérées et conservent les proportions des pages.
+Les PDF importés ne disparaissent plus des notes après une mise à jour de l'app. Correction des plantages lors de la suppression d'une sélection après une annulation et de l'export PDF de longs carnets. Si OpenNotes se ferme de façon inattendue, vous pouvez désormais partager les détails de l'erreur pour nous aider à la corriger.

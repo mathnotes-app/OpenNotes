@@ -405,6 +405,23 @@ export interface CatalogStore {
   invalidate(): Promise<void>;
 }
 
+/**
+ * A note's PDF always lives at env.pdfUriForNote(id), but the stored URI is
+ * absolute and embeds the app container path, which iOS changes on updates
+ * and iCloud restores. Re-derive it so a moved container never orphans a PDF.
+ */
+function withCurrentPdfUris(env: CatalogEnv, catalog: Catalog): { catalog: Catalog; changed: boolean } {
+  let changed = false;
+  const notes = catalog.notes.map((note) => {
+    if (!note.pdfUri) return note;
+    const pdfUri = env.pdfUriForNote(note.id);
+    if (pdfUri === note.pdfUri) return note;
+    changed = true;
+    return { ...note, pdfUri };
+  });
+  return changed ? { catalog: { ...catalog, notes }, changed } : { catalog, changed };
+}
+
 export function createCatalogStore(env: CatalogEnv): CatalogStore {
   const queue = createPromiseQueue();
   let cached: Catalog | null = null;
@@ -463,8 +480,9 @@ export function createCatalogStore(env: CatalogEnv): CatalogStore {
     }
 
     const reconciled = await reconcileCatalog(env, catalog);
-    catalog = reconciled.catalog;
-    if (reconciled.changed || needsPersist) {
+    const rebased = withCurrentPdfUris(env, reconciled.catalog);
+    catalog = rebased.catalog;
+    if (reconciled.changed || rebased.changed || needsPersist) {
       await persist(catalog, null);
     }
     cached = catalog;

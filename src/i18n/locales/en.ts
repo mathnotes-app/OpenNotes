@@ -205,6 +205,14 @@ export const en = {
     yesterday: 'yesterday',
     daysAgo: (d: number) => `${d}d ago`,
   },
+  crash: {
+    screenTitle: 'Something went wrong',
+    screenBody: 'OpenNotes hit an unexpected error. Notes that were already saved are safe on this device.',
+    shareDetails: 'Share error details',
+    promptTitle: 'OpenNotes closed unexpectedly',
+    promptBody: 'Sharing the error details helps fix the problem. The report contains the error message, app version and device type, not your notes.',
+    share: 'Share',
+  },
 };
 
 export type Strings = typeof en;

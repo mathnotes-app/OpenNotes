@@ -1,8 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { imageId as makeImageId } from '../utils/id';
-
-const IMAGES_SUBDIR = 'images/';
+import { IMAGES_SUBDIR } from '../utils/appDocumentUri';
 
 function noteImagesDir(noteId: string): string {
   return `${FileSystem.documentDirectory ?? ''}${IMAGES_SUBDIR}${encodeURIComponent(noteId)}/`;

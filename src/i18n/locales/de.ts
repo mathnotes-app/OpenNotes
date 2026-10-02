@@ -205,4 +205,12 @@ export const de: Strings = {
     yesterday: 'gestern',
     daysAgo: (d: number) => `vor ${d} T.`,
   },
+  crash: {
+    screenTitle: 'Etwas ist schiefgelaufen',
+    screenBody: 'In OpenNotes ist ein unerwarteter Fehler aufgetreten. Bereits gespeicherte Notizen sind auf diesem Gerät sicher.',
+    shareDetails: 'Fehlerdetails teilen',
+    promptTitle: 'OpenNotes wurde unerwartet beendet',
+    promptBody: 'Das Teilen der Fehlerdetails hilft, das Problem zu beheben. Der Bericht enthält die Fehlermeldung, die App-Version und den Gerätetyp, nicht deine Notizen.',
+    share: 'Teilen',
+  },
 };
