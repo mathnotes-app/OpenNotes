@@ -1,1 +1,1 @@
-Corregido el texto que aparecía lejos del punto donde tocabas. Las exportaciones a PDF ahora incluyen las imágenes insertadas y conservan las proporciones de las páginas.
+Los PDF importados ya no desaparecen de las notas después de actualizar la app. Se corrigieron los cierres al eliminar una selección después de Deshacer y al exportar cuadernos largos a PDF. Si OpenNotes se cierra inesperadamente, ahora puedes compartir los detalles del error para ayudarnos a solucionarlo.

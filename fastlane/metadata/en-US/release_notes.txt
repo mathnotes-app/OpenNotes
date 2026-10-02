@@ -1,1 +1,1 @@
-Fixed text appearing away from where you tap. PDF exports now include inserted images and preserve page proportions.
+Fixed imported PDFs disappearing from notes after an app update. Fixed crashes when deleting a selection after Undo and when exporting long notebooks to PDF. If OpenNotes ever closes unexpectedly, you can now share the error details to help us fix it.

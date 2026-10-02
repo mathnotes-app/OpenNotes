@@ -19,13 +19,13 @@
     "android": "expo run:android",
     "test:lifecycle": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs",
     "test:catalog": "node --experimental-strip-types --test scripts/catalogStore.test.mjs",
-    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs scripts/appDocumentUri.test.mjs scripts/crashReport.test.mjs",
     "test:backup": "node --experimental-strip-types --test scripts/backupEngine.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@mathnotes/mobile-ink": "0.3.4",
+    "@mathnotes/mobile-ink": "0.3.6",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.2.12",
     "expo": "54.0.34",

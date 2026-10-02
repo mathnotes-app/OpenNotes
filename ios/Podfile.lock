@@ -259,7 +259,7 @@ PODS:
   - hermes-engine (0.81.5):
     - hermes-engine/Pre-built (= 0.81.5)
   - hermes-engine/Pre-built (0.81.5)
-  - MathNotesMobileInk (0.3.2):
+  - MathNotesMobileInk (0.3.6):
     - React-Core
     - react-native-skia
   - RCTDeprecation (0.81.5)
@@ -2552,7 +2552,7 @@ SPEC CHECKSUMS:
   EXUpdatesInterface: 5adf50cb41e079c861da6d9b4b954c3db9a50734
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
-  MathNotesMobileInk: 397dd2c1d132a84b594547f911a625cd667f77e9
+  MathNotesMobileInk: affc434b8ea8baee9686500bcc89fa5c40ac861c
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043
   RCTTypeSafety: 16a4144ca3f959583ab019b57d5633df10b5e97c

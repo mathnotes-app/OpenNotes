@@ -1,1 +1,1 @@
-Text erscheint jetzt an der angetippten Stelle. PDF-Exporte enthalten nun eingefügte Bilder und behalten die Seitenproportionen bei.
+Importierte PDFs verschwinden nach einem App-Update nicht mehr aus Notizen. Abstürze beim Löschen einer Auswahl nach dem Widerrufen und beim PDF-Export langer Notizbücher wurden behoben. Falls OpenNotes unerwartet beendet wird, kannst du jetzt die Fehlerdetails teilen, damit wir das Problem beheben können.
