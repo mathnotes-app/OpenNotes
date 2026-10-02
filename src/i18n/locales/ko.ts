@@ -205,4 +205,12 @@ export const ko: Strings = {
     yesterday: '어제',
     daysAgo: (d: number) => `${d}일 전`,
   },
+  crash: {
+    screenTitle: '문제가 발생했습니다',
+    screenBody: 'OpenNotes에 예기치 않은 오류가 발생했습니다. 이미 저장된 노트는 이 기기에 안전하게 보관되어 있습니다.',
+    shareDetails: '오류 세부 정보 공유',
+    promptTitle: 'OpenNotes가 예기치 않게 종료되었습니다',
+    promptBody: '오류 세부 정보를 공유하면 문제 해결에 도움이 됩니다. 보고서에는 오류 메시지, 앱 버전, 기기 유형이 포함되며 노트 내용은 포함되지 않습니다.',
+    share: '공유',
+  },
 };

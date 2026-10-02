@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import type { SerializedNotebookData } from '@mathnotes/mobile-ink';
 import { writeStringAtomic } from './atomicFile';
+import { withCurrentImagePaths } from '../utils/appDocumentUri';
 
 const BODIES_SUBDIR = 'notebook-bodies/';
 const BODY_EXTENSION = '.body';
@@ -55,7 +56,8 @@ export async function readBody(id: string): Promise<BodyReadResult> {
   try {
     const raw = await FileSystem.readAsStringAsync(path);
     if (!raw) return { kind: 'unreadable' };
-    return { kind: 'ok', data: JSON.parse(raw) as SerializedNotebookData };
+    const data = JSON.parse(raw) as SerializedNotebookData;
+    return { kind: 'ok', data: withCurrentImagePaths(data, FileSystem.documentDirectory ?? '') };
   } catch (error) {
     if (__DEV__) console.warn('[noteBodyStorage] readBody failed', id, error);
     return { kind: 'unreadable' };

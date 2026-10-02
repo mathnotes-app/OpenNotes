@@ -205,4 +205,12 @@ export const nl: Strings = {
     yesterday: 'gisteren',
     daysAgo: (d: number) => `${d} d geleden`,
   },
+  crash: {
+    screenTitle: 'Er is iets misgegaan',
+    screenBody: 'OpenNotes heeft een onverwachte fout gehad. Notities die al waren opgeslagen, staan veilig op dit apparaat.',
+    shareDetails: 'Foutdetails delen',
+    promptTitle: 'OpenNotes is onverwacht gesloten',
+    promptBody: 'Het delen van de foutdetails helpt het probleem op te lossen. Het rapport bevat de foutmelding, de appversie en het apparaattype, niet je notities.',
+    share: 'Delen',
+  },
 };

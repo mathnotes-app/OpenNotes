@@ -202,4 +202,12 @@ export const zhHant: Strings = {
     yesterday: '昨天',
     daysAgo: (d: number) => `${d} 天前`,
   },
+  crash: {
+    screenTitle: '發生問題',
+    screenBody: 'OpenNotes 遇到非預期的錯誤。已儲存的筆記仍安全地保存在此裝置上。',
+    shareDetails: '分享錯誤詳細資料',
+    promptTitle: 'OpenNotes 意外關閉',
+    promptBody: '分享錯誤詳細資料有助於修正問題。報告包含錯誤訊息、App 版本和裝置類型，不包含你的筆記。',
+    share: '分享',
+  },
 };

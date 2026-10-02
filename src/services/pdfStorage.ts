@@ -1,7 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { NativeModules, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import type { NotebookPage, SerializedNotebookData } from '@mathnotes/mobile-ink';
+import { PDFUtilsModule } from './pdfUtilsModule';
 
 const PDFS_SUBDIR = 'pdfs/';
 const FAST_READ_CHUNK_SIZE = 128 * 1024;
@@ -10,12 +11,6 @@ const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024;
 const JS_FALLBACK_SIZE_LIMIT = 100 * 1024 * 1024;
 const NATIVE_PAGE_COUNT_TIMEOUT_MS = 15000;
 
-type PDFUtilsModuleType = {
-  getPageCount?: (filePath: string) => Promise<number>;
-  copySecurityScopedFileToTmp?: (sourceUrl: string) => Promise<string>;
-};
-
-const PDFUtilsModule = NativeModules.PDFUtilsModule as PDFUtilsModuleType | undefined;
 
 function pdfsDir(): string {
   return `${FileSystem.documentDirectory ?? ''}${PDFS_SUBDIR}`;

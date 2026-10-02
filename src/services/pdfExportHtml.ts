@@ -40,6 +40,15 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// Base64 image data URIs cannot contain HTML-special characters, so they are
+// emitted as-is: escaping a multi-megabyte page raster would allocate five
+// full copies of it. Anything else is escaped.
+const BASE64_IMAGE_DATA_URI = /^data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]*$/i;
+
+function imageSrc(uri: string): string {
+  return BASE64_IMAGE_DATA_URI.test(uri) ? uri : escapeHtml(uri);
+}
+
 function safeColor(value: string): string {
   return /^#[0-9a-f]{3,8}$/i.test(value) ? value : '#000000';
 }
@@ -62,7 +71,7 @@ function imageHtml(image: PrintableImage, order: number): string {
   return '<div class="inserted-image" style="left:' + x + 'px;top:' + y +
     'px;width:' + width + 'px;height:' + height + 'px;z-index:' + order +
     ';transform:rotate(' + rotation + 'deg)">' +
-    '<img src="' + escapeHtml(dataUri) + '" style="left:' + imageLeft +
+    '<img src="' + imageSrc(dataUri) + '" style="left:' + imageLeft +
     'px;top:' + imageTop + 'px;width:' + fullWidth + 'px;height:' +
     fullHeight + 'px" /></div>';
 }
@@ -93,7 +102,7 @@ export function buildPdfHtml(pages: PrintablePage[]): string {
     return '<section class="page"><div class="content" style="left:' +
       CONTENT_LEFT + 'px;top:' + CONTENT_TOP + 'px;transform:scale(' +
       CONTENT_SCALE + ')"><img class="raster" src="' +
-      escapeHtml(page.rasterUri) + '" />' + images + textBoxes +
+      imageSrc(page.rasterUri) + '" />' + images + textBoxes +
       '</div></section>';
   }).join('');
 

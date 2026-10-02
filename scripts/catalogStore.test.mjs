@@ -346,3 +346,28 @@ test('empty folders index with surviving folder records still lists folders', as
   const catalog = await store.getCatalog();
   assert.deepEqual(catalog.folders.map((f) => f.id), ['folder-a']);
 });
+
+test('REPRO: a PDF note saved before the app container moved is re-pointed at its PDF and healed on disk', async () => {
+  // iOS moves the app container on updates and iCloud restores. The stored
+  // pdfUri still named the old container, so the native PDF background could
+  // not load it: annotations stayed visible but the PDF vanished.
+  const stale = 'file:///var/mobile/Containers/Data/Application/OLD-UUID/Documents/pdfs/note-pdf.pdf';
+  const catalogFile = JSON.stringify({
+    version: 1,
+    notes: [
+      { id: 'note-pdf', title: 'Lecture', folderId: null, createdAt: 'x', updatedAt: 'x', backgroundType: 'pdf', pdfUri: stale, thumbnailUri: null },
+      { id: 'note-plain', title: 'Plain', folderId: null, createdAt: 'x', updatedAt: 'x', backgroundType: 'plain', pdfUri: null, thumbnailUri: null },
+    ],
+    folders: [],
+    deletedNoteIds: {},
+  });
+  const env = makeEnv({ catalogFile, bodyFiles: ['note-pdf', 'note-plain'] });
+
+  const catalog = await createCatalogStore(env).getCatalog();
+
+  const pdfNote = catalog.notes.find((n) => n.id === 'note-pdf');
+  assert.equal(pdfNote.pdfUri, 'file:///documents/pdfs/note-pdf.pdf');
+  assert.equal(catalog.notes.find((n) => n.id === 'note-plain').pdfUri, null);
+  const persisted = JSON.parse(env.catalogFile).notes.find((n) => n.id === 'note-pdf');
+  assert.equal(persisted.pdfUri, 'file:///documents/pdfs/note-pdf.pdf');
+});

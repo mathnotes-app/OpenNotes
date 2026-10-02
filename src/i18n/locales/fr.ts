@@ -205,4 +205,12 @@ export const fr: Strings = {
     yesterday: 'hier',
     daysAgo: (d: number) => `il y a ${d} j`,
   },
+  crash: {
+    screenTitle: 'Un problème est survenu',
+    screenBody: 'OpenNotes a rencontré une erreur inattendue. Les notes déjà enregistrées sont en sécurité sur cet appareil.',
+    shareDetails: 'Partager les détails de l\'erreur',
+    promptTitle: 'OpenNotes s\'est fermé de façon inattendue',
+    promptBody: 'Partager les détails de l\'erreur aide à corriger le problème. Le rapport contient le message d\'erreur, la version de l\'app et le type d\'appareil, pas vos notes.',
+    share: 'Partager',
+  },
 };

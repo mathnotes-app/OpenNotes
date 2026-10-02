@@ -11,12 +11,18 @@ import {
   PDF_PAGE_WIDTH,
   type PrintablePage,
 } from './pdfExportHtml';
+import { PDFUtilsModule } from './pdfUtilsModule';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
 const LARGE_NATIVE_BATCH_SIZE = 1;
 const LARGE_NOTEBOOK_PREVIEW_THRESHOLD = 150;
 const NATIVE_BATCH_PAUSE_MS = 16;
+// Pages rendered, embedded as base64 and printed per pass. Each page raster
+// is several MB of base64 in the JS heap, so printing a whole notebook in
+// one HTML document exhausted Hermes memory on long notebooks. Printing in
+// fixed-size passes and merging the PDFs natively keeps memory bounded.
+const PRINT_PASS_PAGES = 8;
 
 export interface ExportOptions {
   data: SerializedNotebookData;
@@ -90,13 +96,13 @@ async function embedInsertedImage(uri: string): Promise<string> {
 }
 
 async function preparePrintablePages(
-  data: SerializedNotebookData,
+  notebookPages: SerializedNotebookData['pages'],
   rasterUris: string[],
 ): Promise<PrintablePage[]> {
   const cachedImages = new Map<string, string>();
   const pages: PrintablePage[] = [];
-  for (let index = 0; index < data.pages.length; index += 1) {
-    const page = data.pages[index];
+  for (let index = 0; index < notebookPages.length; index += 1) {
+    const page = notebookPages[index];
     const images: PrintablePage['images'] = [];
     for (const element of page.insertedElements ?? []) {
       const sourceUri = element.sourceUri ?? element.renderedImageUri;
@@ -170,34 +176,27 @@ async function renderNativePagesInChunks(options: {
 
 async function collectExportImages(options: {
   data: SerializedNotebookData;
+  pageIndexes: number[];
   exportWidth: number;
   exportHeight: number;
   pdfBackgroundUri?: string | null;
 }): Promise<string[]> {
-  const { data, exportWidth, exportHeight, pdfBackgroundUri } = options;
-  const pageCount = data.pages.length;
-  const images: Array<string | undefined> = new Array(pageCount);
+  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri } = options;
+  const images = new Map<number, string>();
   const nativePageIndexes: number[] = [];
-  const preferStoredPreviews = pageCount >= LARGE_NOTEBOOK_PREVIEW_THRESHOLD;
+  const preferStoredPreviews = data.pages.length >= LARGE_NOTEBOOK_PREVIEW_THRESHOLD;
 
   if (preferStoredPreviews) {
-    let previewCount = 0;
-    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+    for (const pageIndex of pageIndexes) {
       const previewUri = await toPrintableImageUri(data.pages[pageIndex]?.previewUri);
       if (previewUri) {
-        images[pageIndex] = previewUri;
-        previewCount += 1;
+        images.set(pageIndex, previewUri);
       } else {
         nativePageIndexes.push(pageIndex);
       }
     }
-    if (__DEV__) {
-      console.log(
-        `[exportService] using stored previews for ${previewCount}/${pageCount} export pages`,
-      );
-    }
   } else {
-    nativePageIndexes.push(...data.pages.map((_, index) => index));
+    nativePageIndexes.push(...pageIndexes);
   }
 
   if (nativePageIndexes.length > 0) {
@@ -210,11 +209,30 @@ async function collectExportImages(options: {
       batchSize: preferStoredPreviews ? LARGE_NATIVE_BATCH_SIZE : DEFAULT_NATIVE_BATCH_SIZE,
     });
     for (const [pageIndex, uri] of rendered) {
-      images[pageIndex] = uri;
+      images.set(pageIndex, uri);
     }
   }
 
-  return images.filter((uri): uri is string => typeof uri === 'string' && uri.length > 0);
+  return pageIndexes
+    .map((pageIndex) => images.get(pageIndex))
+    .filter((uri): uri is string => typeof uri === 'string' && uri.length > 0);
+}
+
+async function mergePrintedPasses(passUris: string[]): Promise<string> {
+  if (passUris.length === 1) return passUris[0];
+  const merge = PDFUtilsModule?.mergePdfFiles;
+  if (!merge) throw new Error('PDF merging is unavailable on this device');
+  return merge(passUris);
+}
+
+async function deleteFiles(uris: string[]): Promise<void> {
+  await Promise.all(
+    uris.map((uri) =>
+      FileSystem.deleteAsync(uri, { idempotent: true }).catch((error: unknown) => {
+        if (__DEV__) console.warn('[exportService] could not delete export pass', uri, error);
+      }),
+    ),
+  );
 }
 
 export async function exportNotebookAsPdf(
@@ -225,48 +243,64 @@ export async function exportNotebookAsPdf(
     return { ok: false, error: 'Empty notebook' };
   }
 
+  const passUris: string[] = [];
+  let mergedUri: string | null = null;
   try {
     const pixelRatio = PixelRatio.get();
     const nativeScale = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
     const exportWidth = Math.round(NOTE_PAGE_WIDTH * nativeScale);
     const exportHeight = Math.round(NOTE_PAGE_HEIGHT * nativeScale);
-    const pages = await collectExportImages({
-      data,
-      exportWidth,
-      exportHeight,
-      pdfBackgroundUri,
-    });
-    if (pages.length === 0) {
-      return { ok: false, error: 'Native export returned no pages' };
-    }
-    if (pages.length !== data.pages.length) {
-      return {
-        ok: false,
-        error: `Export rendered ${pages.length} of ${data.pages.length} pages`,
-      };
+    const pageCount = data.pages.length;
+
+    for (let start = 0; start < pageCount; start += PRINT_PASS_PAGES) {
+      const pageIndexes = Array.from(
+        { length: Math.min(PRINT_PASS_PAGES, pageCount - start) },
+        (_, offset) => start + offset,
+      );
+      const rasterUris = await collectExportImages({
+        data,
+        pageIndexes,
+        exportWidth,
+        exportHeight,
+        pdfBackgroundUri,
+      });
+      if (rasterUris.length !== pageIndexes.length) {
+        return {
+          ok: false,
+          error: `Export rendered ${start + rasterUris.length} of ${pageCount} pages`,
+        };
+      }
+
+      const printablePages = await preparePrintablePages(
+        pageIndexes.map((pageIndex) => data.pages[pageIndex]),
+        rasterUris,
+      );
+      const printed = await Print.printToFileAsync({
+        html: buildPdfHtml(printablePages),
+        width: PDF_PAGE_WIDTH,
+        height: PDF_PAGE_HEIGHT,
+        base64: false,
+      });
+      passUris.push(printed.uri);
     }
 
-    const printablePages = await preparePrintablePages(data, pages);
-    const html = buildPdfHtml(printablePages);
-    const printed = await Print.printToFileAsync({
-      html,
-      width: PDF_PAGE_WIDTH,
-      height: PDF_PAGE_HEIGHT,
-      base64: false,
-    });
+    const pdfUri = await mergePrintedPasses(passUris);
+    if (pdfUri !== passUris[0]) mergedUri = pdfUri;
+    await deleteFiles(passUris.filter((uri) => uri !== pdfUri));
 
     const available = await Sharing.isAvailableAsync();
     if (!available) {
-      return { ok: true, uri: printed.uri };
+      return { ok: true, uri: pdfUri };
     }
 
-    await Sharing.shareAsync(printed.uri, {
+    await Sharing.shareAsync(pdfUri, {
       mimeType: 'application/pdf',
       dialogTitle: filename,
       UTI: 'com.adobe.pdf',
     });
-    return { ok: true, uri: printed.uri };
+    return { ok: true, uri: pdfUri };
   } catch (error) {
+    await deleteFiles(mergedUri ? [...passUris, mergedUri] : passUris);
     if (__DEV__) console.warn('[exportService] export failed', error);
     return {
       ok: false,

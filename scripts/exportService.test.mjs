@@ -24,10 +24,12 @@ function notebook(pages) {
   };
 }
 
-function harness(files = {}) {
+function harness(files = {}, { mergePdfFiles } = {}) {
   const printCalls = [];
   const batchCalls = [];
   const fileReads = [];
+  const deletedFiles = [];
+  const mergeCalls = [];
   const exports = {};
   const fileSystem = {
     EncodingType: { Base64: 'base64' },
@@ -36,11 +38,14 @@ function harness(files = {}) {
       if (!(uri in files)) throw new Error('File not found');
       return files[uri];
     },
+    async deleteAsync(uri) {
+      deletedFiles.push(uri);
+    },
   };
   const print = {
     async printToFileAsync(options) {
       printCalls.push(options);
-      return { uri: 'file:///export.pdf', numberOfPages: 3 };
+      return { uri: 'file:///export-' + printCalls.length + '.pdf' };
     },
   };
   const mobileInk = {
@@ -59,6 +64,18 @@ function harness(files = {}) {
         return { isAvailableAsync: async () => false };
       }
       if (name === 'react-native') return { PixelRatio: { get: () => 2 } };
+      if (name === './pdfUtilsModule') {
+        return {
+          PDFUtilsModule: mergePdfFiles === null
+            ? {}
+            : {
+                mergePdfFiles: async (uris) => {
+                  mergeCalls.push(uris);
+                  return mergePdfFiles ? mergePdfFiles(uris) : 'file:///merged.pdf';
+                },
+              },
+        };
+      }
       if (name === '@mathnotes/mobile-ink') return mobileInk;
       if (name === './pdfExportHtml') {
         return {
@@ -72,7 +89,14 @@ function harness(files = {}) {
       throw new Error('Unexpected import: ' + name);
     },
   });
-  return { exportNotebookAsPdf: exports.exportNotebookAsPdf, printCalls, batchCalls, fileReads };
+  return {
+    exportNotebookAsPdf: exports.exportNotebookAsPdf,
+    printCalls,
+    batchCalls,
+    fileReads,
+    deletedFiles,
+    mergeCalls,
+  };
 }
 
 test('a three-page PDF includes a photo and typed text on their original page', async () => {
@@ -165,4 +189,70 @@ test('page HTML preserves a uniform scale and escapes typed text', () => {
   assert.match(html, /&lt;script&gt;alert\(&quot;x&quot;\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>/);
   assert.match(html, /page-break-after:always/);
+});
+
+test('a long notebook prints in bounded passes that are merged into one PDF', async () => {
+  const h = harness();
+  const data = notebook(Array.from({ length: 20 }, () => ({})));
+
+  const result = await h.exportNotebookAsPdf({ data, filename: 'long' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.uri, 'file:///merged.pdf');
+  assert.deepEqual(
+    h.printCalls.map(({ html }) => (html.match(/<section class="page">/g) ?? []).length),
+    [8, 8, 4],
+  );
+  assert.ok(h.batchCalls.every((call) => call[0].length <= 8));
+  assert.deepEqual(h.mergeCalls.map((uris) => [...uris]), [['file:///export-1.pdf', 'file:///export-2.pdf', 'file:///export-3.pdf']]);
+  assert.deepEqual(h.deletedFiles.sort(), ['file:///export-1.pdf', 'file:///export-2.pdf', 'file:///export-3.pdf']);
+});
+
+test('a notebook that fits one pass is printed once and never merged', async () => {
+  const h = harness();
+
+  const result = await h.exportNotebookAsPdf({ data: notebook([{}, {}]), filename: 'short' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.uri, 'file:///export-1.pdf');
+  assert.equal(h.mergeCalls.length, 0);
+  assert.deepEqual(h.deletedFiles, []);
+});
+
+test('a failed merge reports the error and removes the partial pass files', async () => {
+  const h = harness({}, {
+    mergePdfFiles: async () => {
+      throw new Error('Could not read export-2.pdf');
+    },
+  });
+
+  const result = await h.exportNotebookAsPdf({
+    data: notebook(Array.from({ length: 9 }, () => ({}))),
+    filename: 'broken',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Could not read export-2\.pdf/);
+  assert.deepEqual(h.deletedFiles.sort(), ['file:///export-1.pdf', 'file:///export-2.pdf']);
+});
+
+test('a long export fails clearly when the native merge is missing', async () => {
+  const h = harness({}, { mergePdfFiles: null });
+
+  const result = await h.exportNotebookAsPdf({
+    data: notebook(Array.from({ length: 9 }, () => ({}))),
+    filename: 'no-merge',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error, /PDF merging is unavailable/);
+});
+
+test('base64 page rasters are embedded verbatim instead of escaped copies', () => {
+  const raster = 'data:image/png;base64,' + 'A'.repeat(64) + '+/=';
+  const html = buildPdfHtml([{ rasterUri: raster, images: [], textBoxes: [] }]);
+
+  assert.ok(html.includes('src="' + raster + '"'));
+  const unsafe = buildPdfHtml([{ rasterUri: 'file:///a"b.png', images: [], textBoxes: [] }]);
+  assert.ok(unsafe.includes('file:///a&quot;b.png'));
 });
