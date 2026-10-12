@@ -11,29 +11,46 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4788858903E15B3CAEB129E6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */; };
+		511FEA48B7554353BD76B271 /* NotebookInteractionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */; };
 		7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */; };
 		7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */; };
 		7D3A801A2E1A4CC89B1B09C1 /* ICloudBackupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */; };
 		7D3A801B2E1A4CC89B1B09C1 /* ICloudBackupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */; };
 		9C2FD7C620026BB779139CCD /* libPods-OpenNotes.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A7A85B485F4321855B927960 /* libPods-OpenNotes.a */; };
+		AA1519DCA43664DFE64E36E9 /* InkVisibilityAssertions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		E8210B97ECFC3A28A05FADD9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFDCECAB8FCBFB2881B4072A /* Foundation.framework */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		442E9B63CACEF7FB3ECB1E70 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
+			remoteInfo = OpenNotes;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* OpenNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OpenNotes/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OpenNotes/Info.plist; sourceTree = "<group>"; };
+		33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotebookInteractionUITests.swift; sourceTree = "<group>"; };
 		575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = OpenNotes/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFUtilsModule.swift; path = OpenNotes/PDFUtilsModule.swift; sourceTree = "<group>"; };
 		7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PDFUtilsModule.m; path = OpenNotes/PDFUtilsModule.m; sourceTree = "<group>"; };
 		7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ICloudBackupModule.swift; path = OpenNotes/ICloudBackupModule.swift; sourceTree = "<group>"; };
 		7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ICloudBackupModule.m; path = OpenNotes/ICloudBackupModule.m; sourceTree = "<group>"; };
+		7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InkVisibilityAssertions.swift; sourceTree = "<group>"; };
 		9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-OpenNotes/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		A7A85B485F4321855B927960 /* libPods-OpenNotes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OpenNotes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = OpenNotes/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		BFDCECAB8FCBFB2881B4072A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		CEB267F85878647A5ACA788A /* Pods-OpenNotes.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenNotes.release.xcconfig"; path = "Target Support Files/Pods-OpenNotes/Pods-OpenNotes.release.xcconfig"; sourceTree = "<group>"; };
+		E4A6B347EDF0BEED4C56B75E /* OpenNotesUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OpenNotesUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6710FB66EE811C212116106 /* Pods-OpenNotes.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenNotes.debug.xcconfig"; path = "Target Support Files/Pods-OpenNotes/Pods-OpenNotes.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = OpenNotes/AppDelegate.swift; sourceTree = "<group>"; };
@@ -49,9 +66,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F6918DBDA9D6E1EA5434DC60 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E8210B97ECFC3A28A05FADD9 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		113AAC429982245F287A514B /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				BFDCECAB8FCBFB2881B4072A /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* OpenNotes */ = {
 			isa = PBXGroup;
 			children = (
@@ -75,6 +108,7 @@
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				A7A85B485F4321855B927960 /* libPods-OpenNotes.a */,
+				113AAC429982245F287A514B /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -103,6 +137,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				CCEB29EB4EA264547E3F22DF /* Pods */,
 				B025AFE641A7B146AB64069B /* ExpoModulesProviders */,
+				94F4EBFAAF2787ED7D01F434 /* OpenNotesUITests */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,8 +148,19 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* OpenNotes.app */,
+				E4A6B347EDF0BEED4C56B75E /* OpenNotesUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		94F4EBFAAF2787ED7D01F434 /* OpenNotesUITests */ = {
+			isa = PBXGroup;
+			children = (
+				7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */,
+				33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */,
+			);
+			name = OpenNotesUITests;
+			path = OpenNotesUITests;
 			sourceTree = "<group>";
 		};
 		B025AFE641A7B146AB64069B /* ExpoModulesProviders */ = {
@@ -169,6 +215,24 @@
 			productReference = 13B07F961A680F5B00A75B9A /* OpenNotes.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F2556A6F7BB9D8A59CD13656 /* OpenNotesUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2096F621AB0874DB9EE21092 /* Build configuration list for PBXNativeTarget "OpenNotesUITests" */;
+			buildPhases = (
+				3863A37677E3B07E81B282F9 /* Sources */,
+				F6918DBDA9D6E1EA5434DC60 /* Frameworks */,
+				0594059E144C9886F2C516CC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2F854E704CAB0A50FE497853 /* PBXTargetDependency */,
+			);
+			name = OpenNotesUITests;
+			productName = OpenNotesUITests;
+			productReference = E4A6B347EDF0BEED4C56B75E /* OpenNotesUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -198,11 +262,19 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* OpenNotes */,
+				F2556A6F7BB9D8A59CD13656 /* OpenNotesUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0594059E144C9886F2C516CC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		13B07F8E1A680F5B00A75B9A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -352,7 +424,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3863A37677E3B07E81B282F9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA1519DCA43664DFE64E36E9 /* InkVisibilityAssertions.swift in Sources */,
+				511FEA48B7554353BD76B271 /* NotebookInteractionUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2F854E704CAB0A50FE497853 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = OpenNotes;
+			target = 13B07F861A680F5B00A75B9A /* OpenNotes */;
+			targetProxy = 442E9B63CACEF7FB3ECB1E70 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -364,7 +454,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -377,7 +467,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.3.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -403,7 +493,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -411,7 +501,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.3;
+				MARKETING_VERSION = 1.3.4;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -545,6 +635,41 @@
 			};
 			name = Release;
 		};
+		9273CECCEBBCD90F0398488F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OpenNotes;
+			};
+			name = Debug;
+		};
+		FA5BBFAC3A302DC5B2E8EE18 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = OpenNotes;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -553,6 +678,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2096F621AB0874DB9EE21092 /* Build configuration list for PBXNativeTarget "OpenNotesUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA5BBFAC3A302DC5B2E8EE18 /* Release */,
+				9273CECCEBBCD90F0398488F /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
