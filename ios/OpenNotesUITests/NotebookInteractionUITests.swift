@@ -412,6 +412,25 @@ final class NotebookInteractionUITests: XCTestCase {
     }
   }
 
+  // Each pause outlasts the 350 ms autosave debounce, so every stroke after the
+  // first is drawn while the dense 100-page document is being captured.
+  func testDenseWritingDuringAutosavePerformance() throws {
+    let app = prepare()
+    let viewport = element(app, "ink-viewport")
+    tap(app, "Enable finger drawing")
+    try measureInteractions(app) {
+      for row in 0..<6 {
+        let y = 0.3 + Double(row) * 0.08
+        let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: y))
+        let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: y + 0.02))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0)
+        Thread.sleep(forTimeInterval: 0.4)
+      }
+      for _ in 0..<6 { tap(app, "Undo") }
+    }
+    assertDenseInkVisible(app, context: "Writing during autosave complete")
+  }
+
   func testDenseScrollAndZoomPerformance() throws {
     let app = prepare()
     let viewport = element(app, "ink-viewport")

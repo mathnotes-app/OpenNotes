@@ -2,7 +2,7 @@
   "expo": {
     "name": "OpenNotes",
     "slug": "open-notes",
-    "version": "1.3.4",
+    "version": "1.3.5",
     "scheme": "opennotes",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
-      "buildNumber": "17",
+      "buildNumber": "18",
       "supportsTablet": true,
       "usesIcloudStorage": true,
       "entitlements": {
