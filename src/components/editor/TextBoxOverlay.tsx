@@ -1,4 +1,3 @@
-import {useNativeCallback} from '../../hooks/native-callback';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Platform,
@@ -19,7 +18,6 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  type SharedValue,
 } from 'react-native-reanimated';
 import type { InkTextBox } from '@mathnotes/mobile-ink';
 import { useTheme } from '../../hooks/useTheme';
@@ -45,7 +43,6 @@ type ResizeHandle =
 export interface TextBoxOverlayProps {
   textBox: InkTextBox;
   pageScale: number;
-  gestureScale?: SharedValue<number>;
   screenLeft: number;
   screenTop: number;
   pageWidth: number;
@@ -98,7 +95,9 @@ function resizeFromHandle(
   }
 
   nextX = clamp(nextX, 0, Math.max(0, pageWidth - nextWidth));
+  nextY = clamp(nextY, 0, Math.max(0, pageHeight - nextHeight));
   nextWidth = Math.min(nextWidth, pageWidth - nextX);
+  nextHeight = Math.min(nextHeight, pageHeight - nextY);
 
   return { x: nextX, y: nextY, width: nextWidth, height: nextHeight };
 }
@@ -106,7 +105,6 @@ function resizeFromHandle(
 export function TextBoxOverlay({
   textBox,
   pageScale,
-  gestureScale,
   screenLeft,
   screenTop,
   pageWidth,
@@ -178,7 +176,7 @@ export function TextBoxOverlay({
     y,
   ]);
 
-  const commitLayout = useNativeCallback(
+  const commitLayout = useCallback(
     (nextX: number, nextY: number, nextWidth: number, nextHeight: number) => {
       onCommit({
         x: nextX,
@@ -187,14 +185,15 @@ export function TextBoxOverlay({
         height: nextHeight,
       });
     },
+    [onCommit],
   );
 
-  const selectFromFinger = useNativeCallback(() => {
+  const selectFromFinger = useCallback(() => {
     if (!isSelectedRef.current) {
       suppressEditUntilRef.current = Date.now() + 250;
     }
     onSelect();
-  });
+  }, [onSelect]);
 
   const handleFingerPointerDown = useCallback((event: any) => {
     const pointerType = event.nativeEvent.pointerType;
@@ -203,7 +202,7 @@ export function TextBoxOverlay({
     selectFromFinger();
   }, [isEditing, selectFromFinger]);
 
-  const handleTap = useNativeCallback(() => {
+  const handleTap = useCallback(() => {
     if (isSelectedRef.current) {
       if (Date.now() < suppressEditUntilRef.current) return;
       onStartEdit();
@@ -211,7 +210,7 @@ export function TextBoxOverlay({
       suppressEditUntilRef.current = Date.now() + 250;
       onSelect();
     }
-  });
+  }, [onSelect, onStartEdit]);
 
   const handleContentChange = useCallback(
     (content: string) => {
@@ -221,21 +220,16 @@ export function TextBoxOverlay({
     [onCommit],
   );
 
-  const dragOriginX = useSharedValue(0);
-  const dragOriginY = useSharedValue(0);
-  const dragGesture = Gesture.Pan().maxPointers(1)
+  const dragGesture = Gesture.Pan()
     .enabled(isSelected && !isEditing)
     .manualActivation(true)
     .minDistance(2)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
-      const touch = event.allTouches[0];
-      if (touch) {dragOriginX.value = touch.absoluteX; dragOriginY.value = touch.absoluteY;}
-      isDragging.value = false;
       runOnJS(selectFromFinger)();
     })
     .onTouchesMove((_event, stateManager) => {
@@ -252,21 +246,20 @@ export function TextBoxOverlay({
     .onUpdate((evt) => {
       'worklet';
       x.value = clamp(
-        savedX.value + (evt.absoluteX - dragOriginX.value) / (gestureScale?.value ?? pageScale),
+        savedX.value + evt.translationX / pageScale,
         0,
         Math.max(0, pageWidth - width.value),
       );
-      // The owner page remains stable when an asset crosses a page boundary.
-      y.value = savedY.value + (evt.absoluteY - dragOriginY.value) / (gestureScale?.value ?? pageScale);
+      y.value = clamp(
+        savedY.value + evt.translationY / pageScale,
+        0,
+        Math.max(0, pageHeight - height.value),
+      );
     })
-    .onEnd((_event, success) => {
+    .onEnd(() => {
       'worklet';
-      if (success && isDragging.value) {runOnJS(commitLayout)(x.value, y.value, width.value, height.value);}
-    })
-    .onFinalize((_event, success) => {
-      'worklet';
-      if (!success && isDragging.value) {x.value = savedX.value; y.value = savedY.value;}
       isDragging.value = false;
+      runOnJS(commitLayout)(x.value, y.value, width.value, height.value);
     });
 
   const tapGesture = Gesture.Tap()
@@ -275,7 +268,7 @@ export function TextBoxOverlay({
     .maxDuration(450)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
       }
     })
@@ -284,20 +277,16 @@ export function TextBoxOverlay({
       if (success) runOnJS(handleTap)();
     });
 
-  const resizeOriginX = useSharedValue(0);
-  const resizeOriginY = useSharedValue(0);
   const createResizeGesture = (handle: ResizeHandle) =>
-    Gesture.Pan().maxPointers(1)
+    Gesture.Pan()
       .enabled(isSelected && !isEditing)
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }
-        const touch = event.allTouches[0];
-        if (touch) {resizeOriginX.value = touch.absoluteX; resizeOriginY.value = touch.absoluteY;}
         stateManager.activate();
       })
       .onStart(() => {
@@ -316,8 +305,8 @@ export function TextBoxOverlay({
           savedY.value,
           savedWidth.value,
           savedHeight.value,
-          (evt.absoluteX - resizeOriginX.value) / (gestureScale?.value ?? pageScale),
-          (evt.absoluteY - resizeOriginY.value) / (gestureScale?.value ?? pageScale),
+          evt.translationX / pageScale,
+          evt.translationY / pageScale,
           pageWidth,
           pageHeight,
         );
@@ -326,11 +315,10 @@ export function TextBoxOverlay({
         width.value = next.width;
         height.value = next.height;
       })
-      .onEnd((_event, success) => {
+      .onEnd(() => {
         'worklet';
         isResizing.value = false;
-        if (success) runOnJS(commitLayout)(x.value, y.value, width.value, height.value);
-        else { x.value = savedX.value; y.value = savedY.value; width.value = savedWidth.value; height.value = savedHeight.value; }
+        runOnJS(commitLayout)(x.value, y.value, width.value, height.value);
       });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -344,6 +332,7 @@ export function TextBoxOverlay({
     transform: [
       { translateX: x.value },
       { translateY: y.value },
+      { scale: isDragging.value || isResizing.value ? 1.02 : 1 },
     ],
   }));
 
@@ -354,8 +343,6 @@ export function TextBoxOverlay({
   return (
     <GestureDetector gesture={Gesture.Simultaneous(tapGesture, dragGesture)}>
       <Animated.View
-        testID={`text-box-${textBox.id}`}
-        collapsable={false}
         onPointerDown={handleFingerPointerDown}
         pointerEvents="auto"
         style={[
@@ -469,7 +456,7 @@ function ResizeHandleView({
   const isCorner = position.includes('-');
   return (
     <GestureDetector gesture={gesture}>
-      <View testID={`text-box-resize-${position}`} collapsable={false} style={[styles.handleTouchArea, handlePosition(position)]}>
+      <View style={[styles.handleTouchArea, handlePosition(position)]}>
         <View
           style={[
             isCorner ? styles.cornerHandle : styles.edgeHandle,

@@ -50,9 +50,6 @@ export function EditorHeader({
     >
       <View style={[styles.bar, { height: EDITOR_HEADER_BAR_HEIGHT }]}>
         <Pressable
-          testID="editor-back"
-          accessibilityRole="button"
-          accessibilityLabel={t.library.backLabel}
           onPress={onBack}
           hitSlop={10}
           style={({ pressed }) => [styles.sideButton, pressed && { opacity: 0.5 }]}

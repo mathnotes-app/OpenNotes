@@ -1,4 +1,3 @@
-import {useOverlayHistory} from '../../src/components/editor/history/useOverlayHistory';
 import React, {
   useCallback,
   useEffect,
@@ -24,8 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
-  ContinuousDocumentCanvas as InfiniteInkCanvas,
-  type ContinuousDocumentCanvasRef,
+  InfiniteInkCanvas,
+  type InfiniteInkCanvasRef,
   type InkTextBox,
   type InsertedElement,
   type NotebookPage,
@@ -62,7 +61,6 @@ import {
 } from '../../src/services/imageInsertStorage';
 import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
-import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
 import { t } from '../../src/i18n';
@@ -137,7 +135,7 @@ export default function NoteScreen() {
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const canvasRef = useRef<ContinuousDocumentCanvasRef | null>(null);
+  const canvasRef = useRef<InfiniteInkCanvasRef | null>(null);
   const pendingBodyRef = useRef<SerializedNotebookData | null>(null);
   const canvasReadyRef = useRef(false);
   const isMountedRef = useRef(true);
@@ -150,20 +148,13 @@ export default function NoteScreen() {
 
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
   const [enginePages, setEnginePages] = useState<NotebookPage[]>([]);
-  const enginePagesRef = useRef(enginePages);
-  const updateEnginePages = useCallback((pages: NotebookPage[]) => {
-    enginePagesRef.current = pages;
-    setEnginePages(pages);
-  }, []);
-  const flushHistoryRef = useRef<() => Promise<void>>(async () => {});
   const [overlayMap, setOverlayMap] = useState<Map<string, PageOverlayState>>(
     () => new Map(),
   );
   const overlayMapRef = useRef(overlayMap);
-  const replaceOverlayMap = useCallback((next: Map<string, PageOverlayState>) => {
-    overlayMapRef.current = next;
-    setOverlayMap(next);
-  }, []);
+  useEffect(() => {
+    overlayMapRef.current = overlayMap;
+  }, [overlayMap]);
 
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>('idle');
@@ -212,7 +203,6 @@ export default function NoteScreen() {
 
   const persistMerged = useCallback(async () => {
     if (!id || !canvasRef.current) return;
-    await flushHistoryRef.current();
     const canvasData = await canvasRef.current.getNotebookData();
     const overlay = overlayMapRef.current;
     const mergedPages = mergeStoredPreviews(canvasData.pages).map((page) => {
@@ -246,13 +236,6 @@ export default function NoteScreen() {
     onStatusChange: safeStatusChange,
     enabled: Boolean(id) && autosaveEnabled && bodyReady,
   });
-
-  const history = useOverlayHistory({fileId: id, canvasRef,
-    readPages: () => enginePagesRef.current.map(page => ({...page, ...overlayMapRef.current.get(page.id)})),
-    writePages: pages => replaceOverlayMap(new Map(pages.map(page => [page.id, overlayFromPage(page)]))),
-    onChange: scheduleAutosave,
-  });
-  flushHistoryRef.current = history.flushOverlayHistory;
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -293,32 +276,23 @@ export default function NoteScreen() {
     });
   }, [fingerDrawingEnabled]);
 
-  const handleCanvasLoadError = useCallback((error: unknown) => {
-    if (__DEV__) console.warn('[NoteScreen] native notebook load failed', error);
-    if (!isMountedRef.current) return;
-    canvasReadyRef.current = false;
-    pendingBodyRef.current = null;
-    setBodyReady(false);
-    setBodyLoadFailed(true);
-  }, []);
-
   const applyNotebookData = useCallback(
     (notebookData: SerializedNotebookData) => {
       rememberPagePreviews(notebookData.pages);
-      updateEnginePages(mergeStoredPreviews(notebookData.pages));
+      setEnginePages(mergeStoredPreviews(notebookData.pages));
       const initialMap = new Map<string, PageOverlayState>();
       for (const page of notebookData.pages) {
         initialMap.set(page.id, overlayFromPage(page));
       }
-      replaceOverlayMap(initialMap);
+      setOverlayMap(initialMap);
       setBodyReady(true);
-      if (canvasReadyRef.current && canvasRef.current) {
-        void canvasRef.current.loadNotebookData(notebookData).catch(handleCanvasLoadError);
+      if (canvasReadyRef.current) {
+        void canvasRef.current?.loadNotebookData(notebookData);
       } else {
         pendingBodyRef.current = notebookData;
       }
     },
-    [mergeStoredPreviews, rememberPagePreviews, handleCanvasLoadError],
+    [mergeStoredPreviews, rememberPagePreviews],
   );
 
   // Initial load
@@ -328,7 +302,7 @@ export default function NoteScreen() {
     storedPreviewByPageIdRef.current = new Map();
     setBodyReady(false);
     setBodyLoadFailed(false);
-    updateEnginePages([]);
+    setEnginePages([]);
     setCurrentPageIndex(0);
     setLoading(true);
     (async () => {
@@ -383,18 +357,17 @@ export default function NoteScreen() {
     const pending = pendingBodyRef.current;
     if (pending) {
       pendingBodyRef.current = null;
-      void canvasRef.current?.loadNotebookData(pending).catch(handleCanvasLoadError);
+      void canvasRef.current?.loadNotebookData(pending);
     }
-  }, [handleCanvasLoadError]);
+  }, []);
 
   const handlePagesChange = useCallback((next: NotebookPage[]) => {
     if (!isMountedRef.current || exitRef.current === 'navigating') return;
     rememberPagePreviews(next);
     const pagesWithPreviews = mergeStoredPreviews(next);
-    updateEnginePages(pagesWithPreviews);
+    setEnginePages(pagesWithPreviews);
     // Make sure every page id has an overlay slot; drop overlays for removed pages.
-    {
-      const prev = overlayMapRef.current;
+    setOverlayMap((prev) => {
       let changed = false;
       const nextMap = new Map(prev);
       const idsInPages = new Set(pagesWithPreviews.map((p) => p.id));
@@ -410,8 +383,8 @@ export default function NoteScreen() {
           changed = true;
         }
       }
-      if (changed) replaceOverlayMap(nextMap);
-    }
+      return changed ? nextMap : prev;
+    });
   }, [mergeStoredPreviews, rememberPagePreviews]);
 
   const handleDrawingChange = useCallback(() => {
@@ -486,13 +459,13 @@ export default function NoteScreen() {
   );
 
   const handleUndo = useCallback(() => {
-    history.undoHistory();
+    canvasRef.current?.undo();
     scheduleAutosave();
-  }, [scheduleAutosave, history.undoHistory]);
+  }, [scheduleAutosave]);
   const handleRedo = useCallback(() => {
-    history.redoHistory();
+    canvasRef.current?.redo();
     scheduleAutosave();
-  }, [scheduleAutosave, history.redoHistory]);
+  }, [scheduleAutosave]);
 
   const handleJumpToPage = useCallback(
     (pageIndex: number) => {
@@ -523,13 +496,18 @@ export default function NoteScreen() {
       pageIndex: number,
       updater: (state: PageOverlayState) => PageOverlayState,
     ) => {
-      const pageId = enginePagesRef.current[pageIndex]?.id;
-      if (!pageId) return;
-      history.setOverlayPages(pages => pages.map(page => page.id === pageId
-        ? {...page, ...updater(overlayFromPage(page))} : page));
+      setOverlayMap((prev) => {
+        const page = enginePages[pageIndex];
+        if (!page) return prev;
+        const current = prev.get(page.id) ?? emptyOverlay();
+        const next = updater(current);
+        const nextMap = new Map(prev);
+        nextMap.set(page.id, next);
+        return nextMap;
+      });
       scheduleAutosave();
     },
-    [history.setOverlayPages, scheduleAutosave],
+    [enginePages, scheduleAutosave],
   );
 
   const applyInsertedImage = useCallback(
@@ -666,15 +644,12 @@ export default function NoteScreen() {
 
       const now = new Date().toISOString();
       const nextId = insertedElementId();
-      const maxZIndex = Array.from(overlayMapRef.current.values()).reduce(
-        (highest, overlay) => overlay.insertedElements.reduce(
-          (value, asset) => Math.max(value, asset.zIndex ?? 0), highest,
-        ), 0,
-      );
+      const maxZIndex = Math.max(0, ...state.insertedElements.map((el) => el.zIndex ?? 0));
       const duplicated: InsertedElement = {
         ...element,
         id: nextId,
-        ...duplicateAssetPosition(element, pageIndex, PAGE_WIDTH, PAGE_HEIGHT, enginePages.length),
+        x: Math.max(0, Math.min(PAGE_WIDTH - (element.width ?? 80), element.x + 20)),
+        y: Math.max(0, Math.min(PAGE_HEIGHT - (element.height ?? 80), element.y + 20)),
         zIndex: maxZIndex + 1,
         createdAt: now,
         updatedAt: now,
@@ -721,7 +696,6 @@ export default function NoteScreen() {
     setIsExporting(true);
     try {
       await flushNow();
-      await flushHistoryRef.current();
       const canvasData = await canvasRef.current.getNotebookData();
       const overlay = overlayMapRef.current;
       const mergedPages = mergeStoredPreviews(canvasData.pages).map((page) => {
@@ -934,10 +908,7 @@ export default function NoteScreen() {
           pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
           fingerDrawingEnabled={fingerDrawingEnabled}
           onReady={handleCanvasReady}
-          onError={handleCanvasLoadError}
           onDrawingChange={handleDrawingChange}
-          onExternalEdit={payload => history.handleHistoryDrawingChange({nativeEvent: {externalEdit: {payload}}})}
-          onHistoryAction={historyAction => history.handleHistoryDrawingChange({nativeEvent: {historyAction}})}
           onCurrentPageChange={handleCurrentPageChange}
           onPagesChange={handlePagesChange}
           onPencilDoubleTap={handlePencilDoubleTap}

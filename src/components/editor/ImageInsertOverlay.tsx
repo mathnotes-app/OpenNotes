@@ -1,5 +1,3 @@
-import {useNativeCallback} from '../../hooks/native-callback';
-import {resizeFromCorner, localPointerDelta, anchorRotatedFrame, cropFromEdge, type ResizeHandle} from './overlayGeometry';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,9 +23,12 @@ import { useTheme } from '../../hooks/useTheme';
 
 const DEFAULT_WIDTH = 240;
 const DEFAULT_HEIGHT = 240;
+const DEFAULT_MIN_SIZE = 50;
 const HANDLE_SIZE = 24;
 const HANDLE_OFFSET = -HANDLE_SIZE / 2;
+const MIN_CROP_SIZE = 36;
 
+type ResizeHandle = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type CropHandle =
   | 'left'
   | 'right'
@@ -43,7 +44,6 @@ type CropRect = NonNullable<InsertedElement['cropRect']>;
 export interface ImageInsertOverlayProps {
   element: InsertedElement;
   pageScale: number;
-  gestureScale?: SharedValue<number>;
   screenLeft: number;
   screenTop: number;
   pageWidth: number;
@@ -69,11 +69,68 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function resizeFromCorner(
+  direction: ResizeHandle,
+  baseX: number,
+  baseY: number,
+  baseWidth: number,
+  baseHeight: number,
+  dx: number,
+  dy: number,
+  pageWidth: number,
+  pageHeight: number,
+  preserveAspectRatio: boolean,
+) {
+  'worklet';
+  const aspectRatio = baseHeight > 0 ? baseWidth / baseHeight : 1;
+  let nextX = baseX;
+  let nextY = baseY;
+  let nextWidth = baseWidth;
+  let nextHeight = baseHeight;
+
+  if (preserveAspectRatio) {
+    const rawWidth = direction.includes('left') ? baseWidth - dx : baseWidth + dx;
+    const rawHeight = direction.includes('top') ? baseHeight - dy : baseHeight + dy;
+    const widthScale = rawWidth / baseWidth;
+    const heightScale = rawHeight / baseHeight;
+    const minScale = Math.max(DEFAULT_MIN_SIZE / baseWidth, DEFAULT_MIN_SIZE / baseHeight);
+    const uniformScale = Math.max(minScale, Math.max(widthScale, heightScale));
+
+    nextWidth = Math.min(pageWidth, baseWidth * uniformScale);
+    nextHeight = Math.min(pageHeight, nextWidth / aspectRatio);
+
+    if (direction.includes('left')) nextX = baseX + (baseWidth - nextWidth);
+    if (direction.includes('top')) nextY = baseY + (baseHeight - nextHeight);
+  } else {
+    if (direction.includes('right')) {
+      nextWidth = Math.max(DEFAULT_MIN_SIZE, baseWidth + dx);
+    }
+    if (direction.includes('left')) {
+      const widthDelta = Math.min(dx, baseWidth - DEFAULT_MIN_SIZE);
+      nextWidth = baseWidth - widthDelta;
+      nextX = baseX + widthDelta;
+    }
+    if (direction.includes('bottom')) {
+      nextHeight = Math.max(DEFAULT_MIN_SIZE, baseHeight + dy);
+    }
+    if (direction.includes('top')) {
+      const heightDelta = Math.min(dy, baseHeight - DEFAULT_MIN_SIZE);
+      nextHeight = baseHeight - heightDelta;
+      nextY = baseY + heightDelta;
+    }
+  }
+
+  nextX = clamp(nextX, 0, Math.max(0, pageWidth - nextWidth));
+  nextY = clamp(nextY, 0, Math.max(0, pageHeight - nextHeight));
+  nextWidth = Math.min(nextWidth, pageWidth - nextX);
+  nextHeight = Math.min(nextHeight, pageHeight - nextY);
+
+  return { x: nextX, y: nextY, width: nextWidth, height: nextHeight };
+}
 
 export function ImageInsertOverlay({
   element,
   pageScale,
-  gestureScale,
   screenLeft,
   screenTop,
   pageWidth,
@@ -87,7 +144,6 @@ export function ImageInsertOverlay({
   onSendToBack,
   onRemove,
 }: ImageInsertOverlayProps) {
-  const nativeSelect = useNativeCallback(onSelect);
   const theme = useTheme();
   const [isCropMode, setIsCropMode] = useState(false);
 
@@ -95,7 +151,7 @@ export function ImageInsertOverlay({
   const initialHeight = element.height ?? DEFAULT_HEIGHT;
   const locked = Boolean(element.locked);
   const sourceUri = element.sourceUri ?? element.renderedImageUri;
-  const canCrop = element.type === 'image' && Boolean(sourceUri) && !locked;
+  const canCrop = element.type === 'image' && Boolean(sourceUri);
   const preserveAspectRatio = element.type === 'latex-figure';
 
   const x = useSharedValue(element.x);
@@ -146,7 +202,6 @@ export function ImageInsertOverlay({
     cropX,
     cropY,
     element.cropRect,
-    element.rotation,
     element.height,
     element.rotation,
     element.width,
@@ -172,13 +227,14 @@ export function ImageInsertOverlay({
     if (!isSelected) setIsCropMode(false);
   }, [isSelected]);
 
-  const commitPosition = useNativeCallback(
+  const commitPosition = useCallback(
     (nextX: number, nextY: number) => {
       onUpdate({ x: nextX, y: nextY });
     },
+    [onUpdate],
   );
 
-  const commitSize = useNativeCallback(
+  const commitSize = useCallback(
     (nextWidth: number, nextHeight: number, nextX: number, nextY: number) => {
       onUpdate({
         x: nextX,
@@ -187,17 +243,19 @@ export function ImageInsertOverlay({
         height: nextHeight,
       });
     },
+    [onUpdate],
   );
 
-  const commitRotation = useNativeCallback(
+  const commitRotation = useCallback(
     (nextRotation: number) => {
       onUpdate({ rotation: nextRotation });
     },
+    [onUpdate],
   );
 
-  const selectFromFinger = useNativeCallback(() => {
+  const selectFromFinger = useCallback(() => {
     onSelect();
-  });
+  }, [onSelect]);
 
   const handleFingerPointerDown = useCallback((event: any) => {
     const pointerType = event.nativeEvent.pointerType;
@@ -214,11 +272,8 @@ export function ImageInsertOverlay({
 
     const fullWidth = (element.width ?? DEFAULT_WIDTH) / Math.max(0.001, element.cropRect.width);
     const fullHeight = (element.height ?? DEFAULT_HEIGHT) / Math.max(0.001, element.cropRect.height);
-    const fullFrame = anchorRotatedFrame({x: element.x, y: element.y,
-      width: element.width ?? DEFAULT_WIDTH, height: element.height ?? DEFAULT_HEIGHT},
-      {x: element.x - element.cropRect.x * fullWidth, y: element.y - element.cropRect.y * fullHeight,
-        width: fullWidth, height: fullHeight}, element.rotation ?? 0);
-    const fullX = fullFrame.x, fullY = fullFrame.y;
+    const fullX = element.x - element.cropRect.x * fullWidth;
+    const fullY = element.y - element.cropRect.y * fullHeight;
 
     x.value = fullX;
     y.value = fullY;
@@ -240,7 +295,6 @@ export function ImageInsertOverlay({
     cropX,
     cropY,
     element.cropRect,
-    element.rotation,
     element.height,
     element.width,
     element.x,
@@ -256,21 +310,16 @@ export function ImageInsertOverlay({
     y,
   ]);
 
-  const dragOriginX = useSharedValue(0);
-  const dragOriginY = useSharedValue(0);
-  const dragGesture = Gesture.Pan().maxPointers(1)
+  const dragGesture = Gesture.Pan()
     .enabled(isSelected && !isCropMode)
     .manualActivation(true)
     .minDistance(2)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
-      const touch = event.allTouches[0];
-      if (touch) {dragOriginX.value = touch.absoluteX; dragOriginY.value = touch.absoluteY;}
-      hasMoved.value = false;
       runOnJS(selectFromFinger)();
     })
     .onTouchesMove((_event, stateManager) => {
@@ -290,21 +339,21 @@ export function ImageInsertOverlay({
       'worklet';
       if (locked || !hasMoved.value) return;
       x.value = clamp(
-        savedX.value + (evt.absoluteX - dragOriginX.value) / (gestureScale?.value ?? pageScale),
+        savedX.value + evt.translationX / pageScale,
         0,
         Math.max(0, pageWidth - width.value),
       );
-      // The owner page remains stable when an asset crosses a page boundary.
-      y.value = savedY.value + (evt.absoluteY - dragOriginY.value) / (gestureScale?.value ?? pageScale);
+      y.value = clamp(
+        savedY.value + evt.translationY / pageScale,
+        0,
+        Math.max(0, pageHeight - height.value),
+      );
     })
-    .onEnd((_event, success) => {
+    .onEnd(() => {
       'worklet';
-      if (success && hasMoved.value) {runOnJS(commitPosition)(x.value, y.value);}
-    })
-    .onFinalize((_event, success) => {
-      'worklet';
-      if (!success && hasMoved.value) {x.value = savedX.value; y.value = savedY.value;}
-      hasMoved.value = false;
+      if (hasMoved.value) {
+        runOnJS(commitPosition)(x.value, y.value);
+      }
     });
 
   const tapGesture = Gesture.Tap()
@@ -313,21 +362,21 @@ export function ImageInsertOverlay({
     .maxDuration(450)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
       }
     })
     .onEnd((_evt, success) => {
       'worklet';
-      if (success) runOnJS(nativeSelect)();
+      if (success) runOnJS(onSelect)();
     });
 
-  const rotateGesture = Gesture.Pan().maxPointers(1)
+  const rotateGesture = Gesture.Pan()
     .enabled(isSelected && !locked && !isCropMode)
     .manualActivation(true)
     .onTouchesDown((event, stateManager) => {
       'worklet';
-      if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+      if (event.pointerType === PointerType.STYLUS) {
         stateManager.fail();
         return;
       }
@@ -342,7 +391,7 @@ export function ImageInsertOverlay({
         evt.absoluteY - rotateCenterY.value,
         evt.absoluteX - rotateCenterX.value,
       );
-      runOnJS(nativeSelect)();
+      runOnJS(onSelect)();
     })
     .onUpdate((evt) => {
       'worklet';
@@ -354,26 +403,21 @@ export function ImageInsertOverlay({
         savedRotation.value +
         ((currentAngle - rotateStartPointerAngle.value) * 180) / Math.PI;
     })
-    .onEnd((_event, success) => {
+    .onEnd(() => {
       'worklet';
-      if (success) runOnJS(commitRotation)(rotation.value);
-      else rotation.value = savedRotation.value;
+      runOnJS(commitRotation)(rotation.value);
     });
 
-  const resizeOriginX = useSharedValue(0);
-  const resizeOriginY = useSharedValue(0);
   const createResizeGesture = (direction: ResizeHandle) =>
-    Gesture.Pan().maxPointers(1)
+    Gesture.Pan()
       .enabled(isSelected && !locked && !isCropMode)
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }
-        const touch = event.allTouches[0];
-        if (touch) {resizeOriginX.value = touch.absoluteX; resizeOriginY.value = touch.absoluteY;}
         stateManager.activate();
       })
       .onStart(() => {
@@ -385,30 +429,26 @@ export function ImageInsertOverlay({
       })
       .onUpdate((evt) => {
         'worklet';
-        const delta = localPointerDelta(evt.absoluteX - resizeOriginX.value,
-          evt.absoluteY - resizeOriginY.value, gestureScale?.value ?? pageScale, rotation.value);
-        const resized = resizeFromCorner(
+        const next = resizeFromCorner(
           direction,
           savedX.value,
           savedY.value,
           savedWidth.value,
           savedHeight.value,
-          delta.x,
-          delta.y,
+          evt.translationX / pageScale,
+          evt.translationY / pageScale,
           pageWidth,
+          pageHeight,
           preserveAspectRatio,
         );
-        const next = anchorRotatedFrame({x: savedX.value, y: savedY.value,
-          width: savedWidth.value, height: savedHeight.value}, resized, rotation.value);
         x.value = next.x;
         y.value = next.y;
         width.value = next.width;
         height.value = next.height;
       })
-      .onEnd((_event, success) => {
+      .onEnd(() => {
         'worklet';
-        if (success) runOnJS(commitSize)(width.value, height.value, x.value, y.value);
-        else { x.value = savedX.value; y.value = savedY.value; width.value = savedWidth.value; height.value = savedHeight.value; }
+        runOnJS(commitSize)(width.value, height.value, x.value, y.value);
       });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -430,8 +470,6 @@ export function ImageInsertOverlay({
   return (
     <GestureDetector gesture={Gesture.Simultaneous(tapGesture, dragGesture)}>
       <Animated.View
-        testID={`inserted-image-${element.id}`}
-        collapsable={false}
         onPointerDown={handleFingerPointerDown}
         pointerEvents="auto"
         style={[
@@ -463,7 +501,7 @@ export function ImageInsertOverlay({
         {isSelected ? (
           <>
             {!locked && !isCropMode ? (
-              <ResizeHandles elementId={element.id} createResizeGesture={createResizeGesture} />
+              <ResizeHandles createResizeGesture={createResizeGesture} />
             ) : null}
             <View
               style={[
@@ -478,7 +516,6 @@ export function ImageInsertOverlay({
             >
               {canCrop ? (
                 <ActionButton
-                  testID={`image-crop-toggle-${element.id}`}
                   name="crop-outline"
                   color={isCropMode ? theme.colors.accent : theme.colors.textSecondary}
                   onPress={() => setIsCropMode((value) => !value)}
@@ -487,7 +524,6 @@ export function ImageInsertOverlay({
               {isCropMode ? (
                 <>
                   <ActionButton
-                    testID={`image-crop-reset-${element.id}`}
                     name="refresh"
                     color={theme.colors.textSecondary}
                     onPress={handleResetCrop}
@@ -521,10 +557,9 @@ export function ImageInsertOverlay({
                 />
               ) : null}
               <ActionButton
-                testID={`image-lock-${element.id}`}
                 name={locked ? 'lock-closed' : 'lock-open-outline'}
                 color={locked ? theme.colors.accent : theme.colors.textSecondary}
-                onPress={() => { setIsCropMode(false); onUpdate({ locked: !locked }); }}
+                onPress={() => onUpdate({ locked: !locked })}
               />
               <ActionButton
                 name="trash-outline"
@@ -541,10 +576,7 @@ export function ImageInsertOverlay({
             ) : null}
             {isCropMode && canCrop ? (
               <CropHandles
-                elementId={element.id}
-                rotation={rotation}
                 pageScale={pageScale}
-                gestureScale={gestureScale}
                 width={width}
                 height={height}
                 x={x}
@@ -663,17 +695,15 @@ function AnimatedCroppedImage({
 }
 
 function ResizeHandles({
-  elementId,
   createResizeGesture,
 }: {
-  elementId: string;
   createResizeGesture: (handle: ResizeHandle) => ReturnType<typeof Gesture.Pan>;
 }) {
   return (
     <>
       {RESIZE_HANDLES.map((handle) => (
         <GestureDetector key={handle} gesture={createResizeGesture(handle)}>
-          <Animated.View testID={`image-resize-${elementId}-${handle}`} collapsable={false} style={[styles.handle, handleStyle(handle)]} />
+          <Animated.View style={[styles.handle, handleStyle(handle)]} />
         </GestureDetector>
       ))}
     </>
@@ -681,10 +711,7 @@ function ResizeHandles({
 }
 
 function CropHandles({
-  elementId,
-  rotation,
   pageScale,
-  gestureScale,
   width,
   height,
   x,
@@ -703,10 +730,7 @@ function CropHandles({
   savedCropHeight,
   onUpdateCrop,
 }: {
-  elementId: string;
-  rotation: SharedValue<number>;
   pageScale: number;
-  gestureScale?: SharedValue<number>;
   width: SharedValue<number>;
   height: SharedValue<number>;
   x: SharedValue<number>;
@@ -731,16 +755,12 @@ function CropHandles({
     y: number,
   ) => void;
 }) {
-  const nativeCrop = useNativeCallback(onUpdateCrop);
-  const touchStart = useSharedValue({x: 0, y: 0});
   const createCropGesture = (edge: CropHandle) =>
-    Gesture.Pan().maxPointers(1)
+    Gesture.Pan()
       .manualActivation(true)
       .onTouchesDown((event, stateManager) => {
         'worklet';
-        const touch = event.allTouches[0];
-        if (touch) touchStart.value = {x: touch.absoluteX, y: touch.absoluteY};
-        if (event.pointerType === PointerType.STYLUS || event.numberOfTouches > 1) {
+        if (event.pointerType === PointerType.STYLUS) {
           stateManager.fail();
           return;
         }
@@ -762,25 +782,72 @@ function CropHandles({
       })
       .onUpdate((event) => {
         'worklet';
-        const delta = localPointerDelta(event.absoluteX - touchStart.value.x,
-          event.absoluteY - touchStart.value.y, gestureScale?.value ?? pageScale, rotation.value);
-        const next = cropFromEdge({x: savedX.value, y: savedY.value,
-          width: savedWidth.value, height: savedHeight.value},
-          {x: savedCropX.value, y: savedCropY.value, width: savedCropWidth.value, height: savedCropHeight.value},
-          edge, delta.x, delta.y, rotation.value);
-        x.value = next.frame.x; y.value = next.frame.y;
-        width.value = next.frame.width; height.value = next.frame.height;
-        cropX.value = next.crop.x; cropY.value = next.crop.y;
-        cropWidth.value = next.crop.width; cropHeight.value = next.crop.height;
-      })
-      .onEnd((_event, success) => {
-        'worklet';
-        if (!success) {
-          x.value = savedX.value; y.value = savedY.value; width.value = savedWidth.value; height.value = savedHeight.value;
-          cropX.value = savedCropX.value; cropY.value = savedCropY.value;
-          cropWidth.value = savedCropWidth.value; cropHeight.value = savedCropHeight.value;
-          return;
+        const fullWidth = savedWidth.value / Math.max(0.001, savedCropWidth.value);
+        const fullHeight = savedHeight.value / Math.max(0.001, savedCropHeight.value);
+        const minWidth = Math.min(savedWidth.value, MIN_CROP_SIZE);
+        const minHeight = Math.min(savedHeight.value, MIN_CROP_SIZE);
+        let nextX = savedX.value;
+        let nextY = savedY.value;
+        let nextWidth = savedWidth.value;
+        let nextHeight = savedHeight.value;
+        let nextCropX = savedCropX.value;
+        let nextCropY = savedCropY.value;
+        let nextCropWidth = savedCropWidth.value;
+        let nextCropHeight = savedCropHeight.value;
+
+        if (edge.includes('left')) {
+          const maxDelta = Math.min(
+            savedWidth.value - minWidth,
+            (1 - savedCropX.value) * fullWidth - minWidth,
+          );
+          const dx = Math.max(
+            -savedCropX.value * fullWidth,
+            Math.min(maxDelta, event.translationX / pageScale),
+          );
+          nextX = savedX.value + dx;
+          nextWidth = savedWidth.value - dx;
+          nextCropX = savedCropX.value + dx / fullWidth;
+          nextCropWidth = savedCropWidth.value - dx / fullWidth;
+        } else if (edge.includes('right')) {
+          const minDelta = minWidth - savedWidth.value;
+          const maxDelta = (1 - savedCropX.value - savedCropWidth.value) * fullWidth;
+          const dx = Math.max(minDelta, Math.min(maxDelta, event.translationX / pageScale));
+          nextWidth = savedWidth.value + dx;
+          nextCropWidth = savedCropWidth.value + dx / fullWidth;
         }
+
+        if (edge.includes('top')) {
+          const maxDelta = Math.min(
+            savedHeight.value - minHeight,
+            (1 - savedCropY.value) * fullHeight - minHeight,
+          );
+          const dy = Math.max(
+            -savedCropY.value * fullHeight,
+            Math.min(maxDelta, event.translationY / pageScale),
+          );
+          nextY = savedY.value + dy;
+          nextHeight = savedHeight.value - dy;
+          nextCropY = savedCropY.value + dy / fullHeight;
+          nextCropHeight = savedCropHeight.value - dy / fullHeight;
+        } else if (edge.includes('bottom')) {
+          const minDelta = minHeight - savedHeight.value;
+          const maxDelta = (1 - savedCropY.value - savedCropHeight.value) * fullHeight;
+          const dy = Math.max(minDelta, Math.min(maxDelta, event.translationY / pageScale));
+          nextHeight = savedHeight.value + dy;
+          nextCropHeight = savedCropHeight.value + dy / fullHeight;
+        }
+
+        x.value = nextX;
+        y.value = nextY;
+        width.value = nextWidth;
+        height.value = nextHeight;
+        cropX.value = Math.max(0, Math.min(1, nextCropX));
+        cropY.value = Math.max(0, Math.min(1, nextCropY));
+        cropWidth.value = Math.max(0.02, Math.min(1 - cropX.value, nextCropWidth));
+        cropHeight.value = Math.max(0.02, Math.min(1 - cropY.value, nextCropHeight));
+      })
+      .onEnd(() => {
+        'worklet';
         const nextCropRect = {
           x: cropX.value,
           y: cropY.value,
@@ -792,7 +859,7 @@ function CropHandles({
           nextCropRect.y <= 0.001 &&
           nextCropRect.width >= 0.999 &&
           nextCropRect.height >= 0.999;
-        runOnJS(nativeCrop)(
+        runOnJS(onUpdateCrop)(
           isFullImage ? undefined : nextCropRect,
           width.value,
           height.value,
@@ -806,7 +873,7 @@ function CropHandles({
       <View pointerEvents="none" style={styles.cropOverlay} />
       {CROP_HANDLES.map((handle) => (
         <GestureDetector key={handle} gesture={createCropGesture(handle)}>
-          <Animated.View testID={`image-crop-${elementId}-${handle}`} collapsable={false}
+          <Animated.View
             style={[
               handle.includes('-') ? styles.cropCornerHandle : styles.cropEdgeHandle,
               cropHandleStyle(handle),
@@ -819,19 +886,16 @@ function CropHandles({
 }
 
 function ActionButton({
-  testID,
   name,
   color,
   onPress,
 }: {
-  testID?: string;
   name: React.ComponentProps<typeof Ionicons>['name'];
   color: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity
-      testID={testID}
       style={styles.actionButton}
       onPress={onPress}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

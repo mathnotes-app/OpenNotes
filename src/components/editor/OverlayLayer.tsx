@@ -1,5 +1,4 @@
-import {useSharedValue} from 'react-native-reanimated';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   Keyboard,
@@ -18,8 +17,6 @@ import { ImageInsertOverlay } from './ImageInsertOverlay';
 import type { ViewportTransformStore } from '../../hooks/useViewportTransform';
 import { contentToPageCoord } from '../../hooks/useViewportTransform';
 import type { SupportedTool } from '../../utils/toolPalette';
-
-import { assetInNotebook, patchForOwner } from '../../utils/continuousAssets';
 
 const PAGE_GAP = 0;
 
@@ -69,27 +66,14 @@ export function OverlayLayer({
   onRemoveInsertedElement,
   onCreateTextBoxId,
 }: OverlayLayerProps) {
-  const imageLayerBounds = useMemo(() => {
-    let min = 0;
-    let max = 0;
-    for (const page of pages) {
-      for (const element of page.insertedElements ?? []) {
-        min = Math.min(min, element.zIndex ?? 0);
-        max = Math.max(max, element.zIndex ?? 0);
-      }
-    }
-    return { min, max };
-  }, [pages]);
   const transformRef = useRef<InfiniteInkViewportTransform | null>(store.getSnapshot());
   const [hasTransform, setHasTransform] = useState(() => transformRef.current !== null);
 
-  const gestureScale = useSharedValue(store.getSnapshot()?.scale ?? 1);
   useEffect(() => {
     const unsub = store.subscribe(() => {
       const next = store.getSnapshot();
       if (!next) return;
       transformRef.current = next;
-      gestureScale.value = next.scale;
       setHasTransform(true);
     });
     return unsub;
@@ -167,7 +151,7 @@ export function OverlayLayer({
       {captureTaps ? (
         <Pressable
           onPress={handleBlankTap}
-          style={[StyleSheet.absoluteFill, { zIndex: imageLayerBounds.min - 1 }]}
+          style={StyleSheet.absoluteFill}
         />
       ) : null}
 
@@ -177,7 +161,19 @@ export function OverlayLayer({
           (a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0),
         );
         return (
-          <React.Fragment key={page.id}>
+          <View
+            key={page.id}
+            pointerEvents="box-none"
+            style={[
+              styles.pageHost,
+              {
+                left: 0,
+                top: pageIndex * (pageHeight + PAGE_GAP),
+                width: pageWidth,
+                height: pageHeight,
+              },
+            ]}
+          >
             {elements.map((el) => {
               const canRenderElement =
                 el.type === 'image' ||
@@ -190,36 +186,35 @@ export function OverlayLayer({
               return canRenderElement ? (
                 <ImageInsertOverlay
                   key={el.id}
-                  element={assetInNotebook(el, pageIndex, pageHeight)}
+                  element={el}
                   pageScale={transformRef.current?.scale ?? 1}
-                  gestureScale={gestureScale}
                   screenLeft={0}
                   screenTop={0}
                   pageWidth={pageWidth}
-                  pageHeight={pageHeight * pages.length}
+                  pageHeight={pageHeight}
                   isSelected={isSelected}
                   onSelect={() =>
                     onSelectionChange({ type: 'image', pageIndex, id: el.id })
                   }
-                  onUpdate={(patch) => onUpdateInsertedElement(pageIndex, el.id, patchForOwner(patch, pageIndex, pageHeight))}
+                  onUpdate={(patch) => onUpdateInsertedElement(pageIndex, el.id, patch)}
                   onUpdateCrop={(cropRect, width, height, x, y) =>
                     onUpdateInsertedElement(pageIndex, el.id, {
                       cropRect,
                       width,
                       height,
                       x,
-                      y: y === undefined ? undefined : y - pageIndex * pageHeight,
+                      y,
                     })
                   }
                   onDuplicate={() => onDuplicateInsertedElement(pageIndex, el.id)}
                   onBringToFront={() => {
                     const nextZIndex =
-                      imageLayerBounds.max + 1;
+                      Math.max(0, ...elements.map((candidate) => candidate.zIndex ?? 0)) + 1;
                     onUpdateInsertedElement(pageIndex, el.id, { zIndex: nextZIndex });
                   }}
                   onSendToBack={() => {
                     const nextZIndex =
-                      imageLayerBounds.min - 1;
+                      Math.min(0, ...elements.map((candidate) => candidate.zIndex ?? 0)) - 1;
                     onUpdateInsertedElement(pageIndex, el.id, { zIndex: nextZIndex });
                   }}
                   onRemove={() => {
@@ -237,13 +232,12 @@ export function OverlayLayer({
               return (
                 <TextBoxOverlay
                   key={tb.id}
-                  textBox={assetInNotebook(tb, pageIndex, pageHeight)}
+                  textBox={tb}
                   pageScale={transformRef.current?.scale ?? 1}
-                  gestureScale={gestureScale}
                   screenLeft={0}
                   screenTop={0}
                   pageWidth={pageWidth}
-                  pageHeight={pageHeight * pages.length}
+                  pageHeight={pageHeight}
                   isEditing={Boolean(isSelected && selection?.editing)}
                   isSelected={isSelected}
                   onSelect={() =>
@@ -258,7 +252,7 @@ export function OverlayLayer({
                     })
                   }
                   onCommit={(patch) => {
-                    onUpdateTextBox(pageIndex, tb.id, patchForOwner(patch, pageIndex, pageHeight));
+                    onUpdateTextBox(pageIndex, tb.id, patch);
                     if (patch.isEditing === false) {
                       onSelectionChange({ type: 'text', pageIndex, id: tb.id });
                     }
@@ -270,9 +264,16 @@ export function OverlayLayer({
                 />
               );
             })}
-          </React.Fragment>
+          </View>
         );
       })}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pageHost: {
+    position: 'absolute',
+    overflow: 'hidden',
+  },
+});

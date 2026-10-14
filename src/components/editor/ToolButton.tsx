@@ -34,10 +34,6 @@ export function ToolButton({
       : theme.colors.text;
   return (
     <Pressable
-      testID={`tool-${descriptor.type}`}
-      accessibilityRole="button"
-      accessibilityLabel={descriptor.label}
-      accessibilityState={{ selected: active }}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={350}

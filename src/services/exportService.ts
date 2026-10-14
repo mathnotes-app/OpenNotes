@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { PixelRatio } from 'react-native';
-import { batchExportPages, projectDocumentPages, type SerializedNotebookData } from '@mathnotes/mobile-ink';
+import { batchExportPages, type SerializedNotebookData } from '@mathnotes/mobile-ink';
 import {
   buildPdfHtml,
   NOTE_PAGE_HEIGHT,
@@ -12,10 +12,11 @@ import {
   type PrintablePage,
 } from './pdfExportHtml';
 import { PDFUtilsModule } from './pdfUtilsModule';
-import { indexAssetsByPage } from '../utils/continuousAssets';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
+const LARGE_NATIVE_BATCH_SIZE = 1;
+const LARGE_NOTEBOOK_PREVIEW_THRESHOLD = 150;
 const NATIVE_BATCH_PAUSE_MS = 16;
 // Pages rendered, embedded as base64 and printed per pass. Each page raster
 // is several MB of base64 in the JS heap, so printing a whole notebook in
@@ -40,6 +41,22 @@ function getPdfPageIndex(
   return typeof page.pdfPageNumber === 'number' && page.pdfPageNumber > 0
     ? page.pdfPageNumber - 1
     : pageIndex;
+}
+
+async function toPrintableImageUri(uri: string | undefined): Promise<string | null> {
+  if (!uri) return null;
+  if (uri.startsWith('data:image/')) return uri;
+  if (!uri.startsWith('file://')) return null;
+
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return base64 ? `data:image/png;base64,${base64}` : null;
+  } catch (error) {
+    if (__DEV__) console.warn('[exportService] could not read preview image', uri, error);
+    return null;
+  }
 }
 
 function mimeTypeForImage(uri: string): string {
@@ -79,14 +96,13 @@ async function embedInsertedImage(uri: string): Promise<string> {
 }
 
 async function preparePrintablePages(
-  indexedAssets: ReturnType<typeof indexAssetsByPage>,
+  notebookPages: SerializedNotebookData['pages'],
   rasterUris: string[],
-  pageIndexes: number[],
 ): Promise<PrintablePage[]> {
   const cachedImages = new Map<string, string>();
   const pages: PrintablePage[] = [];
-  for (let index = 0; index < pageIndexes.length; index += 1) {
-    const page = indexedAssets[pageIndexes[index]];
+  for (let index = 0; index < notebookPages.length; index += 1) {
+    const page = notebookPages[index];
     const images: PrintablePage['images'] = [];
     for (const element of page.insertedElements ?? []) {
       const sourceUri = element.sourceUri ?? element.renderedImageUri;
@@ -131,13 +147,8 @@ async function renderNativePagesInChunks(options: {
   for (let start = 0; start < pageIndexes.length; start += batchSize) {
     const chunkPageIndexes = pageIndexes.slice(start, start + batchSize);
     const chunkPages = chunkPageIndexes.map((pageIndex) => data.pages[pageIndex]);
-    const inkPayloads = await projectDocumentPages(
-      data.pages.map(page => page.data ?? '{"pages":{}}'),
-      exportHeight,
-      chunkPageIndexes,
-    );
     const pngUris = await batchExportPages(
-      inkPayloads,
+      chunkPages.map((p) => p?.data ?? '{"pages":{}}'),
       chunkPages.map((p) => p?.pageType ?? 'plain'),
       exportWidth,
       exportHeight,
@@ -171,17 +182,40 @@ async function collectExportImages(options: {
   pdfBackgroundUri?: string | null;
 }): Promise<string[]> {
   const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri } = options;
-  // Saved thumbnails may omit ink owned by a neighboring page. Always render
-  // the canonical document, in bounded batches, for the exported PDF.
-  const rendered = await renderNativePagesInChunks({
-    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri,
-    batchSize: DEFAULT_NATIVE_BATCH_SIZE,
-  });
-  return pageIndexes.map(index => {
-    const uri = rendered.get(index);
-    if (!uri) throw new Error(`Native export omitted page ${index + 1}`);
-    return uri;
-  });
+  const images = new Map<number, string>();
+  const nativePageIndexes: number[] = [];
+  const preferStoredPreviews = data.pages.length >= LARGE_NOTEBOOK_PREVIEW_THRESHOLD;
+
+  if (preferStoredPreviews) {
+    for (const pageIndex of pageIndexes) {
+      const previewUri = await toPrintableImageUri(data.pages[pageIndex]?.previewUri);
+      if (previewUri) {
+        images.set(pageIndex, previewUri);
+      } else {
+        nativePageIndexes.push(pageIndex);
+      }
+    }
+  } else {
+    nativePageIndexes.push(...pageIndexes);
+  }
+
+  if (nativePageIndexes.length > 0) {
+    const rendered = await renderNativePagesInChunks({
+      data,
+      pageIndexes: nativePageIndexes,
+      exportWidth,
+      exportHeight,
+      pdfBackgroundUri,
+      batchSize: preferStoredPreviews ? LARGE_NATIVE_BATCH_SIZE : DEFAULT_NATIVE_BATCH_SIZE,
+    });
+    for (const [pageIndex, uri] of rendered) {
+      images.set(pageIndex, uri);
+    }
+  }
+
+  return pageIndexes
+    .map((pageIndex) => images.get(pageIndex))
+    .filter((uri): uri is string => typeof uri === 'string' && uri.length > 0);
 }
 
 async function mergePrintedPasses(passUris: string[]): Promise<string> {
@@ -217,7 +251,6 @@ export async function exportNotebookAsPdf(
     const exportWidth = Math.round(NOTE_PAGE_WIDTH * nativeScale);
     const exportHeight = Math.round(NOTE_PAGE_HEIGHT * nativeScale);
     const pageCount = data.pages.length;
-    const indexedAssets = indexAssetsByPage(data.pages, NOTE_PAGE_HEIGHT);
 
     for (let start = 0; start < pageCount; start += PRINT_PASS_PAGES) {
       const pageIndexes = Array.from(
@@ -239,9 +272,8 @@ export async function exportNotebookAsPdf(
       }
 
       const printablePages = await preparePrintablePages(
-        indexedAssets,
+        pageIndexes.map((pageIndex) => data.pages[pageIndex]),
         rasterUris,
-        pageIndexes,
       );
       const printed = await Print.printToFileAsync({
         html: buildPdfHtml(printablePages),

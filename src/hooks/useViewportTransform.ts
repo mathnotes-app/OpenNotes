@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import type { InfiniteInkViewportTransform } from '@mathnotes/mobile-ink';
 
 export interface ViewportTransformStore {
@@ -29,17 +29,21 @@ export function createViewportTransformStore(): ViewportTransformStore {
   return { transform: current, onTransformChange, subscribe, getSnapshot };
 }
 
-/**
- * The store receives every viewport frame. It is deliberately not subscribed
- * here: the editor screen would otherwise re-render ~60 times a second during
- * pan and zoom. Consumers that need frames subscribe to the store directly.
- */
-export function useViewportTransformStore(): { store: ViewportTransformStore } {
+export function useViewportTransformStore(): {
+  store: ViewportTransformStore;
+  transform: InfiniteInkViewportTransform | null;
+} {
   const storeRef = useRef<ViewportTransformStore | null>(null);
   if (!storeRef.current) {
     storeRef.current = createViewportTransformStore();
   }
-  return { store: storeRef.current };
+  const store = storeRef.current;
+  const transform = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    () => null,
+  );
+  return { store, transform };
 }
 
 export interface PageRect {

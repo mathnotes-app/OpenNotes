@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import { isDocumentCaptureSuperseded } from '@mathnotes/mobile-ink';
-import { createAutosaveQueue, type AutosaveStatus } from './autosaveQueue';
-
-export type { AutosaveStatus } from './autosaveQueue';
 
 const DEFAULT_DEBOUNCE_MS = 350;
+
+export type AutosaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
 export interface UseAutosaveOptions {
   onSave: () => Promise<void>;
@@ -20,21 +18,79 @@ export function useAutosave({
   debounceMs = DEFAULT_DEBOUNCE_MS,
   enabled = true,
 }: UseAutosaveOptions) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
+  const dirtyRef = useRef(false);
   const onSaveRef = useRef(onSave);
   const onStatusRef = useRef(onStatusChange);
   const enabledRef = useRef(enabled);
-  onSaveRef.current = onSave;
-  onStatusRef.current = onStatusChange;
-  enabledRef.current = enabled;
 
-  const [queue] = useState(() => createAutosaveQueue({
-    save: () => onSaveRef.current(),
-    onStatus: status => onStatusRef.current?.(status),
-    isEnabled: () => enabledRef.current,
-    debounceMs,
-    onError: error => { if (__DEV__) console.warn('[useAutosave] save failed', error); },
-    isSuperseded: isDocumentCaptureSuperseded,
-  }));
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  useEffect(() => {
+    onStatusRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  const runSave = useCallback(async (): Promise<boolean> => {
+    if (!enabledRef.current) return true;
+    // Cleared before the save so changes made while it runs mark dirty again.
+    dirtyRef.current = false;
+    onStatusRef.current?.('saving');
+    try {
+      await onSaveRef.current();
+      onStatusRef.current?.('saved');
+      return true;
+    } catch (error) {
+      dirtyRef.current = true;
+      if (__DEV__) console.warn('[useAutosave] save failed', error);
+      onStatusRef.current?.('error');
+      return false;
+    }
+  }, []);
+
+  const flushNow = useCallback(async (): Promise<boolean> => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (inFlightRef.current) {
+      await inFlightRef.current;
+    }
+    if (!dirtyRef.current) return true;
+    const promise = runSave();
+    inFlightRef.current = promise;
+    return promise.finally(() => {
+      if (inFlightRef.current === promise) inFlightRef.current = null;
+    });
+  }, [runSave]);
+
+  const cancelPending = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    onStatusRef.current?.('idle');
+  }, []);
+
+  const schedule = useCallback(() => {
+    if (!enabledRef.current) return;
+    dirtyRef.current = true;
+    onStatusRef.current?.('pending');
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      const promise = runSave().finally(() => {
+        if (inFlightRef.current === promise) inFlightRef.current = null;
+      });
+      inFlightRef.current = promise;
+    }, debounceMs);
+  }, [debounceMs, runSave]);
 
   // Flush the moment the app leaves the foreground: JS timers do not fire in
   // the background, so a pending debounced save would otherwise sit unsaved
@@ -42,13 +98,20 @@ export function useAutosave({
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background' || state === 'inactive') {
-        void queue.flushNow();
+        void flushNow();
       }
     });
     return () => subscription.remove();
-  }, [queue]);
+  }, [flushNow]);
 
-  useEffect(() => () => queue.dispose(), [queue]);
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
-  return { schedule: queue.schedule, flushNow: queue.flushNow, cancelPending: queue.cancelPending };
+  return { schedule, flushNow, cancelPending };
 }

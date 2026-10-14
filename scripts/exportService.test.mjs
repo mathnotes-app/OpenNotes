@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { indexAssetsByPage } from '../src/utils/continuousAssets.ts';
 import { buildPdfHtml } from '../src/services/pdfExportHtml.ts';
 
 const source = ts.transpileModule(
@@ -28,7 +27,6 @@ function notebook(pages) {
 function harness(files = {}, { mergePdfFiles } = {}) {
   const printCalls = [];
   const batchCalls = [];
-  const projectionCalls = [];
   const fileReads = [];
   const deletedFiles = [];
   const mergeCalls = [];
@@ -51,10 +49,6 @@ function harness(files = {}, { mergePdfFiles } = {}) {
     },
   };
   const mobileInk = {
-    async projectDocumentPages(payloads, height, indices) {
-      projectionCalls.push({ payloads, height, indices });
-      return indices.map(index => 'projected-' + index);
-    },
     async batchExportPages(...args) {
       batchCalls.push(args);
       return args[0].map((_, index) => 'data:image/png;base64,' + (index + 1));
@@ -83,7 +77,6 @@ function harness(files = {}, { mergePdfFiles } = {}) {
         };
       }
       if (name === '@mathnotes/mobile-ink') return mobileInk;
-      if (name === '../utils/continuousAssets') return { indexAssetsByPage };
       if (name === './pdfExportHtml') {
         return {
           buildPdfHtml,
@@ -100,7 +93,6 @@ function harness(files = {}, { mergePdfFiles } = {}) {
     exportNotebookAsPdf: exports.exportNotebookAsPdf,
     printCalls,
     batchCalls,
-    projectionCalls,
     fileReads,
     deletedFiles,
     mergeCalls,
@@ -263,44 +255,4 @@ test('base64 page rasters are embedded verbatim instead of escaped copies', () =
   assert.ok(html.includes('src="' + raster + '"'));
   const unsafe = buildPdfHtml([{ rasterUri: 'file:///a"b.png', images: [], textBoxes: [] }]);
   assert.ok(unsafe.includes('file:///a&quot;b.png'));
-});
-
-test('cross-page assets survive the boundary between PDF print passes', async () => {
-  const photo = 'file:///notes/crossing.png';
-  const h = harness({ [photo]: 'cGhvdG8=' });
-  const data = notebook(Array.from({ length: 9 }, () => ({})));
-  data.pages[7].insertedElements = [{
-    id: 'crossing', type: 'image', sourceUri: photo,
-    x: 40, y: 1000, width: 200, height: 200,
-  }];
-  data.pages[7].textBoxes = [{
-    id: 'text', content: 'Across the seam', x: 20, y: 1030,
-    width: 200, height: 120, fontSize: 18, color: '#000000',
-  }];
-  const original = JSON.stringify(data);
-  const result = await h.exportNotebookAsPdf({ data, filename: 'crossing' });
-  assert.equal(result.ok, true);
-  assert.equal(h.printCalls.length, 2);
-  assert.match(h.printCalls[0].html, /top:1000px;width:200px/);
-  assert.match(h.printCalls[1].html, /top:-61px;width:200px/);
-  assert.match(h.printCalls[1].html, /top:-31px;width:200px/);
-  assert.match(h.printCalls[1].html, /Across the seam/);
-  assert.equal(JSON.stringify(data), original);
-});
-
-
-test('each bounded export batch projects from the entire notebook, ignoring stale previews', async () => {
-  const h = harness();
-  const data = notebook(Array.from({ length: 9 }, (_, index) => ({
-    data: 'owner-' + index, previewUri: 'data:image/png;base64,stale',
-  })));
-  const result = await h.exportNotebookAsPdf({ data, filename: 'cross-page' });
-  assert.equal(result.ok, true);
-  assert.equal(h.projectionCalls.length, 2);
-  for (const call of h.projectionCalls) {
-    assert.equal(call.payloads.length, 9);
-    assert.equal(call.height, 2122);
-  }
-  assert.deepEqual(Array.from(h.projectionCalls[1].indices), [8]);
-  assert.deepEqual(Array.from(h.batchCalls[1][0]), ['projected-8']);
 });
