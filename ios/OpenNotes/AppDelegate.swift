@@ -21,8 +21,16 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
 
-    // React Native starts in SceneDelegate. iOS 27 terminates apps built with
-    // its SDK at launch unless they adopt the UIScene lifecycle.
+#if DEBUG
+    // Debug keeps the original startup order: expo-dev-launcher's app delegate
+    // subscriber requires a window during didFinishLaunching. SceneDelegate
+    // attaches this window to the scene once it connects.
+    window = UIWindow(frame: UIScreen.main.bounds)
+    factory.startReactNative(withModuleName: "main", in: window, launchOptions: launchOptions)
+#endif
+
+    // Release starts React Native in SceneDelegate. iOS 27 terminates apps built
+    // with its SDK at launch unless they adopt the UIScene lifecycle.
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -57,6 +65,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     guard let windowScene = scene as? UIWindowScene,
           let appDelegate = UIApplication.shared.delegate as? AppDelegate,
           let factory = appDelegate.reactNativeFactory else {
+      return
+    }
+    // Debug already started React Native in a window during launch.
+    if let existing = appDelegate.window {
+      existing.windowScene = windowScene
+      existing.makeKeyAndVisible()
+      self.window = existing
       return
     }
     let window = UIWindow(windowScene: windowScene)
