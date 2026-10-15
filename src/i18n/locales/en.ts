@@ -181,6 +181,8 @@ export const en = {
     goToPageA11y: (page: number) => `Go to page ${page}`,
     undo: 'Undo',
     redo: 'Redo',
+    enableFullscreen: 'Enable fullscreen',
+    disableFullscreen: 'Disable fullscreen',
     enableFingerDrawing: 'Enable finger drawing',
     disableFingerDrawing: 'Disable finger drawing',
     tapToAddText: 'Tap to add text',
