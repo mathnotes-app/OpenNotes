@@ -3,7 +3,8 @@ import {
   Image,
   Keyboard,
   Pressable,
-  ScrollView,
+  FlatList,
+  useWindowDimensions,
   StyleSheet,
   Text,
   TextInput,
@@ -45,7 +46,8 @@ export function PageSidebar({
   onJumpToPage,
 }: PageSidebarProps) {
   const theme = useTheme();
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<FlatList<NotebookPage> | null>(null);
+  const { height: windowHeight } = useWindowDimensions();
   const pageCount = Math.max(1, pages.length);
   const [draftPage, setDraftPage] = useState(String(currentPage + 1));
 
@@ -54,12 +56,13 @@ export function PageSidebar({
   }, [currentPage]);
 
   useEffect(() => {
-    if (!visible) return;
-    const y = Math.max(0, currentPage * (THUMBNAIL_HEIGHT + spacing.lg) - spacing.lg);
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ y, animated: true });
+    if (!visible || pages.length === 0) return;
+    const index = Math.max(0, Math.min(pages.length - 1, currentPage));
+    const frame = requestAnimationFrame(() => {
+      scrollRef.current?.scrollToIndex({ index, animated: false, viewOffset: spacing.md });
     });
-  }, [currentPage, visible]);
+    return () => cancelAnimationFrame(frame);
+  }, [currentPage, pages.length, visible]);
 
   const jumpToPageNumber = useCallback(
     (pageNumber: number) => {
@@ -139,12 +142,22 @@ export function PageSidebar({
           </Text>
         </View>
 
-        <ScrollView
+        <FlatList
           ref={scrollRef}
+          data={pages}
+          extraData={currentPage}
+          keyExtractor={page => page.id}
+          initialScrollIndex={pages.length ? Math.max(0, Math.min(pages.length - 1, currentPage)) : undefined}
+          initialNumToRender={Math.max(1, Math.ceil(windowHeight / (THUMBNAIL_HEIGHT + spacing.md)))}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          updateCellsBatchingPeriod={32}
+          getItemLayout={(_, index) => ({index, length: THUMBNAIL_HEIGHT,
+            offset: spacing.md + index * (THUMBNAIL_HEIGHT + spacing.md)})}
+          ItemSeparatorComponent={PageSeparator}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.thumbList}
-        >
-          {pages.map((page, index) => {
+          renderItem={({ item: page, index }) => {
             const active = index === currentPage;
             return (
               <Pressable
@@ -202,11 +215,15 @@ export function PageSidebar({
                 </View>
               </Pressable>
             );
-          })}
-        </ScrollView>
+          }}
+        />
       </View>
     </View>
   );
+}
+
+function PageSeparator() {
+  return <View style={{ height: spacing.md }} />;
 }
 
 const styles = StyleSheet.create({
@@ -264,7 +281,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.xl,
     paddingTop: spacing.md,
-    rowGap: spacing.md,
   },
   thumbButton: {
     alignItems: 'center',

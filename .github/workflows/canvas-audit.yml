@@ -1,0 +1,86 @@
+name: Native Canvas Stall Audit
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'src/**'
+      - 'app/**'
+      - 'vendor/**'
+      - 'package*.json'
+      - 'scripts/ci/**'
+      - 'scripts/ios/**'
+      - '.github/workflows/canvas-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  canvas-interaction-audit:
+    name: iPad canvas interaction stall audit
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      IOS_SIMULATOR_FAMILY: ipad
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: node --test scripts/ci/verify-canvas-audit.test.mjs
+      - name: Install iOS pods
+        run: pod install --project-directory=ios
+      - name: Resolve iPad simulator
+        run: echo "IOS_SIMULATOR_DESTINATION=$(node scripts/ci/resolve-ios-simulator.mjs)" >> "$GITHUB_ENV"
+      - name: Record toolchain and host conditions
+        run: |
+          xcodebuild -version
+          uname -m
+          uptime
+          xcrun simctl list runtimes
+      - name: Build native interaction tests
+        run: |
+          UITEST_FORCE_BUNDLING=1 xcodebuild build-for-testing \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 COMPILER_INDEX_STORE_ENABLE=NO
+      - name: Seed owned 100-page lecture fixtures
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl bootstatus "$simulator_id" -b
+          xcrun simctl install "$simulator_id" /tmp/opennotes-ui-deriveddata/Build/Products/Release-iphonesimulator/OpenNotes.app
+          python3 scripts/seed-native-audit.py "$simulator_id"
+      - name: Run real native interaction workloads
+        run: |
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -collect-test-diagnostics never
+      - name: Validate native responsiveness and render budgets
+        if: always()
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          app_data=$(xcrun simctl get_app_container "$simulator_id" com.builderpro.opennotes data)
+          mkdir -p "$RUNNER_TEMP/canvas-audit-reports"
+          cp "$app_data"/Library/Caches/MobileInkAudits/*.json "$RUNNER_TEMP/canvas-audit-reports/"
+          node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-audit
+          path: |
+            /tmp/opennotes-ui-deriveddata/Logs/Test
+            ${{ runner.temp }}/canvas-audit-reports
+          if-no-files-found: warn
+          retention-days: 7
