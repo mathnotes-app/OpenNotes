@@ -65,14 +65,17 @@ jobs:
             -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
             -collect-test-diagnostics never
+      - name: Verify persisted lecture content
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl bootstatus "$simulator_id" -b
+          python3 scripts/verify-native-audit.py "$simulator_id"
       - name: Validate native responsiveness and render budgets
         if: always()
         run: |
-          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
-          app_data=$(xcrun simctl get_app_container "$simulator_id" com.builderpro.opennotes data)
-          mkdir -p "$RUNNER_TEMP/canvas-audit-reports"
-          cp "$app_data"/Library/Caches/MobileInkAudits/*.json "$RUNNER_TEMP/canvas-audit-reports/"
+          python3 scripts/ci/collect-canvas-audits.py "$RUNNER_TEMP/canvas-audit-reports"
           node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
       - name: Preserve audit evidence
         if: always()

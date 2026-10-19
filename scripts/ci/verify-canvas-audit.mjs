@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const scenarios = ['testDensePagesAndKeyboardInteractionAudit', 'testDensePanZoomInteractionAudit'];
+const scenarios = ['testDensePagesAndKeyboardInteractionAudit', 'testDensePanZoomInteractionAudit',
+  'testDenseWritingDuringAutosaveInteractionAudit'];
 
 export function verifyCanvasAudit(reports) {
   const results = [];
@@ -13,7 +14,8 @@ export function verifyCanvasAudit(reports) {
     for (const report of matching) {
       const delay = report.mainQueueDelayMs;
       const render = report.renderMs;
-      if (!delay || !render || delay.count < 20 || !Number.isFinite(delay.max) ||
+      if (!delay || !render || !Number.isFinite(delay.count) || delay.count < 20 ||
+          !Number.isFinite(render.count) || render.count < 1 || !Number.isFinite(delay.max) ||
           !Number.isFinite(render.max) || !Number.isFinite(render.p95)) {
         throw new Error(`Incomplete native timing evidence: ${scenario}`);
       }

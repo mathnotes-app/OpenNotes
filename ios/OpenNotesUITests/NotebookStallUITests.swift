@@ -32,4 +32,23 @@ final class NotebookStallUITests: NotebookUITestCase {
     tap(app, "editor-back")
     XCTAssertTrue(element(app, "note-audit-performance-100-pages").waitForExistence(timeout: 15))
   }
+
+  func testDenseWritingDuringAutosaveInteractionAudit() {
+    let app = prepare()
+    tap(app, "Enable finger drawing")
+    let viewport = element(app, "ink-viewport")
+    for _ in 0..<3 {
+      for row in 0..<6 {
+        let y = 0.3 + Double(row) * 0.08
+        let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: y))
+        let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: y + 0.02))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0)
+        Thread.sleep(forTimeInterval: 0.4)
+      }
+      for _ in 0..<6 { tap(app, "Undo") }
+    }
+    assertDenseInkVisible(app, context: "Drawing throughout repeated autosaves")
+    tap(app, "editor-back")
+    XCTAssertTrue(element(app, "note-audit-performance-100-pages").waitForExistence(timeout: 15))
+  }
 }
