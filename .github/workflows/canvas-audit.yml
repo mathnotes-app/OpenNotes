@@ -60,6 +60,7 @@ jobs:
           xcrun simctl install "$simulator_id" /tmp/opennotes-ui-deriveddata/Build/Products/Release-iphonesimulator/OpenNotes.app
           python3 scripts/seed-native-audit.py "$simulator_id"
       - name: Run real native interaction workloads
+        id: interaction_workloads
         run: |
           xcodebuild test-without-building \
             -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
@@ -78,10 +79,24 @@ jobs:
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
           python3 scripts/verify-native-audit.py "$simulator_id"
       - name: Validate native responsiveness and render budgets
+        id: canvas_budgets
         if: always()
         run: |
           python3 scripts/ci/collect-canvas-audits.py "$RUNNER_TEMP/canvas-audit-reports"
           node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
+      - name: Profile interactions that missed the budgets
+        if: ${{ failure() && steps.interaction_workloads.outcome == 'success' && steps.canvas_budgets.outcome == 'failure' }}
+        run: |
+          python3 scripts/ci/sample-canvas-process.py OpenNotes "$RUNNER_TEMP/canvas-audit-profiles" &
+          profile_pid=$!
+          trap 'kill "$profile_pid" 2>/dev/null || true; wait "$profile_pid" || true' EXIT
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -collect-test-diagnostics never
       - name: Preserve audit evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,5 +105,6 @@ jobs:
           path: |
             /tmp/opennotes-ui-deriveddata/Logs/Test
             ${{ runner.temp }}/canvas-audit-reports
+            ${{ runner.temp }}/canvas-audit-profiles
           if-no-files-found: warn
           retention-days: 7
