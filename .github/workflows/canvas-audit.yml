@@ -34,6 +34,8 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: node --test scripts/ci/verify-canvas-audit.test.mjs
+      - name: Select compatible native audit toolchain
+        run: echo "DEVELOPER_DIR=$(python3 scripts/ci/select-ios-toolchain.py)" >> "$GITHUB_ENV"
       - name: Install iOS pods
         run: pod install --project-directory=ios
       - name: Resolve iPad simulator
@@ -54,7 +56,7 @@ jobs:
       - name: Seed owned 100-page lecture fixtures
         run: |
           simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
-          xcrun simctl bootstatus "$simulator_id" -b
+          python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
           xcrun simctl install "$simulator_id" /tmp/opennotes-ui-deriveddata/Build/Products/Release-iphonesimulator/OpenNotes.app
           python3 scripts/seed-native-audit.py "$simulator_id"
       - name: Run real native interaction workloads
@@ -70,7 +72,7 @@ jobs:
       - name: Verify persisted lecture content
         run: |
           simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
-          xcrun simctl bootstatus "$simulator_id" -b
+          python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
           python3 scripts/verify-native-audit.py "$simulator_id"
       - name: Validate native responsiveness and render budgets
         if: always()

@@ -44,6 +44,11 @@ function chooseSimulator() {
     encoding: 'utf8',
   });
   const data = JSON.parse(raw);
+  // XCTest and simctl must come from a toolchain that supports the runtime.
+  const sdkVersion = execFileSync('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-version'], {
+    encoding: 'utf8',
+  }).trim().split('.').map(Number);
+  if (!Number.isFinite(sdkVersion[0])) throw new Error('Cannot determine the installed iOS simulator SDK');
   const candidates = [];
   const family = process.env.IOS_SIMULATOR_FAMILY;
   if (family && family !== 'iphone' && family !== 'ipad') {
@@ -52,6 +57,8 @@ function chooseSimulator() {
 
   for (const [runtimeKey, devices] of Object.entries(data.devices ?? {})) {
     const runtimeVersion = parseVersion(runtimeKey);
+    if (runtimeVersion[0] > sdkVersion[0] ||
+        (runtimeVersion[0] === sdkVersion[0] && runtimeVersion[1] > (sdkVersion[1] ?? 0))) continue;
     for (const device of devices ?? []) {
       if (device.isAvailable === false || !device.udid || !device.name) {
         continue;
