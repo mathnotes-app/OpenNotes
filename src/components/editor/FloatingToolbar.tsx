@@ -181,6 +181,7 @@ export interface FloatingToolbarProps {
   onToolLongPress: (tool: ToolDescriptor, anchor: ToolbarButtonAnchor) => void;
   fingerDrawingEnabled: boolean;
   onToggleFingerDrawing: () => void;
+  historyEnabled?: boolean;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -202,6 +203,7 @@ export function FloatingToolbar({
   onToolLongPress,
   fingerDrawingEnabled,
   onToggleFingerDrawing,
+  historyEnabled = true,
   onUndo,
   onRedo,
 }: FloatingToolbarProps) {
@@ -530,6 +532,7 @@ export function FloatingToolbar({
               iconName="arrow-undo-outline"
               compact={isCompactHorizontal}
               accessibilityLabel={t.editor.undo}
+              disabled={!historyEnabled}
               onPress={onUndo}
               theme={theme}
             />
@@ -537,6 +540,7 @@ export function FloatingToolbar({
               iconName="arrow-redo-outline"
               compact={isCompactHorizontal}
               accessibilityLabel={t.editor.redo}
+              disabled={!historyEnabled}
               onPress={onRedo}
               theme={theme}
             />
@@ -548,6 +552,7 @@ export function FloatingToolbar({
 }
 
 function SmallIconButton({
+  disabled = false,
   iconName,
   active = false,
   compact = false,
@@ -557,6 +562,7 @@ function SmallIconButton({
 }: {
   iconName: keyof typeof Ionicons.glyphMap;
   active?: boolean;
+  disabled?: boolean;
   compact?: boolean;
   accessibilityLabel: string;
   onPress: () => void;
@@ -564,6 +570,7 @@ function SmallIconButton({
 }) {
   return (
     <Pressable
+      disabled={disabled}
       onPress={() => {
         void Haptics.selectionAsync();
         onPress();
@@ -571,9 +578,10 @@ function SmallIconButton({
       hitSlop={4}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: active, disabled }}
       style={({ pressed }) => [
         styles.smallButton,
+        disabled && { opacity: 0.35 },
         compact && styles.smallButtonCompact,
         {
           backgroundColor: active

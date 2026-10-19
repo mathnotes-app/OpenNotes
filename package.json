@@ -19,13 +19,14 @@
     "android": "expo run:android",
     "test:lifecycle": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs",
     "test:catalog": "node --experimental-strip-types --test scripts/catalogStore.test.mjs",
-    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs scripts/appDocumentUri.test.mjs scripts/crashReport.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs scripts/appDocumentUri.test.mjs scripts/crashReport.test.mjs scripts/autosaveQueue.test.mjs scripts/continuousAssets.test.mjs scripts/nativeCallback.test.mjs scripts/overlayGeometry.test.mjs scripts/overlayHistory.test.mjs scripts/overlayTouchRects.test.mjs",
     "test:backup": "node --experimental-strip-types --test scripts/backupEngine.test.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "postinstall": "node scripts/ios/fix-expo-view-construction.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@mathnotes/mobile-ink": "0.3.6",
+    "@mathnotes/mobile-ink": "file:vendor/mathnotes-mobile-ink-0.3.10.tgz",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.2.12",
     "expo": "54.0.34",
