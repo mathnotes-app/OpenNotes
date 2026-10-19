@@ -32,7 +32,7 @@ enum NativeCanvasAudit {
                                   trigger: () -> Void) {
     let received = DispatchSemaphore(value: 0)
     var token: Int32 = 0
-    let status = notify_register_dispatch(name(bundle, action) + ".ack", &token, .global()) { _ in
+    let status = notify_register_dispatch(name(bundle, action) + ".ack", &token, .global(qos: .userInteractive)) { _ in
       received.signal()
     }
     guard status == 0 else { XCTFail("Could not observe native audit acknowledgement"); return }
