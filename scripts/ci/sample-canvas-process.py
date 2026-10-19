@@ -31,7 +31,7 @@ for line in initial.splitlines():
     if len(fields) == 2 and fields[1].endswith(f"/{binary}.app/{binary}"):
         seen.add(int(fields[0]))
 try:
-    while not stopping and time.monotonic() < deadline and sampled < 2:
+    while not stopping and time.monotonic() < deadline and sampled < 3:
         listing = subprocess.check_output(["ps", "-axo", "pid=,comm="], text=True)
         for line in listing.splitlines():
             fields = line.strip().split(maxsplit=1)

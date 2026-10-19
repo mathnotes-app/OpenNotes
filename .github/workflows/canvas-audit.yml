@@ -96,6 +96,7 @@ jobs:
             -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
             -collect-test-diagnostics never
       - name: Preserve audit evidence
         if: always()
