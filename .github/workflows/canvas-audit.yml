@@ -68,6 +68,9 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testStrokeCrossesPageBoundary \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -collect-test-diagnostics never
       - name: Verify persisted lecture content
         run: |

@@ -23,6 +23,7 @@
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		687B4D655A434E689D7A6F2E /* NotebookUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = F179D0B9F0C84C9EBD8B6E62 /* NotebookUITestCase.swift */; };
 		6F4F07E6B68040CA9CCD835A /* NotebookStallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */; };
+		CA7387E72D1A4EFD8F6C213D /* NativeCanvasAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0677D15AA0FA40208901792C /* NativeCanvasAudit.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 		F11748442D0722820044C1D9 /* OpenNotes-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "OpenNotes-Bridging-Header.h"; path = "OpenNotes/OpenNotes-Bridging-Header.h"; sourceTree = "<group>"; };
 		F179D0B9F0C84C9EBD8B6E62 /* NotebookUITestCase.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotebookUITestCase.swift; sourceTree = "<group>"; };
 		A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotebookStallUITests.swift; sourceTree = "<group>"; };
+		0677D15AA0FA40208901792C /* NativeCanvasAudit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCanvasAudit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */,
+				0677D15AA0FA40208901792C /* NativeCanvasAudit.swift */,
 				F179D0B9F0C84C9EBD8B6E62 /* NotebookUITestCase.swift */,
 				A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */,
 				33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */,
@@ -435,6 +438,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA1519DCA43664DFE64E36E9 /* InkVisibilityAssertions.swift in Sources */,
+				CA7387E72D1A4EFD8F6C213D /* NativeCanvasAudit.swift in Sources */,
 				687B4D655A434E689D7A6F2E /* NotebookUITestCase.swift in Sources */,
 				6F4F07E6B68040CA9CCD835A /* NotebookStallUITests.swift in Sources */,
 				511FEA48B7554353BD76B271 /* NotebookInteractionUITests.swift in Sources */,

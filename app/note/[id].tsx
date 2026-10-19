@@ -944,7 +944,7 @@ export default function NoteScreen() {
           style={styles.flex}
           initialPageCount={1}
           minScale={0.25}
-          renderBackend="cpu"
+          renderBackend={Platform.OS === "ios" ? "ganesh" : "cpu"}
           contentPadding={CONTENT_PADDING}
           blockedTouchRects={overlayTouchRects}
           pageWidth={PAGE_WIDTH}

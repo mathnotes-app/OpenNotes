@@ -37,7 +37,9 @@ class NotebookUITestCase: XCTestCase {
     if communityDismiss.waitForExistence(timeout: 2) { communityDismiss.tap() }
     let skip = element(app, "Skip introduction")
     if skip.waitForExistence(timeout: 3) { skip.tap() }
-    tap(app, "note-audit-performance-100-pages")
+    NativeCanvasAudit.startup(bundle: "com.builderpro.opennotes") {
+      tap(app, "note-audit-performance-100-pages")
+    }
     XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
     XCTAssertTrue(element(app, "tool-pen").waitForExistence(timeout: 20))
     let finger = element(app, "Disable finger drawing")
