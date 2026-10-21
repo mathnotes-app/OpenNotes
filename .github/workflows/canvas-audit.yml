@@ -74,6 +74,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -collect-test-diagnostics never
       - name: Verify persisted lecture content
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
         run: |
           simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
@@ -84,9 +85,16 @@ jobs:
         run: |
           python3 scripts/ci/collect-canvas-audits.py "$RUNNER_TEMP/canvas-audit-reports"
           node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
-      - name: Profile interactions that missed the budgets
-        if: ${{ failure() && steps.interaction_workloads.outcome == 'success' && steps.canvas_budgets.outcome == 'failure' }}
+      - name: Profile failed native workloads
+        if: ${{ failure() && (steps.interaction_workloads.outcome == 'failure' || (steps.interaction_workloads.outcome == 'success' && steps.canvas_budgets.outcome == 'failure')) }}
         run: |
+          # Restore known geometry before rerunning the edit/relaunch case.
+          # Timing reports above remain the unprofiled evidence.
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          app_data=$(xcrun simctl get_app_container "$simulator_id" com.builderpro.opennotes data)
+          mkdir -p "$RUNNER_TEMP/canvas-audit-profiles"
+          cp -R "$app_data/Documents/notebook-bodies" "$RUNNER_TEMP/canvas-audit-profiles/before-profile-bodies"
+          python3 scripts/seed-native-audit.py "$simulator_id"
           python3 scripts/ci/sample-canvas-process.py OpenNotes "$RUNNER_TEMP/canvas-audit-profiles" &
           profile_pid=$!
           trap 'kill "$profile_pid" 2>/dev/null || true; wait "$profile_pid" || true' EXIT
@@ -94,6 +102,7 @@ jobs:
             -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
             -derivedDataPath /tmp/opennotes-ui-deriveddata \
             -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
