@@ -1,3 +1,4 @@
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
 import {useNativeCallback} from '../../hooks/native-callback';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -348,7 +349,7 @@ export function TextBoxOverlay({
   }));
 
   const fontSize = textBox.fontSize ?? 18;
-  const color = textBox.color || theme.colors.text;
+  const color = inkDisplayColor(textBox.color || '#000000', resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light'));
   const showChrome = isSelected || isEditing;
 
   return (
