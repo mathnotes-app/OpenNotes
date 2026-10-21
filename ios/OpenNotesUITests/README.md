@@ -38,3 +38,7 @@ per page at the editor's 820×1061 point size and 2× native pixel scale.
 
 Keep fixture revisions identical for before/after comparisons. Simulator and
 standalone engine measurements do not establish physical-iPad frame rates.
+
+Ink visibility checks contrast against the dominant paper brightness in a page
+interior, so dark paper cannot falsely satisfy an ink assertion. Cross-page
+change checks accept newly visible ink in either light or dark appearance.
