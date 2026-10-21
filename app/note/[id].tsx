@@ -1,3 +1,4 @@
+import { resolveInkDisplayAppearance } from '@mathnotes/mobile-ink';
 import {selectedOverlayTouchRects} from '../../src/utils/overlayTouchRects';
 import {useOverlayHistory} from '../../src/components/editor/history/useOverlayHistory';
 import React, {
@@ -940,6 +941,7 @@ export default function NoteScreen() {
         style={styles.canvasArea}
       >
         <InfiniteInkCanvas
+          displayAppearance={resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light')}
           ref={canvasRef}
           style={styles.flex}
           initialPageCount={1}

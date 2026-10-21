@@ -99,13 +99,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertTrue(boundary.waitForExistence(timeout: 10))
     let reopenedY = boundary.frame.midY
     let reopened = app.screenshot().image
-    // The lower page fixture is blank. Compare the persisted lower stroke
-    // against a white reference generated at the same screenshot dimensions.
-    let white = UIGraphicsImageRenderer(size: reopened.size).image { context in
-      UIColor.white.setFill()
-      context.fill(CGRect(origin: .zero, size: reopened.size))
-    }
-    XCTAssertGreaterThan(changedInkPixels(white, reopened,
+    XCTAssertGreaterThan(contrastingInkPixels(reopened,
       rect: CGRect(x: x - 8, y: reopenedY + 25, width: 16, height: 40)), 20,
       "Saved crossing stroke must survive full application relaunch")
     attach(app, "Cross-page stroke after undo, redo, save and relaunch")

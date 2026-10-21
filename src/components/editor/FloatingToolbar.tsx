@@ -1,3 +1,4 @@
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
@@ -478,7 +479,7 @@ export function FloatingToolbar({
           >
             {TOOL_DESCRIPTORS.map((tool) => {
               const isActive = activeTool === tool.type;
-              const tint = tool.supportsColor ? toolColors[tool.type] : undefined;
+              const tint = tool.supportsColor ? inkDisplayColor(toolColors[tool.type], resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light')) : undefined;
               return (
                 <View
                   key={tool.type}

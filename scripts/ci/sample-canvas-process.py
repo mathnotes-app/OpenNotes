@@ -23,7 +23,9 @@ def stop(_signum, _frame):
 
 signal.signal(signal.SIGTERM, stop)
 signal.signal(signal.SIGINT, stop)
-deadline = time.monotonic() + 300
+# The asset case launches twice, followed by the three stall workloads.
+# Keep this diagnostic bounded while covering all of those app lifetimes.
+deadline = time.monotonic() + 600
 # Ignore an app left open by the preceding timing run.
 initial = subprocess.check_output(["ps", "-axo", "pid=,comm="], text=True)
 for line in initial.splitlines():
@@ -31,7 +33,7 @@ for line in initial.splitlines():
     if len(fields) == 2 and fields[1].endswith(f"/{binary}.app/{binary}"):
         seen.add(int(fields[0]))
 try:
-    while not stopping and time.monotonic() < deadline and sampled < 3:
+    while not stopping and time.monotonic() < deadline and sampled < 6:
         listing = subprocess.check_output(["ps", "-axo", "pid=,comm="], text=True)
         for line in listing.splitlines():
             fields = line.strip().split(maxsplit=1)

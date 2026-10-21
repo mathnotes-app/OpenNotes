@@ -1,3 +1,4 @@
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
 import React, { useEffect } from 'react';
 import {
   Modal,
@@ -166,7 +167,7 @@ export function ToolSettingsPopover({
                   style={[
                     styles.swatch,
                     {
-                      backgroundColor: swatch,
+                      backgroundColor: inkDisplayColor(swatch, resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light')),
                       borderColor:
                         swatch.toLowerCase() === color.toLowerCase()
                           ? theme.colors.accent

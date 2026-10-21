@@ -1,9 +1,9 @@
 import XCTest
 import UIKit
 
-/// The dense fixture uses dark ink on a light page. Sample only page content,
-/// excluding the navigation/toolbars, page edges, and floating AI control.
-private func visibleInkSamples(_ image: UIImage) -> Int {
+/// Count ink that contrasts with the dominant paper brightness. Sampling page
+/// interiors prevents dark paper from falsely satisfying a dark-ink assertion.
+func contrastingInkPixels(_ image: UIImage, rect: CGRect? = nil) -> Int {
   guard let source = image.cgImage else { return 0 }
   let width = source.width, height = source.height
   var pixels = [UInt8](repeating: 255, count: width * height * 4)
@@ -14,11 +14,26 @@ private func visibleInkSamples(_ image: UIImage) -> Int {
     else { return 0 }
     context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
     let data = bytes.bindMemory(to: UInt8.self)
+    let scale = CGFloat(width) / image.size.width
+    let interior = CGRect(x: width / 4, y: height / 5, width: width / 2, height: height * 7 / 15)
+    let area = (rect?.applying(CGAffineTransform(scaleX: scale, y: scale)) ?? interior)
+      .intersection(CGRect(x: 0, y: 0, width: width, height: height))
+    guard !area.isNull, !area.isEmpty else { return 0 }
+    var histogram = [Int](repeating: 0, count: 16)
+    for y in Int(area.minY)..<Int(area.maxY) {
+      for x in Int(area.minX)..<Int(area.maxX) {
+        let i = (y * width + x) * 4
+        let brightness = (Int(data[i]) + Int(data[i + 1]) + Int(data[i + 2])) / 3
+        histogram[brightness / 16] += 1
+      }
+    }
+    let paper = histogram.indices.max(by: { histogram[$0] < histogram[$1] }) ?? 15
     var count = 0
-    for y in (height / 5)..<(height * 2 / 3) {
-      for x in (width / 100)..<(width * 85 / 100) {
-        let offset = (y * width + x) * 4
-        if data[offset] < 90 && data[offset + 1] < 90 && data[offset + 2] < 110 { count += 1 }
+    for y in Int(area.minY)..<Int(area.maxY) {
+      for x in Int(area.minX)..<Int(area.maxX) {
+        let i = (y * width + x) * 4
+        let brightness = (Int(data[i]) + Int(data[i + 1]) + Int(data[i + 2])) / 3
+        if paper < 8 ? brightness > 160 : brightness < 100 { count += 1 }
       }
     }
     return count
@@ -27,7 +42,7 @@ private func visibleInkSamples(_ image: UIImage) -> Int {
 
 func assertDenseInkVisible(_ app: XCUIApplication, context: String,
   file: StaticString = #filePath, line: UInt = #line) {
-  let predicate = NSPredicate { _, _ in visibleInkSamples(app.screenshot().image) > 100 }
+  let predicate = NSPredicate { _, _ in contrastingInkPixels(app.screenshot().image) > 100 }
   let result = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: 8)
   if result != .completed {
     let attachment = XCTAttachment(screenshot: app.screenshot())
@@ -38,8 +53,7 @@ func assertDenseInkVisible(_ app: XCUIApplication, context: String,
   XCTAssertEqual(result, .completed, "Expected visible dense ink: \(context)", file: file, line: line)
 }
 
-/// Count newly darkened pixels in a screen-coordinate rectangle, excluding
-/// preexisting fixture ink. Both captures use the same transform and viewport.
+/// Count changed ink brightness in either appearance at an unchanged viewport.
 func changedInkPixels(_ before: UIImage, _ after: UIImage, rect: CGRect) -> Int {
   guard let first = before.cgImage, let second = after.cgImage,
     first.width == second.width, first.height == second.height else { return 0 }
@@ -63,7 +77,7 @@ func changedInkPixels(_ before: UIImage, _ after: UIImage, rect: CGRect) -> Int 
   for y in Int(area.minY)..<Int(area.maxY) {
     for x in Int(area.minX)..<Int(area.maxX) {
       let i = (y * width + x) * 4
-      if Int(a[i]) + Int(a[i + 1]) + Int(a[i + 2]) - Int(b[i]) - Int(b[i + 1]) - Int(b[i + 2]) > 100 {
+      if abs(Int(a[i]) + Int(a[i + 1]) + Int(a[i + 2]) - Int(b[i]) - Int(b[i + 1]) - Int(b[i + 2])) > 100 {
         changed += 1
       }
     }
