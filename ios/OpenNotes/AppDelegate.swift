@@ -1,10 +1,12 @@
 import Expo
+import Metal
 import React
 import ReactAppDependencyProvider
 
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
+  private var inkMetalDevice: MTLDevice?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
@@ -13,6 +15,12 @@ public class AppDelegate: ExpoAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    // First Metal-device initialization was measured blocking notebook opening.
+    // Prepare it while React Native starts, and retain it for subsequent canvases.
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      let device = MTLCreateSystemDefaultDevice()
+      DispatchQueue.main.async { self?.inkMetalDevice = device }
+    }
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()

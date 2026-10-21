@@ -20,6 +20,7 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress }: NoteCardPr
   const tileWidth = useLibraryTileWidth();
   return (
     <Pressable
+      testID={`note-${note.id}`}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={350}

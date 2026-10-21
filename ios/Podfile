@@ -59,5 +59,16 @@ target 'OpenNotes' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Resource bundle targets must honor the app's existing iOS 15.1 floor.
+    # Xcode 27 rejects older pod defaults such as AsyncStorage's iOS 13.4.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        minimum = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if minimum && Gem::Version.new(minimum) < Gem::Version.new('15.1')
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+      end
+    end
   end
 end
