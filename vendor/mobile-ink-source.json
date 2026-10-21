@@ -2,7 +2,7 @@
   "package": "@mathnotes/mobile-ink",
   "version": "0.3.10",
   "source": "https://github.com/mathnotes-app/mobile-ink",
-  "commit": "5096541e82e0a48d0017281a129eb5647dd24113",
+  "commit": "fbb8017594896ebcaf0f6ddf6b7632c7250a2a1d",
   "pull_request": "https://github.com/mathnotes-app/mobile-ink/pull/61",
-  "sha256": "120c45e22c7b82bffe994637ad26c3dcd35f362fbdbad5f29a243074304b5fbb"
+  "sha256": "49de52afa68fbd478283b456cf63d3cb34af07272cc612a22cad03aecc337010"
 }
