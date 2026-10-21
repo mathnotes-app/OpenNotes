@@ -6,6 +6,12 @@ panel, dense-page zoom at 2× and 5×, long scrolling, and navigation between la
 record app CPU, memory, and available hitch metrics. XCTest gesture synthesis
 and idle waits are included; elapsed test time is not tap response latency.
 
+`NativeCanvasAudit.useRunLoopQuiescence()` changes only the test runner's
+animation-idle wait. It retains the app run-loop wait and production animations,
+including paused blur animators that would otherwise cause false 60-second
+waits. Unsupported XCTest selectors fail explicitly. Native stall and rendering
+budgets remain unchanged.
+
 Build and install the Release test app, then seed and run the simulator audit:
 
 ```sh

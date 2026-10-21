@@ -30,6 +30,7 @@ class NotebookUITestCase: XCTestCase {
   }
 
   func prepare() -> XCUIApplication {
+    NativeCanvasAudit.useRunLoopQuiescence()
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
     launchPrepared(app)
