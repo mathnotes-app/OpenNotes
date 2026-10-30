@@ -30,6 +30,7 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress }: NoteCardPr
   }, [note]);
   return (
     <Pressable
+      testID={`note-${note.id}`}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={350}
