@@ -191,6 +191,8 @@ export const ru: Strings = {
     goToPageA11y: (page: number) => `Перейти к странице ${page}`,
     undo: 'Отменить',
     redo: 'Повторить',
+    enableFullscreen: 'Включить полноэкранный режим',
+    disableFullscreen: 'Выйти из полноэкранного режима',
     enableFingerDrawing: 'Включить рисование пальцем',
     disableFingerDrawing: 'Выключить рисование пальцем',
     tapToAddText: 'Коснитесь, чтобы добавить текст',

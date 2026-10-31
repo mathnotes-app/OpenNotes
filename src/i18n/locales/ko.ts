@@ -181,6 +181,8 @@ export const ko: Strings = {
     goToPageA11y: (page: number) => `${page}페이지로 이동`,
     undo: '실행 취소',
     redo: '다시 실행',
+    enableFullscreen: '전체 화면 사용',
+    disableFullscreen: '전체 화면 사용 안 함',
     enableFingerDrawing: '손가락 그리기 켜기',
     disableFingerDrawing: '손가락 그리기 끄기',
     tapToAddText: '탭하여 텍스트 추가',
