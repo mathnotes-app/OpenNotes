@@ -17,12 +17,13 @@ export interface ItemActionsMenuProps {
   title?: string;
   actions: MenuAction[];
   onClose: () => void;
+  onDismiss?: () => void;
 }
 
-export function ItemActionsMenu({ visible, title, actions, onClose }: ItemActionsMenuProps) {
+export function ItemActionsMenu({ visible, title, actions, onClose, onDismiss }: ItemActionsMenuProps) {
   const theme = useTheme();
   return (
-    <Sheet visible={visible} onClose={onClose}>
+    <Sheet visible={visible} onClose={onClose} onDismiss={onDismiss}>
       {title ? (
         <Text
           style={[

@@ -82,7 +82,7 @@ export default function LibraryScreen() {
     setFolders(allFolders);
     setLoading(false);
   }, []);
-  const { chooseCover, removeCover } = useNoteCover(refresh);
+  const { chooseCover, removeCover, presentPendingCover } = useNoteCover(refresh);
 
   useEffect(() => {
     void refresh();
@@ -389,6 +389,7 @@ export default function LibraryScreen() {
 
       <ItemActionsMenu
         visible={action?.kind === 'noteMenu'}
+        onDismiss={presentPendingCover}
         title={action?.kind === 'noteMenu' ? action.note.title : undefined}
         actions={
           action?.kind === 'noteMenu'

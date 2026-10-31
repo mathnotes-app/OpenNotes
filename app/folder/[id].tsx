@@ -60,7 +60,7 @@ export default function FolderScreen() {
     setAllFolders(folders);
     setLoading(false);
   }, [id]);
-  const { chooseCover, removeCover } = useNoteCover(refresh);
+  const { chooseCover, removeCover, presentPendingCover } = useNoteCover(refresh);
 
   useEffect(() => {
     void refresh();
@@ -191,6 +191,7 @@ export default function FolderScreen() {
 
       <ItemActionsMenu
         visible={action?.kind === 'noteMenu'}
+        onDismiss={presentPendingCover}
         title={action?.kind === 'noteMenu' ? action.note.title : undefined}
         actions={
           action?.kind === 'noteMenu'
