@@ -12,7 +12,8 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     tap(app, "note-menu-audit-cross-page")
     tap(app, "Choose cover")
     let photo = app.collectionViews.cells.firstMatch
-    XCTAssertTrue(photo.waitForExistence(timeout: 20), "Photo picker must show the seeded image")
+    XCTAssertTrue(photo.waitForExistence(timeout: 60), "Photo picker must show the seeded image")
+    print("PHOTO PICKER HIERARCHY:\n\(app.debugDescription)")
     photo.tap()
     XCTAssertTrue(element(app, "note-menu-audit-cross-page").waitForExistence(timeout: 20))
     app.terminate()

@@ -61,6 +61,23 @@ jobs:
           xcrun simctl addmedia "$simulator_id" assets/icon.png
           xcrun simctl privacy "$simulator_id" grant photos com.builderpro.opennotes
           python3 scripts/seed-native-audit.py "$simulator_id"
+      - name: Inspect photo picker
+        continue-on-error: true
+        run: |
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
+            -collect-test-diagnostics never > "$RUNNER_TEMP/photo-picker-test.log" 2>&1
+      - name: Preserve photo picker output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: photo-picker-diagnostic
+          path: ${{ runner.temp }}/photo-picker-test.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Run real native interaction workloads
         id: interaction_workloads
         run: |
@@ -77,6 +94,13 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
             -collect-test-diagnostics never
+      - name: Preserve interaction test evidence
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-results
+          path: /tmp/opennotes-ui-deriveddata/Logs/Test
+          retention-days: 7
       - name: Record repeated native zoom interactions
         if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
         run: |
