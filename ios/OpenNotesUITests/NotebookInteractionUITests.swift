@@ -2,6 +2,32 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testSwitchingToEraserDoesNotShowStaleCursor() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-eraser-history")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let disableFinger = element(app, "Disable finger drawing")
+    if disableFinger.exists { disableFinger.tap() }
+    XCTAssertTrue(element(app, "Enable finger drawing").waitForExistence(timeout: 10))
+    let pen = element(app, "tool-pen")
+    XCTAssertTrue(pen.waitForExistence(timeout: 10))
+    if !pen.isSelected { pen.tap() }
+    let point = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.75))
+    point.tap()
+    let rect = CGRect(x: viewport.frame.minX + viewport.frame.width * 0.8 - 40,
+                      y: viewport.frame.minY + viewport.frame.height * 0.75 - 40,
+                      width: 80, height: 80)
+    let before = app.screenshot().image
+    tap(app, "tool-eraser")
+    XCTAssertLessThan(changedInkPixels(before, app.screenshot().image, rect: rect), 30,
+                      "Switching tools must not show a cursor at a previously ignored touch")
+  }
+
   func testDenseEraserHistoryRemainsEditable() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

@@ -16,7 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
-      "buildNumber": "27",
+      "buildNumber": "28",
       "supportsTablet": true,
       "usesIcloudStorage": true,
       "entitlements": {
