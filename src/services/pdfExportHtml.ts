@@ -16,6 +16,7 @@ export interface PrintableImage {
 
 export interface PrintablePage {
   rasterUri: string;
+  inkUri?: string;
   images: PrintableImage[];
   textBoxes: InkTextBox[];
 }
@@ -92,17 +93,19 @@ function textBoxHtml(box: InkTextBox, order: number): string {
 
 export function buildPdfHtml(pages: PrintablePage[]): string {
   const pageHtml = pages.map((page) => {
-    const images = [...page.images]
-      .sort((a, b) => finite(a.element.zIndex, 0) - finite(b.element.zIndex, 0))
-      .map((image, index) => imageHtml(image, index + 1))
-      .join('');
-    const textBoxes = page.textBoxes
-      .map((box, index) => textBoxHtml(box, page.images.length + index + 1))
+    const overlays = [
+      ...page.images.map(image => ({ z: finite(image.element.zIndex, 1), image })),
+      ...page.textBoxes.map(box => ({ z: 0, box })),
+    ].sort((a, b) => a.z - b.z)
+      .map((entry, index) => 'image' in entry
+        ? imageHtml(entry.image, index + 1) : textBoxHtml(entry.box, index + 1))
       .join('');
     return '<section class="page"><div class="content" style="left:' +
       CONTENT_LEFT + 'px;top:' + CONTENT_TOP + 'px;transform:scale(' +
       CONTENT_SCALE + ')"><img class="raster" src="' +
-      imageSrc(page.rasterUri) + '" />' + images + textBoxes +
+      imageSrc(page.rasterUri) + '" />' + overlays +
+      (page.inkUri ? '<img class="raster ink" style="z-index:' +
+        (page.images.length + page.textBoxes.length + 1) + '" src="' + imageSrc(page.inkUri) + '" />' : '') +
       '</div></section>';
   }).join('');
 

@@ -80,7 +80,7 @@ async function embedInsertedImage(uri: string): Promise<string> {
 
 async function preparePrintablePages(
   indexedAssets: ReturnType<typeof indexAssetsByPage>,
-  rasterUris: string[],
+  rasters: RenderedPage[],
   pageIndexes: number[],
 ): Promise<PrintablePage[]> {
   const cachedImages = new Map<string, string>();
@@ -102,13 +102,16 @@ async function preparePrintablePages(
       images.push({ element, dataUri });
     }
     pages.push({
-      rasterUri: rasterUris[index],
+      rasterUri: rasters[index].background,
+      inkUri: rasters[index].ink,
       images,
       textBoxes: page.textBoxes ?? [],
     });
   }
   return pages;
 }
+
+type RenderedPage = { background: string; ink?: string };
 
 async function renderNativePagesInChunks(options: {
   data: SerializedNotebookData;
@@ -117,7 +120,8 @@ async function renderNativePagesInChunks(options: {
   exportHeight: number;
   pdfBackgroundUri?: string | null;
   batchSize: number;
-}): Promise<Map<number, string>> {
+  overlayPageIndexes: Set<number>;
+}): Promise<Map<number, RenderedPage>> {
   const {
     data,
     pageIndexes,
@@ -125,8 +129,9 @@ async function renderNativePagesInChunks(options: {
     exportHeight,
     pdfBackgroundUri,
     batchSize,
+    overlayPageIndexes,
   } = options;
-  const rendered = new Map<number, string>();
+  const rendered = new Map<number, RenderedPage>();
 
   for (let start = 0; start < pageIndexes.length; start += batchSize) {
     const chunkPageIndexes = pageIndexes.slice(start, start + batchSize);
@@ -137,7 +142,7 @@ async function renderNativePagesInChunks(options: {
       chunkPageIndexes,
     );
     const pngUris = await batchExportPages(
-      inkPayloads,
+      inkPayloads.map((payload, offset) => overlayPageIndexes.has(chunkPageIndexes[offset]) ? '{"pages":{}}' : payload),
       chunkPages.map((p) => p?.pageType ?? 'plain'),
       exportWidth,
       exportHeight,
@@ -148,10 +153,24 @@ async function renderNativePagesInChunks(options: {
       ),
     );
 
+    const overlayOffsets = chunkPageIndexes.map((index, offset) => overlayPageIndexes.has(index) ? offset : -1)
+      .filter(offset => offset >= 0);
+    const inkUris = overlayOffsets.length ? await batchExportPages(
+      overlayOffsets.map(offset => inkPayloads[offset]),
+      overlayOffsets.map(() => 'pdf'),
+      exportWidth, exportHeight, EXPORT_SCALE, undefined,
+      overlayOffsets.map(offset => getPdfPageIndex(chunkPages[offset], chunkPageIndexes[offset])),
+    ) : [];
+    const inkByOffset = new Map(overlayOffsets.map((offset, index) => [offset, inkUris[index]]));
+
     for (let offset = 0; offset < chunkPageIndexes.length; offset += 1) {
       const uri = pngUris[offset];
       if (typeof uri === 'string' && uri.length > 0) {
-        rendered.set(chunkPageIndexes[offset], uri);
+        const ink = inkByOffset.get(offset);
+        if (overlayPageIndexes.has(chunkPageIndexes[offset]) && !ink) {
+          throw new Error(`Native export omitted ink for page ${chunkPageIndexes[offset] + 1}`);
+        }
+        rendered.set(chunkPageIndexes[offset], { background: uri, ink });
       }
     }
 
@@ -169,12 +188,13 @@ async function collectExportImages(options: {
   exportWidth: number;
   exportHeight: number;
   pdfBackgroundUri?: string | null;
-}): Promise<string[]> {
-  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri } = options;
+  overlayPageIndexes: Set<number>;
+}): Promise<RenderedPage[]> {
+  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, overlayPageIndexes } = options;
   // Saved thumbnails may omit ink owned by a neighboring page. Always render
   // the canonical document, in bounded batches, for the exported PDF.
   const rendered = await renderNativePagesInChunks({
-    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri,
+    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, overlayPageIndexes,
     batchSize: DEFAULT_NATIVE_BATCH_SIZE,
   });
   return pageIndexes.map(index => {
@@ -218,6 +238,8 @@ export async function exportNotebookAsPdf(
     const exportHeight = Math.round(NOTE_PAGE_HEIGHT * nativeScale);
     const pageCount = data.pages.length;
     const indexedAssets = indexAssetsByPage(data.pages, NOTE_PAGE_HEIGHT);
+    const overlayPageIndexes = new Set(indexedAssets.flatMap((page, index) =>
+      (page.insertedElements?.length || page.textBoxes?.length) ? [index] : []));
 
     for (let start = 0; start < pageCount; start += PRINT_PASS_PAGES) {
       const pageIndexes = Array.from(
@@ -230,6 +252,7 @@ export async function exportNotebookAsPdf(
         exportWidth,
         exportHeight,
         pdfBackgroundUri,
+        overlayPageIndexes,
       });
       if (rasterUris.length !== pageIndexes.length) {
         return {

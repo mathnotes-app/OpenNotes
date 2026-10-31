@@ -141,8 +141,12 @@ test('a three-page PDF includes a photo and typed text on their original page', 
 
   const result = await h.exportNotebookAsPdf({ data, filename: 'three-page' });
   assert.equal(result.ok, true);
-  assert.equal(h.batchCalls.length, 1);
+  assert.equal(h.batchCalls.length, 2);
   assert.equal(h.batchCalls[0][0].length, 3);
+  assert.equal(h.batchCalls[0][0][1], '{"pages":{}}');
+  assert.deepEqual(Array.from(h.batchCalls[1][0]), ['projected-1']);
+  assert.deepEqual(Array.from(h.batchCalls[1][1]), ['pdf']);
+  assert.equal(h.batchCalls[1][5], undefined);
   assert.deepEqual(h.fileReads, [photo]);
   assert.equal(h.printCalls.length, 1);
   const { html, width, height } = h.printCalls[0];
@@ -155,6 +159,7 @@ test('a three-page PDF includes a photo and typed text on their original page', 
   assert.match(sections[2], /transform:rotate\(15deg\)/);
   assert.match(sections[2], /left:-50px;top:-60px;width:500px;height:300px/);
   assert.match(sections[2], /Photo &lt;one&gt; &amp; two/);
+  assert.ok(sections[2].indexOf('class="raster ink"') > sections[2].indexOf('class="inserted-image"'));
   assert.doesNotMatch(sections[3], /data:image\/jpeg/);
 });
 

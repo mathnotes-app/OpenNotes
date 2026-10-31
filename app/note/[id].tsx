@@ -606,7 +606,11 @@ export default function NoteScreen() {
     setAction(null);
     try {
       const picked = await pickFromLibrary(id);
-      if (picked) applyInsertedImage(picked);
+      if (picked) {
+        applyInsertedImage(picked);
+        selectTool('select');
+        return;
+      }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] insert from library failed', error);
       Alert.alert(t.editor.insertImageTitle,
@@ -620,7 +624,11 @@ export default function NoteScreen() {
     setAction(null);
     try {
       const picked = await pickFromCamera(id);
-      if (picked) applyInsertedImage(picked);
+      if (picked) {
+        applyInsertedImage(picked);
+        selectTool('select');
+        return;
+      }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] insert from camera failed', error);
     }

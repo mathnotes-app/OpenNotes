@@ -194,6 +194,49 @@ final class NotebookInteractionUITests: NotebookUITestCase {
       resizeID: "image-resize-cross-image-bottom-right", initialWidth: 180)
   }
 
+  func testDrawingOverImageSurvivesUndoAndReload() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-cross-asset")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let disable = element(app, "Disable finger drawing")
+    if disable.exists { disable.tap() }
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
+      .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
+    tap(app, "tool-select")
+    let asset = element(app, "inserted-image-cross-image")
+    XCTAssertTrue(asset.waitForExistence(timeout: 10))
+    let frame = asset.frame
+    tap(app, "Enable finger drawing")
+    tap(app, "tool-pen")
+    let x = frame.midX, y = frame.midY
+    let inkRect = CGRect(x: x - 8, y: y - 35, width: 16, height: 70)
+    let before = app.screenshot().image
+    let origin = app.coordinate(withNormalizedOffset: .zero)
+    origin.withOffset(CGVector(dx: x, dy: y - 40)).press(forDuration: 0.05,
+      thenDragTo: origin.withOffset(CGVector(dx: x, dy: y + 40)), withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    tap(app, "Undo")
+    XCTAssertLessThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    tap(app, "Redo")
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    tap(app, "Library")
+    XCTAssertTrue(element(app, "note-audit-cross-asset").waitForExistence(timeout: 15))
+    app.terminate(); launchPrepared(app)
+    tap(app, "note-audit-cross-asset")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let disableAfterReload = element(app, "Disable finger drawing")
+    if disableAfterReload.exists { disableAfterReload.tap() }
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
+      .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    attach(app, "Ink above an image after reload")
+  }
+
   func testRotatedImageResizeAndCrop() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
@@ -218,6 +261,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     }
     let zoom = asset.frame.width / 140 // Width/height swap at 90 degrees.
     XCTAssertGreaterThan(zoom, 1.8); XCTAssertLessThan(zoom, 2.2)
+    tap(app, "tool-select")
     asset.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     let before = asset.frame
     let handle = element(app, "image-resize-cross-image-bottom-right")
@@ -304,6 +348,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     let boundary = element(app, "ink-page-boundary-1").frame.midY
     XCTAssertLessThan(asset.frame.minY, boundary)
     XCTAssertGreaterThan(asset.frame.maxY, boundary)
+    tap(app, "tool-select")
     let start = asset.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
     start.tap()
     let originalY = asset.frame.midY
@@ -337,6 +382,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     tap(app, "Redo")
     XCTAssertGreaterThan(changedInkPixels(beforeInk, app.screenshot().image, rect: inkRect), 20)
     tap(app, "Disable finger drawing")
+    tap(app, "tool-select")
     asset.tap()
     viewport.pinch(withScale: 2, velocity: 1)
     for _ in 0..<5 {

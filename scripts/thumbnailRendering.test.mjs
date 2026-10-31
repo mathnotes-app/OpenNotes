@@ -43,8 +43,9 @@ const white = solid('#ffffff');
 const red = solid('#ff0000');
 const blue = solid('#0000ff');
 const black = solid('#000000');
+const transparent = solid('#00000000');
 
-function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage } = {}) {
+function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent } = {}) {
   const exports = {};
   const nativeCalls = [];
   vm.runInNewContext(source, { exports, require(name) {
@@ -62,7 +63,7 @@ function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeIm
     if (name === '@mathnotes/mobile-ink') return { batchExportPages: async (...args) => {
       nativeCalls.push(args);
       if (nativeFails) throw new Error('Native renderer unavailable');
-      return [white];
+      return [args[1][0] === 'pdf' && !args[5] ? ink : white];
     } };
     throw new Error('Unexpected import: ' + name);
   } });
@@ -154,10 +155,10 @@ test('crop rectangles select the requested portion of an image', async () => {
   image.dispose(); surface.dispose(); paint.dispose();
 });
 
-test('handwriting remains below inserted images', async () => {
-  const result = await harness().createPageThumbnail(page([photo()], { previewUri: black }));
+test('handwriting appears above inserted images', async () => {
+  const result = await harness({ ink: black }).createPageThumbnail(page([photo()]));
   assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
-  assert.deepEqual(pixel(result, 100, 100), [255, 0, 0, 255]);
+  assert.deepEqual(pixel(result, 100, 100), [0, 0, 0, 255]);
 });
 
 test('rendering preserves the original notebook data including unknown legacy fields', async () => {

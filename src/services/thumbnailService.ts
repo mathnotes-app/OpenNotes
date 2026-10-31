@@ -3,7 +3,7 @@ import { batchExportPages, type InsertedElement, type NotebookPage } from '@math
 import { createPromiseQueue } from '../utils/promiseQueue';
 import { PDFUtilsModule } from './pdfUtilsModule';
 
-export const THUMBNAIL_VERSION = 1;
+export const THUMBNAIL_VERSION = 2;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const SCALE = 0.5;
@@ -62,13 +62,19 @@ async function composePageThumbnail(
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
   if (!elements.length && !textBoxes.length) return page.previewUri ?? null;
 
-  let raster = page.previewUri;
-  if (!raster) {
+  let raster: string | undefined;
+  let inkRaster: string | undefined;
+  {
     [raster] = await batchExportPages(
-      [page.data ?? '{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      ['{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
       pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!raster) throw new Error('Thumbnail background could not be rendered');
+    [inkRaster] = await batchExportPages(
+      [page.data ?? '{"pages":{}}'], ['pdf'], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+    );
+    if (!inkRaster) throw new Error('Thumbnail ink could not be rendered');
   }
 
   const surface = Skia.Surface.Make(PAGE_WIDTH * SCALE, Math.ceil(PAGE_HEIGHT * SCALE));
@@ -144,6 +150,13 @@ async function composePageThumbnail(
     }
     for (const element of elements.filter(element => finite(element.zIndex, 1) > 0)) {
       await drawElement(element);
+    }
+    const ink = await decodeImage(inkRaster);
+    try {
+      canvas.drawImageRect(ink, Skia.XYWHRect(0, 0, ink.width(), ink.height()),
+        Skia.XYWHRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT), paint);
+    } finally {
+      ink.dispose();
     }
     surface.flush();
     const image = surface.makeImageSnapshot();
