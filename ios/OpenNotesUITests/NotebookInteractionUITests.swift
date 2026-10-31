@@ -14,6 +14,8 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     let photo = app.collectionViews.cells.firstMatch
     let foundPhoto = photo.waitForExistence(timeout: 60)
     print("PHOTO PICKER HIERARCHY:\n\(app.debugDescription)")
+    print("SYSTEM HIERARCHY:\n\(XCUIApplication(bundleIdentifier: "com.apple.springboard").debugDescription)")
+    attach(app, "Photo picker diagnostic")
     XCTAssertTrue(foundPhoto, "Photo picker must show the seeded image")
     photo.tap()
     XCTAssertTrue(photo.waitForNonExistence(timeout: 30), "Selecting a photo must dismiss the picker")

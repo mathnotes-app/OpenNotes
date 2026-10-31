@@ -90,6 +90,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testStrokeCrossesPageBoundary \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDrawingOverImageSurvivesUndoAndReload \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
