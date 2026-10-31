@@ -49,6 +49,7 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
         <Text style={[typography.caption, { color: theme.colors.textTertiary }]} numberOfLines={1}>{formatRelative(note.updatedAt)}</Text>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.noteActions} hitSlop={8}
+        testID={`note-menu-${note.id}`}
         onPress={event => { event.stopPropagation(); onMenuPress(); }} style={styles.compactMenu}>
         <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
       </Pressable>
@@ -92,6 +93,9 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
           />
         )}
         <Pressable
+          testID={`note-menu-${note.id}`}
+          accessibilityRole="button"
+          accessibilityLabel={t.preferences.noteActions}
           onPress={(event) => {
             event.stopPropagation();
             onMenuPress();

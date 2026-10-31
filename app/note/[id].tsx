@@ -452,6 +452,10 @@ export default function NoteScreen() {
   // Push tool state to canvas whenever it changes
   useEffect(() => {
     canvasRef.current?.setTool(toolState);
+    if (toolState.toolType === 'pen' || toolState.toolType === 'highlighter' ||
+        toolState.toolType === 'crayon' || toolState.toolType === 'calligraphy') {
+      lastPenToolRef.current = toolState.toolType;
+    }
   }, [toolState]);
 
   const handleToolPress = useCallback(
@@ -566,6 +570,9 @@ export default function NoteScreen() {
       }
       const { pageIndex: pageIdx, x, y } = insertImagePosition(store.getSnapshot(), PAGE_WIDTH, PAGE_HEIGHT,
         enginePages.length, CONTENT_PADDING, w, h, currentPageIndex);
+      const zIndex = Array.from(overlayMapRef.current.values()).reduce(
+        (highest, overlay) => overlay.insertedElements.reduce((value, asset) => Math.max(value, asset.zIndex ?? 0), highest), 0,
+      ) + 1;
       const element: InsertedElement = {
         id: insertedElementId(),
         type: 'image',
@@ -585,7 +592,7 @@ export default function NoteScreen() {
           ...state.insertedElements,
           {
             ...element,
-            zIndex: Math.max(0, ...state.insertedElements.map((el) => el.zIndex ?? 0)) + 1,
+            zIndex,
           },
         ],
       }));

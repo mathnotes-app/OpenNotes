@@ -284,9 +284,9 @@ function WidthControl({
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={({ nativeEvent }) => onChange(Math.max(min, Math.min(max, value + (nativeEvent.actionName === 'increment' ? 0.5 : -0.5))))}
       onLayout={event => setTrackWidth(event.nativeEvent.layout.width)} {...pan.panHandlers} style={styles.sliderTouch}>
-      <View style={[styles.sliderTrack, { backgroundColor: theme.colors.divider }]} />
-      <View style={[styles.sliderFill, { width: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
-      <View style={[styles.sliderThumb, { left: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
+      <View pointerEvents="none" style={[styles.sliderTrack, { backgroundColor: theme.colors.divider }]} />
+      <View pointerEvents="none" style={[styles.sliderFill, { width: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
+      <View pointerEvents="none" style={[styles.sliderThumb, { left: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
     </View>
   </View>;
 }

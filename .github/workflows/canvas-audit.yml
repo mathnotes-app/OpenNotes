@@ -58,6 +58,7 @@ jobs:
           simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
           python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
           xcrun simctl install "$simulator_id" /tmp/opennotes-ui-deriveddata/Build/Products/Release-iphonesimulator/OpenNotes.app
+          xcrun simctl addmedia "$simulator_id" assets/icon.png
           python3 scripts/seed-native-audit.py "$simulator_id"
       - name: Run real native interaction workloads
         id: interaction_workloads
@@ -73,6 +74,18 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
+            -collect-test-diagnostics never
+      - name: Record repeated native zoom interactions
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl io "$simulator_id" recordVideo "$RUNNER_TEMP/zoom-interactions.mp4" > "$RUNNER_TEMP/zoom-recording.log" 2>&1 &
+          recording_pid=$!
+          trap 'kill -INT "$recording_pid" 2>/dev/null || true; wait "$recording_pid" || true' EXIT
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDenseInteractionAudit \
             -collect-test-diagnostics never
       - name: Verify persisted lecture content
@@ -118,5 +131,7 @@ jobs:
             /tmp/opennotes-ui-deriveddata/Logs/Test
             ${{ runner.temp }}/canvas-audit-reports
             ${{ runner.temp }}/canvas-audit-profiles
+            ${{ runner.temp }}/zoom-interactions.mp4
+            ${{ runner.temp }}/zoom-recording.log
           if-no-files-found: warn
           retention-days: 7

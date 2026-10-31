@@ -2,6 +2,32 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testChoosePhotoCover() {
+    NativeCanvasAudit.useRunLoopQuiescence()
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let community = app.buttons["Not now"]
+    if community.waitForExistence(timeout: 2) { community.tap() }
+    tap(app, "note-menu-audit-cross-page")
+    tap(app, "Choose cover")
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let allow = springboard.buttons["Allow Full Access"]
+    if allow.waitForExistence(timeout: 4) { allow.tap() }
+    let photo = app.collectionViews.cells.firstMatch
+    XCTAssertTrue(photo.waitForExistence(timeout: 20), "Photo picker must show the seeded image")
+    photo.tap()
+    XCTAssertTrue(element(app, "note-menu-audit-cross-page").waitForExistence(timeout: 20))
+    app.terminate()
+    launchPrepared(app)
+    tap(app, "note-menu-audit-cross-page")
+    XCTAssertTrue(element(app, "Remove cover").waitForExistence(timeout: 10), "Custom cover must survive relaunch")
+    tap(app, "Remove cover")
+    tap(app, "note-menu-audit-cross-page")
+    XCTAssertFalse(element(app, "Remove cover").exists, "Removing the cover must restore the generated preview")
+    app.swipeDown()
+  }
+
   func testPreferencesAndReturnToPen() {
     NativeCanvasAudit.useRunLoopQuiescence()
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
@@ -39,7 +65,11 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     tap(app, "tool-pen")
     let slider = element(app, "tool-width-slider")
     XCTAssertTrue(slider.waitForExistence(timeout: 10))
-    slider.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)).tap()
+    let initialWidth = String(describing: slider.value)
+    slider.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)),
+      withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertNotEqual(String(describing: slider.value), initialWidth, "Dragging the slider must change the width")
     attach(app, "Tool width slider in dark appearance")
     app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.8)).tap()
     tap(app, "editor-preferences")
