@@ -38,8 +38,9 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
   }, [note, useCustomCover]);
   const onCoverError = () => { if (useCustomCover && note.customCoverUri) setFailedCover(note.customCoverUri); };
   if (compact) return (
+    <View style={[styles.compactRow, { borderBottomColor: theme.colors.divider }]}>
     <Pressable testID={`note-${note.id}`} onPress={onPress} onLongPress={onLongPress}
-      delayLongPress={350} style={({ pressed }) => [styles.compactRow, { borderBottomColor: theme.colors.divider, backgroundColor: pressed ? theme.colors.surfaceMuted : 'transparent' }]}>
+      delayLongPress={350} style={({ pressed }) => [styles.compactContent, { backgroundColor: pressed ? theme.colors.surfaceMuted : 'transparent' }]}>
       <View style={[styles.compactThumbnail, { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider }]}>
         {thumbnailUri ? <Image source={{ uri: thumbnailUri }} onError={onCoverError} style={styles.thumbnailImage} resizeMode="cover" />
           : <Ionicons name="document-text-outline" size={23} color={theme.colors.textTertiary} />}
@@ -48,21 +49,22 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
         <Text style={[typography.body, { color: theme.colors.text, fontWeight: '600' }]} numberOfLines={1}>{note.title || t.common.untitled}</Text>
         <Text style={[typography.caption, { color: theme.colors.textTertiary }]} numberOfLines={1}>{formatRelative(note.updatedAt)}</Text>
       </View>
+    </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.noteActions} hitSlop={8}
         testID={`note-menu-${note.id}`}
-        onPress={event => { event.stopPropagation(); onMenuPress(); }} style={styles.compactMenu}>
+        onPress={onMenuPress} style={styles.compactMenu}>
         <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
       </Pressable>
-    </Pressable>
+    </View>
   );
   return (
+    <View style={[styles.tile, { width: tileWidth }]}>
     <Pressable
       testID={`note-${note.id}`}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={350}
       style={({ pressed }) => [
-        [styles.tile, { width: tileWidth }],
         {
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
@@ -92,26 +94,6 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
             accent={accentColorForBackground(note.backgroundType, theme.colors.accent)}
           />
         )}
-        <Pressable
-          testID={`note-menu-${note.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={t.preferences.noteActions}
-          onPress={(event) => {
-            event.stopPropagation();
-            onMenuPress();
-          }}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.menuButton,
-            {
-              backgroundColor: theme.colors.surfaceElevated,
-              borderColor: theme.colors.divider,
-              opacity: pressed ? 0.72 : 0.95,
-            },
-          ]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={16} color={theme.colors.textSecondary} />
-        </Pressable>
       </View>
       <Text
         style={[typography.footnote, styles.title, { color: theme.colors.text }]}
@@ -126,6 +108,21 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
         {formatRelative(note.updatedAt)}
       </Text>
     </Pressable>
+    <Pressable
+      testID={`note-menu-${note.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={t.preferences.noteActions}
+      onPress={onMenuPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.menuButton, {
+        backgroundColor: theme.colors.surfaceElevated,
+        borderColor: theme.colors.divider,
+        opacity: pressed ? 0.72 : 0.95,
+      }]}
+    >
+      <Ionicons name="ellipsis-horizontal" size={16} color={theme.colors.textSecondary} />
+    </Pressable>
+    </View>
   );
 }
 
@@ -211,7 +208,8 @@ function useLibraryTileWidth(): number {
 }
 
 const styles = StyleSheet.create({
-  compactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 70, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  compactRow: { flexDirection: 'row', alignItems: 'center', minHeight: 70, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  compactContent: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   compactThumbnail: { width: 40, height: 52, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   compactCopy: { flex: 1, gap: 4 },
   compactMenu: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center' },

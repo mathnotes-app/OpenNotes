@@ -106,7 +106,8 @@ export function ToolSettingsPopover({
 
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+      <View style={StyleSheet.absoluteFill}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.done} style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
           style={[
             styles.card,
@@ -194,7 +195,7 @@ export function ToolSettingsPopover({
             />
           ) : null}
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -279,7 +280,7 @@ function WidthControl({
       <Text style={[typography.caption, { color: theme.colors.textSecondary }]}>{t.preferences.size}</Text>
       <Text style={[typography.caption, { color: theme.colors.textSecondary }]}>{preview}</Text>
     </View>
-    <View testID="tool-width-slider" accessibilityRole="adjustable" accessibilityLabel={t.preferences.size}
+    <View accessible testID="tool-width-slider" accessibilityRole="adjustable" accessibilityLabel={t.preferences.size}
       accessibilityValue={{ min, max, now: preview }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={({ nativeEvent }) => onChange(Math.max(min, Math.min(max, value + (nativeEvent.actionName === 'increment' ? 0.5 : -0.5))))}
