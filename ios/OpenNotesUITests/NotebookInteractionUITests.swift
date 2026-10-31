@@ -12,8 +12,14 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     let viewport = element(app, "ink-viewport")
     XCTAssertTrue(viewport.waitForExistence(timeout: 20))
     let enable = element(app, "Enable finger drawing")
+    let disable = element(app, "Disable finger drawing")
+    XCTAssertTrue(enable.waitForExistence(timeout: 5) || disable.waitForExistence(timeout: 5),
+                  "The finger drawing setting must be ready before drawing")
     if enable.exists { enable.tap() }
-    tap(app, "tool-crayon")
+    XCTAssertTrue(disable.waitForExistence(timeout: 10))
+    let crayon = element(app, "tool-crayon")
+    XCTAssertTrue(crayon.waitForExistence(timeout: 10))
+    if !crayon.isSelected { crayon.tap() }
     let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.65))
     let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.65))
     let rect = CGRect(x: viewport.frame.minX + viewport.frame.width * 0.2,
