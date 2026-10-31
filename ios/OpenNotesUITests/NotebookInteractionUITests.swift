@@ -353,6 +353,32 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 30), "Layered note must export successfully")
   }
 
+  func testFingerTapSelectsImageWhilePenIsActive() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-cross-asset")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let disable = element(app, "Disable finger drawing")
+    if disable.exists { disable.tap() }
+    XCTAssertTrue(element(app, "Enable finger drawing").waitForExistence(timeout: 10))
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
+      .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
+    tap(app, "tool-select")
+    let asset = element(app, "inserted-image-cross-image")
+    XCTAssertTrue(asset.waitForExistence(timeout: 10))
+    let frame = asset.frame
+    tap(app, "tool-pen")
+    app.coordinate(withNormalizedOffset: .zero)
+      .withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
+    XCTAssertTrue(element(app, "image-front-cross-image").waitForExistence(timeout: 10),
+                  "A finger tap should select an image while the pen is active")
+    XCTAssertTrue(element(app, "tool-select").isSelected)
+  }
+
   func testRotatedImageResizeAndCrop() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

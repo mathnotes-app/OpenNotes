@@ -10,6 +10,34 @@ export function imageLayerOrder(image: InsertedElement): number {
   return validOrder(image.layerOrder, (image.zIndex ?? 1) <= 0 ? 2 : 4);
 }
 
+/** Resolve a finger tap through the viewport to the topmost image. */
+export function imageAtContentPoint(
+  pages: NotebookPage[], point: {x: number; y: number},
+  layout: {pageWidth: number; pageHeight: number; contentPadding: number; containerWidth: number},
+): {pageIndex: number; id: string} | null {
+  const x = point.x - (layout.containerWidth - layout.pageWidth) / 2;
+  const y = point.y - layout.contentPadding;
+  if (![x, y, layout.pageHeight].every(Number.isFinite) || layout.pageHeight <= 0) return null;
+  let hit: {pageIndex: number; id: string; order: number; zIndex: number} | null = null;
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+    for (const element of pages[pageIndex].insertedElements ?? []) {
+      if (!(element.sourceUri ?? element.renderedImageUri)) continue;
+      const width = element.width ?? 240, height = element.height ?? 240;
+      const angle = (element.rotation ?? 0) * Math.PI / 180;
+      if (![element.x, element.y, width, height, angle].every(Number.isFinite) || width <= 0 || height <= 0) continue;
+      const dx = x - element.x - width / 2;
+      const dy = y - (element.y + pageIndex * layout.pageHeight) - height / 2;
+      const localX = dx * Math.cos(angle) + dy * Math.sin(angle);
+      const localY = -dx * Math.sin(angle) + dy * Math.cos(angle);
+      if (Math.abs(localX) > width / 2 || Math.abs(localY) > height / 2) continue;
+      const order = imageLayerOrder(element), zIndex = element.zIndex ?? 1;
+      if (!hit || order > hit.order || (order === hit.order && zIndex >= hit.zIndex))
+        hit = {pageIndex, id: element.id, order, zIndex};
+    }
+  }
+  return hit && {pageIndex: hit.pageIndex, id: hit.id};
+}
+
 export function textLayerOrder(text: InkTextBox): number {
   return validOrder(text.layerOrder, 3);
 }

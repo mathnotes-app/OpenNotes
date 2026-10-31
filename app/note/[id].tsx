@@ -69,7 +69,7 @@ import {
 import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
-import { documentVisualLayers } from '../../src/utils/visualLayerOrder';
+import { documentVisualLayers, imageAtContentPoint } from '../../src/utils/visualLayerOrder';
 import { insertImagePosition } from '../../src/utils/insertImagePosition';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
@@ -910,6 +910,19 @@ export default function NoteScreen() {
       };
     });
   }, [enginePages, overlayMap]);
+  const hasSelectableImages = useMemo(() => pagesForOverlay.some(page =>
+    (page.insertedElements ?? []).some(element => Boolean(element.sourceUri ?? element.renderedImageUri))),
+  [pagesForOverlay]);
+
+  const handleImageFingerTap = useCallback((event: {nativeEvent: {locationX: number; locationY: number}}) => {
+    const hit = imageAtContentPoint(pagesForOverlay,
+      {x: event.nativeEvent.locationX, y: event.nativeEvent.locationY},
+      {pageWidth: PAGE_WIDTH, pageHeight: PAGE_HEIGHT, contentPadding: CONTENT_PADDING,
+        containerWidth: store.getSnapshot()?.containerWidth ?? viewportWidth});
+    if (!hit) return;
+    selectTool('select');
+    setSelection({type: 'image', pageIndex: hit.pageIndex, id: hit.id});
+  }, [pagesForOverlay, selectTool, store, viewportWidth]);
 
   const documentImageLayersJSON = useMemo(() => {
     if (Platform.OS !== 'ios') return undefined;
@@ -1027,6 +1040,8 @@ export default function NoteScreen() {
           backgroundType={metadata?.backgroundType ?? 'plain'}
           pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
           fingerDrawingEnabled={fingerDrawingEnabled}
+          onContentTap={hasSelectableImages && !fingerDrawingEnabled && !['select', 'text', 'insert'].includes(toolState.toolType)
+            ? handleImageFingerTap : undefined}
           onReady={handleCanvasReady}
           onError={handleCanvasLoadError}
           onDrawingChange={handleDrawingChange}
