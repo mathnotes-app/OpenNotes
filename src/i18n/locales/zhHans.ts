@@ -118,6 +118,7 @@ export const zhHans: Strings = {
     restoreUnavailableMessage: '目前无法连接 iCloud。请稍后重试。',
   },
   preferences: {
+    photoAccess: "请在系统设置中允许 OpenNotes 访问照片。",
     holdToShape: "按住以创建形状",
     holdToShapeDetail: "在笔画末尾按住以创建形状。",
     folderActions: "文件夹操作",

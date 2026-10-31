@@ -609,6 +609,8 @@ export default function NoteScreen() {
       if (picked) applyInsertedImage(picked);
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] insert from library failed', error);
+      Alert.alert(t.editor.insertImageTitle,
+        error instanceof Error && error.message === 'photo-access-denied' ? t.preferences.photoAccess : t.common.pleaseTryAgain);
     }
     selectTool('pen');
   }, [applyInsertedImage, id, selectTool]);

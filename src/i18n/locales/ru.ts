@@ -129,6 +129,7 @@ export const ru: Strings = {
     restoreUnavailableMessage: 'iCloud сейчас недоступен. Попробуйте позже.',
   },
   preferences: {
+    photoAccess: "Разрешите OpenNotes доступ к фотографиям в системных настройках.",
     holdToShape: "Удерживать для создания фигур",
     holdToShapeDetail: "Удерживайте в конце штриха, чтобы создать фигуру.",
     folderActions: "Действия с папкой",

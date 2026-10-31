@@ -119,6 +119,7 @@ export const ja: Strings = {
     restoreUnavailableMessage: '現在iCloudに接続できません。後でもう一度お試しください。',
   },
   preferences: {
+    photoAccess: "システム設定でOpenNotesに写真へのアクセスを許可してください。",
     holdToShape: "長押しで図形を作成",
     holdToShapeDetail: "ストロークの最後で長押しすると図形になります。",
     folderActions: "フォルダの操作",

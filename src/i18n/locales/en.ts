@@ -119,6 +119,7 @@ export const en = {
     restoreUnavailableMessage: 'iCloud is not reachable right now. Try again later.',
   },
   preferences: {
+    photoAccess: "Allow OpenNotes to access your photos in system settings.",
     holdToShape: "Hold to make shapes",
     holdToShapeDetail: "Hold at the end of a stroke to straighten it or make a shape.",
     folderActions: "Folder actions",

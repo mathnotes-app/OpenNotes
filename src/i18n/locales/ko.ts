@@ -119,6 +119,7 @@ export const ko: Strings = {
     restoreUnavailableMessage: '지금은 iCloud에 연결할 수 없습니다. 나중에 다시 시도해 주세요.',
   },
   preferences: {
+    photoAccess: "시스템 설정에서 OpenNotes의 사진 접근을 허용하세요.",
     holdToShape: "길게 눌러 도형 만들기",
     holdToShapeDetail: "획의 끝을 길게 누르면 도형이 만들어집니다.",
     folderActions: "폴더 작업",

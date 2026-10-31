@@ -119,6 +119,7 @@ export const fr: Strings = {
     restoreUnavailableMessage: 'iCloud est momentanément inaccessible. Réessayez plus tard.',
   },
   preferences: {
+    photoAccess: "Autorisez OpenNotes à accéder à vos photos dans les réglages système.",
     holdToShape: "Maintenir pour créer des formes",
     holdToShapeDetail: "Maintenez à la fin du trait pour créer une forme.",
     folderActions: "Actions du dossier",

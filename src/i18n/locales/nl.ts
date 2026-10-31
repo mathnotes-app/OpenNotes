@@ -119,6 +119,7 @@ export const nl: Strings = {
     restoreUnavailableMessage: 'iCloud is momenteel niet bereikbaar. Probeer het later opnieuw.',
   },
   preferences: {
+    photoAccess: "Geef OpenNotes toegang tot je foto’s in de systeeminstellingen.",
     holdToShape: "Vasthouden voor vormen",
     holdToShapeDetail: "Houd aan het einde van een lijn vast om een vorm te maken.",
     folderActions: "Mapacties",

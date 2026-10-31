@@ -18,7 +18,8 @@ export function useNoteCover(refresh: () => Promise<void>) {
           await refresh();
         } catch (error) {
           if (__DEV__) console.warn('[NoteCover] choose failed', error);
-          Alert.alert(t.preferences.coverError, t.common.pleaseTryAgain);
+          Alert.alert(t.preferences.coverError,
+            error instanceof Error && error.message === 'photo-access-denied' ? t.preferences.photoAccess : t.common.pleaseTryAgain);
         }
       })();
     });
