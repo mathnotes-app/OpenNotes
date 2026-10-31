@@ -44,6 +44,7 @@ type ResizeHandle =
   | 'left';
 
 export interface TextBoxOverlayProps {
+  renderText?: boolean;
   textBox: InkTextBox;
   pageScale: number;
   gestureScale?: SharedValue<number>;
@@ -105,6 +106,7 @@ function resizeFromHandle(
 }
 
 export function TextBoxOverlay({
+  renderText = true,
   textBox,
   pageScale,
   gestureScale,
@@ -356,6 +358,9 @@ export function TextBoxOverlay({
     <GestureDetector gesture={Gesture.Simultaneous(tapGesture, dragGesture)}>
       <Animated.View
         testID={`text-box-${textBox.id}`}
+        accessible={!renderText && !showChrome}
+        accessibilityRole={!renderText && !showChrome ? 'text' : undefined}
+        accessibilityLabel={!renderText && !showChrome ? textBox.content : undefined}
         collapsable={false}
         onPointerDown={handleFingerPointerDown}
         pointerEvents="auto"
@@ -401,7 +406,7 @@ export function TextBoxOverlay({
                 }
               }}
             />
-          ) : (
+          ) : renderText ? (
             <View pointerEvents="none" style={styles.contentLayer}>
               <Text
                 selectable={false}
@@ -415,7 +420,7 @@ export function TextBoxOverlay({
                 {textBox.content || t.editor.tapToAddText}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {showChrome ? (

@@ -53,7 +53,7 @@ function harness(transform, pageCount = 3, customPages) {
     pageWidth: 820, pageHeight: 1061, activeTool: 'text', activeColor: '#123456',
     selection: null,
     onCreateTextBoxId: () => 'new-text',
-    onCreateTextBox: (pageIndex, box) => created.push({ pageIndex, x: box.x, y: box.y }),
+    onCreateTextBox: async (pageIndex, box) => { created.push({ pageIndex, x: box.x, y: box.y }); return true; },
     onSelectionChange: (value) => selected.push(value),
     onUpdateInsertedElement: (owner, id, patch) => updates.push({ owner, id, patch }),
     onUpdateTextBox: (owner, id, patch) => updates.push({ owner, id, patch }),
@@ -69,11 +69,12 @@ for (const transform of [
   { scale: 0.5, translateX: 16, translateY: -500 },
   { scale: 2, translateX: -240, translateY: -1700 },
 ]) {
-  test(`text stays at the tapped page position at zoom ${transform.scale}`, () => {
+  test(`text stays at the tapped page position at zoom ${transform.scale}`, async () => {
     const h = harness(transform);
     h.tap(200, 200);
     h.tap(300, 1061 + 400);
     h.tap(400, 2 * 1061 + 500);
+    await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(h.created, [
       { pageIndex: 0, x: 194, y: 188 },
       { pageIndex: 1, x: 294, y: 388 },

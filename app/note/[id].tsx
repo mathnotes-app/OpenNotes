@@ -1,4 +1,4 @@
-import { resolveInkDisplayAppearance } from '@mathnotes/mobile-ink';
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
 import {selectedOverlayTouchRects} from '../../src/utils/overlayTouchRects';
 import {useOverlayHistory} from '../../src/components/editor/history/useOverlayHistory';
 import React, {
@@ -15,6 +15,8 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  PixelRatio,
+  processColor,
   Pressable,
   StyleSheet,
   Text,
@@ -67,6 +69,7 @@ import {
 import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
+import { documentVisualLayers } from '../../src/utils/visualLayerOrder';
 import { insertImagePosition } from '../../src/utils/insertImagePosition';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
@@ -554,7 +557,7 @@ export default function NoteScreen() {
   );
 
   const applyInsertedImage = useCallback(
-    (picked: PickedImageResult) => {
+    async (picked: PickedImageResult) => {
       if (enginePages.length === 0) return;
       const aspect = picked.width / Math.max(1, picked.height);
       const maxDim = 360;
@@ -573,6 +576,9 @@ export default function NoteScreen() {
       const zIndex = Array.from(overlayMapRef.current.values()).reduce(
         (highest, overlay) => overlay.insertedElements.reduce((value, asset) => Math.max(value, asset.zIndex ?? 0), highest), 0,
       ) + 1;
+      const canvas = canvasRef.current;
+      if (Platform.OS === 'ios' && !canvas) throw new Error('Ink canvas is unavailable');
+      const layerOrder = Platform.OS === 'ios' ? await canvas!.reserveLayerOrder() : undefined;
       const element: InsertedElement = {
         id: insertedElementId(),
         type: 'image',
@@ -582,6 +588,7 @@ export default function NoteScreen() {
         height: h,
         aspectRatio: aspect,
         rotation: 0,
+        layerOrder,
         sourceUri: picked.uri,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -607,7 +614,7 @@ export default function NoteScreen() {
     try {
       const picked = await pickFromLibrary(id);
       if (picked) {
-        applyInsertedImage(picked);
+        await applyInsertedImage(picked);
         selectTool('select');
         return;
       }
@@ -625,7 +632,7 @@ export default function NoteScreen() {
     try {
       const picked = await pickFromCamera(id);
       if (picked) {
-        applyInsertedImage(picked);
+        await applyInsertedImage(picked);
         selectTool('select');
         return;
       }
@@ -636,10 +643,18 @@ export default function NoteScreen() {
   }, [applyInsertedImage, id, selectTool]);
 
   const handleCreateTextBox = useCallback(
-    (pageIndex: number, box: InkTextBox) => {
+    async (pageIndex: number, box: InkTextBox): Promise<boolean> => {
+      let layerOrder: number | undefined;
+      if (Platform.OS === 'ios') {
+        try {
+          const canvas = canvasRef.current;
+          if (!canvas) throw new Error('Ink canvas is unavailable');
+          layerOrder = await canvas.reserveLayerOrder();
+        } catch { Alert.alert(t.common.pleaseTryAgain); return false; }
+      }
       mutateOverlay(pageIndex, (state) => ({
         ...state,
-        textBoxes: [...state.textBoxes, box],
+        textBoxes: [...state.textBoxes, { ...box, layerOrder }],
       }));
       const needsTrailingBlankPage = pageIndex >= enginePages.length - 1;
       const ensureTrailingBlankPage = needsTrailingBlankPage
@@ -652,6 +667,7 @@ export default function NoteScreen() {
           canvasRef.current?.revealPagePosition(pageIndex, box.y, true);
         }, 250);
       });
+      return true;
     },
     [enginePages.length, mutateOverlay],
   );
@@ -680,24 +696,43 @@ export default function NoteScreen() {
 
   const handleUpdateInsertedElement = useCallback(
     (pageIndex: number, elementId: string, patch: Partial<InsertedElement>) => {
-      const now = new Date().toISOString();
-      mutateOverlay(pageIndex, (state) => ({
-        ...state,
-        insertedElements: state.insertedElements.map((el) =>
-          el.id === elementId ? { ...el, ...patch, updatedAt: now } : el,
-        ),
-      }));
+      const apply = (layerOrder?: number) => {
+        const now = new Date().toISOString();
+        mutateOverlay(pageIndex, (state) => ({
+          ...state,
+          insertedElements: state.insertedElements.map((el) =>
+            el.id === elementId ? { ...el, ...patch, ...(layerOrder !== undefined ? {layerOrder} : {}), updatedAt: now } : el,
+          ),
+        }));
+      };
+      if (Platform.OS !== 'ios' || patch.zIndex === undefined) { apply(); return; }
+      const minZIndex = Array.from(overlayMapRef.current.values()).reduce(
+        (minimum, overlay) => overlay.insertedElements.reduce((value, asset) => Math.min(value, asset.zIndex ?? 0), minimum), 0,
+      );
+      if (patch.zIndex < minZIndex) { apply(0); return; }
+      const canvas = canvasRef.current;
+      if (!canvas) { Alert.alert(t.common.pleaseTryAgain); return; }
+      void canvas.reserveLayerOrder().then(apply).catch(() => Alert.alert(t.common.pleaseTryAgain));
     },
     [mutateOverlay],
   );
 
   const handleDuplicateInsertedElement = useCallback(
-    (pageIndex: number, elementId: string) => {
+    async (pageIndex: number, elementId: string) => {
       const page = enginePages[pageIndex];
       if (!page) return;
       const state = overlayMapRef.current.get(page.id) ?? emptyOverlay();
       const element = state.insertedElements.find((el) => el.id === elementId);
       if (!element) return;
+
+      let layerOrder: number | undefined;
+      if (Platform.OS === 'ios') {
+        try {
+          const canvas = canvasRef.current;
+          if (!canvas) throw new Error('Ink canvas is unavailable');
+          layerOrder = await canvas.reserveLayerOrder();
+        } catch { Alert.alert(t.common.pleaseTryAgain); return; }
+      }
 
       const now = new Date().toISOString();
       const nextId = insertedElementId();
@@ -711,6 +746,7 @@ export default function NoteScreen() {
         id: nextId,
         ...duplicateAssetPosition(element, pageIndex, PAGE_WIDTH, PAGE_HEIGHT, enginePages.length),
         zIndex: maxZIndex + 1,
+        layerOrder,
         createdAt: now,
         updatedAt: now,
       };
@@ -875,6 +911,16 @@ export default function NoteScreen() {
     });
   }, [enginePages, overlayMap]);
 
+  const documentImageLayersJSON = useMemo(() => {
+    if (Platform.OS !== 'ios') return undefined;
+    const interactive = ['select', 'text', 'insert'].includes(toolState.toolType);
+    return JSON.stringify(documentVisualLayers(pagesForOverlay, PAGE_HEIGHT, selection, interactive, authored => {
+      const displayColor = inkDisplayColor(authored, resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light'));
+      const color = processColor(displayColor);
+      return typeof color === 'number' ? color >>> 0 : 0xff000000;
+    }, currentPageIndex, PixelRatio.get()));
+  }, [currentPageIndex, pagesForOverlay, selection, theme.isDark, toolState.toolType]);
+
   const overlayTouchRects = useMemo(() => selectedOverlayTouchRects(pagesForOverlay, selection,
     {pageWidth: PAGE_WIDTH, pageHeight: PAGE_HEIGHT, contentPadding: CONTENT_PADDING,
       containerWidth: store.getSnapshot()?.containerWidth ?? viewportWidth}),
@@ -973,6 +1019,7 @@ export default function NoteScreen() {
           renderBackend={Platform.OS === "ios" ? "ganesh" : "cpu"}
           contentPadding={CONTENT_PADDING}
           blockedTouchRects={overlayTouchRects}
+          documentImageLayersJSON={documentImageLayersJSON}
           pageWidth={PAGE_WIDTH}
           pageHeight={PAGE_HEIGHT}
           toolState={toolState}
@@ -993,6 +1040,7 @@ export default function NoteScreen() {
           onPencilDoubleTap={handlePencilDoubleTap}
           overlay={
             <OverlayLayer
+              nativeImages={Platform.OS === 'ios'}
               store={store}
               pages={pagesForOverlay}
               pageWidth={PAGE_WIDTH}

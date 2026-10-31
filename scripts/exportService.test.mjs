@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { indexAssetsByPage } from '../src/utils/continuousAssets.ts';
 import { buildPdfHtml } from '../src/services/pdfExportHtml.ts';
+import { overlayLayerBoundaries } from '../src/utils/visualLayerOrder.ts';
 
 const source = ts.transpileModule(
   readFileSync(new URL('../src/services/exportService.ts', import.meta.url), 'utf8'),
@@ -55,6 +56,10 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       projectionCalls.push({ payloads, height, indices });
       return indices.map(index => 'projected-' + index);
     },
+    async splitProjectedPageByLayers(payload, boundaries) {
+      return Array.from({ length: boundaries.length + 1 }, (_, index) =>
+        JSON.stringify({ pages: { 0: payload + '-layer-' + index } }));
+    },
     async batchExportPages(...args) {
       batchCalls.push(args);
       return args[0].map((_, index) => 'data:image/png;base64,' + (index + 1));
@@ -69,7 +74,7 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       if (name === 'expo-sharing') {
         return { isAvailableAsync: async () => false };
       }
-      if (name === 'react-native') return { PixelRatio: { get: () => 2 } };
+      if (name === 'react-native') return { PixelRatio: { get: () => 2 }, Platform: { OS: 'ios' } };
       if (name === './pdfUtilsModule') {
         return {
           PDFUtilsModule: mergePdfFiles === null
@@ -84,6 +89,7 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       }
       if (name === '@mathnotes/mobile-ink') return mobileInk;
       if (name === '../utils/continuousAssets') return { indexAssetsByPage };
+      if (name === '../utils/visualLayerOrder') return { overlayLayerBoundaries };
       if (name === './pdfExportHtml') {
         return {
           buildPdfHtml,
@@ -144,8 +150,8 @@ test('a three-page PDF includes a photo and typed text on their original page', 
   assert.equal(h.batchCalls.length, 2);
   assert.equal(h.batchCalls[0][0].length, 3);
   assert.equal(h.batchCalls[0][0][1], '{"pages":{}}');
-  assert.deepEqual(Array.from(h.batchCalls[1][0]), ['projected-1']);
-  assert.deepEqual(Array.from(h.batchCalls[1][1]), ['pdf']);
+  assert.equal(h.batchCalls[1][0].length, 3);
+  assert.ok(Array.from(h.batchCalls[1][1]).every(value => value === 'pdf'));
   assert.equal(h.batchCalls[1][5], undefined);
   assert.deepEqual(h.fileReads, [photo]);
   assert.equal(h.printCalls.length, 1);
@@ -159,7 +165,8 @@ test('a three-page PDF includes a photo and typed text on their original page', 
   assert.match(sections[2], /transform:rotate\(15deg\)/);
   assert.match(sections[2], /left:-50px;top:-60px;width:500px;height:300px/);
   assert.match(sections[2], /Photo &lt;one&gt; &amp; two/);
-  assert.ok(sections[2].indexOf('class="raster ink"') > sections[2].indexOf('class="inserted-image"'));
+  assert.ok(sections[2].indexOf('class="raster ink"') < sections[2].indexOf('class="inserted-image"'));
+  assert.ok(sections[2].lastIndexOf('class="raster ink"') > sections[2].indexOf('class="inserted-image"'));
   assert.doesNotMatch(sections[3], /data:image\/jpeg/);
 });
 
@@ -178,6 +185,26 @@ test('export fails before printing when a saved photo cannot be read', async () 
   assert.equal(result.ok, false);
   assert.match(result.error, /File not found/);
   assert.equal(h.printCalls.length, 0);
+});
+
+test('PDF layers preserve ink and text between images in creation order', async () => {
+  const h = harness({ 'file:///first.png': 'Zmlyc3Q=', 'file:///second.png': 'c2Vjb25k' });
+  const data = notebook([{
+    insertedElements: [
+      { id: 'a', type: 'image', sourceUri: 'file:///first.png', x: 10, y: 10, layerOrder: 5 },
+      { id: 'b', type: 'image', sourceUri: 'file:///second.png', x: 10, y: 10, layerOrder: 10 },
+    ],
+    textBoxes: [{ id: 'text', x: 10, y: 10, width: 200, content: 'middle text', color: '#000000', layerOrder: 7 }],
+  }]);
+  assert.equal((await h.exportNotebookAsPdf({ data, filename: 'layers' })).ok, true);
+  const html = h.printCalls[0].html;
+  const ink = [...html.matchAll(/class="raster ink"/g)].map(match => match.index);
+  const first = html.indexOf('data:image/png;base64,Zmlyc3Q=');
+  const text = html.indexOf('middle text');
+  const second = html.indexOf('data:image/png;base64,c2Vjb25k');
+  assert.equal(ink.length, 4);
+  assert.ok(ink[0] < first && first < ink[1] && ink[1] < text && text < ink[2] &&
+    ink[2] < second && second < ink[3]);
 });
 
 test('page HTML preserves a uniform scale and escapes typed text', () => {

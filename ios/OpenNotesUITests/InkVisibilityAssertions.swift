@@ -3,7 +3,7 @@ import UIKit
 
 /// Count ink that contrasts with the dominant paper brightness. Sampling page
 /// interiors prevents dark paper from falsely satisfying a dark-ink assertion.
-func contrastingInkPixels(_ image: UIImage, rect: CGRect? = nil) -> Int {
+func contrastingInkPixels(_ image: UIImage, rect: CGRect? = nil, eitherDirection: Bool = false) -> Int {
   guard let source = image.cgImage else { return 0 }
   let width = source.width, height = source.height
   var pixels = [UInt8](repeating: 255, count: width * height * 4)
@@ -33,7 +33,7 @@ func contrastingInkPixels(_ image: UIImage, rect: CGRect? = nil) -> Int {
       for x in Int(area.minX)..<Int(area.maxX) {
         let i = (y * width + x) * 4
         let brightness = (Int(data[i]) + Int(data[i + 1]) + Int(data[i + 2])) / 3
-        if paper < 8 ? brightness > 160 : brightness < 100 { count += 1 }
+        if eitherDirection ? abs(brightness - (paper * 16 + 8)) > 60 : (paper < 8 ? brightness > 160 : brightness < 100) { count += 1 }
       }
     }
     return count

@@ -31,6 +31,7 @@ export interface OverlaySelection {
 }
 
 export interface OverlayLayerProps {
+  nativeImages?: boolean;
   store: ViewportTransformStore;
   pages: NotebookPage[];
   pageWidth: number;
@@ -39,7 +40,7 @@ export interface OverlayLayerProps {
   activeColor: string;
   selection: OverlaySelection | null;
   onSelectionChange: (next: OverlaySelection | null) => void;
-  onCreateTextBox: (pageIndex: number, box: InkTextBox) => void;
+  onCreateTextBox: (pageIndex: number, box: InkTextBox) => Promise<boolean>;
   onUpdateTextBox: (pageIndex: number, boxId: string, patch: Partial<InkTextBox>) => void;
   onRemoveTextBox: (pageIndex: number, boxId: string) => void;
   onUpdateInsertedElement: (
@@ -53,6 +54,7 @@ export interface OverlayLayerProps {
 }
 
 export function OverlayLayer({
+  nativeImages = false,
   store,
   pages,
   pageWidth,
@@ -96,7 +98,7 @@ export function OverlayLayer({
   }, [store]);
 
   const handleTextToolTap = useCallback(
-    (event: GestureResponderEvent) => {
+    async (event: GestureResponderEvent) => {
       if (activeTool !== 'text') return;
       const { locationX, locationY } = event.nativeEvent;
       // Native touch coordinates are already local to the transformed page
@@ -124,8 +126,8 @@ export function OverlayLayer({
         fontSize: 18,
         isEditing: true,
       };
-      onCreateTextBox(coord.pageIndex, box);
-      onSelectionChange({ type: 'text', pageIndex: coord.pageIndex, id, editing: true });
+      if (await onCreateTextBox(coord.pageIndex, box))
+        onSelectionChange({ type: 'text', pageIndex: coord.pageIndex, id, editing: true });
     },
     [
       activeColor,
@@ -147,7 +149,7 @@ export function OverlayLayer({
         return;
       }
       if (activeTool === 'text') {
-        handleTextToolTap(event);
+        void handleTextToolTap(event);
       }
     },
     [activeTool, handleTextToolTap, onSelectionChange, selection],
@@ -190,6 +192,7 @@ export function OverlayLayer({
               return canRenderElement ? (
                 <ImageInsertOverlay
                   key={el.id}
+                  renderImage={!nativeImages || isSelected}
                   element={assetInNotebook(el, pageIndex, pageHeight)}
                   pageScale={transformRef.current?.scale ?? 1}
                   gestureScale={gestureScale}
@@ -237,6 +240,7 @@ export function OverlayLayer({
               return (
                 <TextBoxOverlay
                   key={tb.id}
+                  renderText={!nativeImages || isSelected}
                   textBox={assetInNotebook(tb, pageIndex, pageHeight)}
                   pageScale={transformRef.current?.scale ?? 1}
                   gestureScale={gestureScale}

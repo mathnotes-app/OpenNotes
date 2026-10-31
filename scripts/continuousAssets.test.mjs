@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { assetInNotebook, patchForOwner, assetsForPage, indexAssetsByPage, duplicateAssetPosition } from '../src/utils/continuousAssets.ts';
+import { documentVisualLayers, overlayLayerBoundaries } from '../src/utils/visualLayerOrder.ts';
 
 test('moving an asset across its owner boundary preserves its identity and local storage', () => {
   const original = { id: 'image', y: 950, height: 200 };
@@ -58,4 +59,44 @@ test('duplication keeps cross-page and negative-owner positions, bounded by the 
   assert.deepEqual(duplicateAssetPosition({ x: 20, y: 950, width: 100, height: 200 }, 0, 600, 1000, 3), { x: 40, y: 970 });
   assert.deepEqual(duplicateAssetPosition({ x: 20, y: -150, width: 100, height: 200 }, 2, 600, 1000, 3), { x: 40, y: -130 });
   assert.deepEqual(duplicateAssetPosition({ x: 550, y: 900, width: 100, height: 200 }, 2, 600, 1000, 3), { x: 500, y: 800 });
+});
+
+test('editing selected text does not rebuild native image layers on every keystroke', () => {
+  const box = { id: 't', x: 10, y: 20, width: 200, content: 'first', color: '#000000', layerOrder: 6 };
+  const page = { id: 'page', textBoxes: [box] };
+  const selection = {type: 'text', id: 't', pageIndex: 0};
+  const layers = () => JSON.stringify(documentVisualLayers([page], 1000, selection, true, () => 0xff000000));
+  const before = layers();
+  box.content = 'first and more';
+  assert.equal(layers(), before);
+  assert.notEqual(JSON.stringify(documentVisualLayers([page], 1000, null, false, () => 0xff000000)), before);
+});
+
+test('legacy overlays preserve ink, back-image, text and front-image ordering', () => {
+  const back = {id: 'back', type: 'image', zIndex: -1};
+  const front = {id: 'front', type: 'image'};
+  const text = {id: 'text', color: '#000000'};
+  assert.deepEqual(overlayLayerBoundaries([front, back], [text]), [2, 3, 4]);
+});
+
+test('long notebooks retain all layer orders while decoding only nearby assets', () => {
+  const pages = Array.from({ length: 100 }, (_, i) => ({id: String(i), insertedElements: [{
+    id: 'photo', sourceUri: 'file:///photo.png', x: 0, y: 100, width: 200, height: 200, layerOrder: i + 5,
+  }]}));
+  // This image belongs to page 90 but crosses into the prefetch range.
+  pages[90].insertedElements[0].y = -33000;
+  const layers = documentVisualLayers(pages, 1000, null, false, () => 0, 50, 2);
+  assert.equal(layers.length, 100);
+  assert.equal(layers[90].defer, false);
+  assert.equal(layers[99].defer, true);
+  assert.equal(layers[99].layerOrder, 104);
+  assert.ok(layers.filter(layer => !layer.defer).length <= 19);
+  assert.ok(layers[50].maxPixelSize < 4096);
+});
+
+test('rotated assets crossing the prefetch boundary remain visible', () => {
+  const pages = [{id: '0', insertedElements: [{id: 'r', sourceUri: 'file:///r.png', x: 0,
+    y: 900, width: 400, height: 80, rotation: 90}]}];
+  const layers = documentVisualLayers(pages, 1000, null, false, () => 0, 9, 2);
+  assert.equal(layers[0].defer, false);
 });

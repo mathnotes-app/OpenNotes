@@ -11,14 +11,17 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     if community.waitForExistence(timeout: 2) { community.tap() }
     tap(app, "note-menu-audit-cross-page")
     tap(app, "Choose cover")
-    let photo = app.collectionViews.cells.firstMatch
+    let fullAccess = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow Full Access"]
+    if fullAccess.waitForExistence(timeout: 5) { fullAccess.tap() }
+    let picker = app.collectionViews.cells.matching(identifier: "PXPickerAllPhotosVirtualCollection").firstMatch
+    let photo = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
     let foundPhoto = photo.waitForExistence(timeout: 60)
     print("PHOTO PICKER HIERARCHY:\n\(app.debugDescription)")
     print("SYSTEM HIERARCHY:\n\(XCUIApplication(bundleIdentifier: "com.apple.springboard").debugDescription)")
     attach(app, "Photo picker diagnostic")
     XCTAssertTrue(foundPhoto, "Photo picker must show the seeded image")
     photo.tap()
-    XCTAssertTrue(photo.waitForNonExistence(timeout: 30), "Selecting a photo must dismiss the picker")
+    XCTAssertTrue(picker.waitForNonExistence(timeout: 30), "Selecting a photo must dismiss the picker")
     tap(app, "note-menu-audit-cross-page")
     XCTAssertTrue(element(app, "Remove cover").waitForExistence(timeout: 20), "The selected cover must be saved")
     app.swipeDown()
@@ -226,6 +229,29 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertLessThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
     tap(app, "Redo")
     XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    // Bringing the photo forward puts it above the older stroke. A stroke
+    // created afterwards must still appear above the same photo.
+    tap(app, "Disable finger drawing")
+    tap(app, "tool-select")
+    asset.tap()
+    tap(app, "image-front-cross-image")
+    tap(app, "Enable finger drawing")
+    tap(app, "tool-pen")
+    let photoInFront = app.screenshot().image
+    XCTAssertLessThan(changedInkPixels(before, photoInFront, rect: inkRect), 20,
+      "An image moved forward must cover older ink")
+    let newRect = inkRect.offsetBy(dx: 25, dy: 0)
+    origin.withOffset(CGVector(dx: x + 25, dy: y - 40)).press(forDuration: 0.05,
+      thenDragTo: origin.withOffset(CGVector(dx: x + 25, dy: y + 40)), withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertGreaterThan(changedInkPixels(photoInFront, app.screenshot().image, rect: newRect), 20,
+      "New ink must appear above the image")
+    tap(app, "Undo")
+    XCTAssertLessThan(changedInkPixels(photoInFront, app.screenshot().image, rect: newRect), 20)
+    tap(app, "Undo")
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20,
+      "Undoing the image reorder must reveal the older ink")
+    tap(app, "Redo")
+    tap(app, "Redo")
     tap(app, "Library")
     XCTAssertTrue(element(app, "note-audit-cross-asset").waitForExistence(timeout: 15))
     app.terminate(); launchPrepared(app)
@@ -235,8 +261,22 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     if disableAfterReload.exists { disableAfterReload.tap() }
     viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
       .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
-    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: inkRect), 20)
+    tap(app, "tool-select")
+    XCTAssertTrue(asset.waitForExistence(timeout: 10))
+    let reopenedFrame = asset.frame
+    tap(app, "tool-pen")
+    let reopened = app.screenshot().image
+    let reopenedOld = CGRect(x: reopenedFrame.midX - 8, y: reopenedFrame.midY - 35, width: 16, height: 70)
+    attach(app, "Layer order after reopening")
+    let oldBaseline = contrastingInkPixels(before, rect: inkRect, eitherDirection: true)
+    let newBaseline = contrastingInkPixels(photoInFront, rect: newRect, eitherDirection: true)
+    XCTAssertLessThan(abs(contrastingInkPixels(reopened, rect: reopenedOld, eitherDirection: true) - oldBaseline), 100,
+      "Older ink must remain below the image")
+    XCTAssertGreaterThan(contrastingInkPixels(reopened, rect: reopenedOld.offsetBy(dx: 25, dy: 0), eitherDirection: true) - newBaseline, 100,
+      "Newer ink must remain above the image")
     attach(app, "Ink above an image after reload")
+    tap(app, "Export")
+    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 30), "Layered note must export successfully")
   }
 
   func testRotatedImageResizeAndCrop() {

@@ -41,6 +41,7 @@ type CropHandle =
 type CropRect = NonNullable<InsertedElement['cropRect']>;
 
 export interface ImageInsertOverlayProps {
+  renderImage?: boolean;
   element: InsertedElement;
   pageScale: number;
   gestureScale?: SharedValue<number>;
@@ -71,6 +72,7 @@ function clamp(value: number, min: number, max: number): number {
 
 
 export function ImageInsertOverlay({
+  renderImage = true,
   element,
   pageScale,
   gestureScale,
@@ -444,7 +446,7 @@ export function ImageInsertOverlay({
           animatedStyle,
         ]}
       >
-        <View pointerEvents="none" style={styles.contentLayer}>
+        {renderImage ? <View pointerEvents="none" style={styles.contentLayer}>
           {isCropMode ? (
             <AnimatedCroppedImage
               uri={sourceUri}
@@ -458,7 +460,7 @@ export function ImageInsertOverlay({
           ) : (
             <ImageElementView uri={sourceUri} element={element} />
           )}
-        </View>
+        </View> : null}
 
         {isSelected ? (
           <>
@@ -508,6 +510,7 @@ export function ImageInsertOverlay({
               ) : null}
               {onBringToFront ? (
                 <ActionButton
+                  testID={`image-front-${element.id}`}
                   name="chevron-up"
                   color={theme.colors.textSecondary}
                   onPress={onBringToFront}
@@ -515,6 +518,7 @@ export function ImageInsertOverlay({
               ) : null}
               {onSendToBack ? (
                 <ActionButton
+                  testID={`image-back-${element.id}`}
                   name="chevron-down"
                   color={theme.colors.textSecondary}
                   onPress={onSendToBack}

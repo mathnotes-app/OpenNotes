@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { createPromiseQueue } from '../src/utils/promiseQueue.ts';
+import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../src/utils/visualLayerOrder.ts';
 
 const require = createRequire(import.meta.url);
 const initCanvasKit = require('canvaskit-wasm/bin/full/canvaskit.js');
@@ -45,11 +46,14 @@ const blue = solid('#0000ff');
 const black = solid('#000000');
 const transparent = solid('#00000000');
 
-function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent } = {}) {
+function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent, inkLayers } = {}) {
   const exports = {};
   const nativeCalls = [];
+  let lastGroup = 0;
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '../utils/promiseQueue') return { createPromiseQueue };
+    if (name === '../utils/visualLayerOrder') return { imageLayerOrder, overlayLayerBoundaries, textLayerOrder };
+    if (name === 'react-native') return { Platform: { OS: 'ios' } };
     if (name === './pdfUtilsModule') return { PDFUtilsModule: nativeImage ? {
       readImageForThumbnail: nativeImage,
     } : undefined };
@@ -60,10 +64,17 @@ function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeIm
         return builder;
       } },
     } : Skia, ClipOp: { Intersect: 1 } };
-    if (name === '@mathnotes/mobile-ink') return { batchExportPages: async (...args) => {
+    if (name === '@mathnotes/mobile-ink') return { splitProjectedPageByLayers: async (_payload, boundaries) => {
+      lastGroup = boundaries.length;
+      return Array.from({length: boundaries.length + 1}, (_, index) => JSON.stringify({pages: {0: String(index)}}));
+    }, batchExportPages: async (...args) => {
       nativeCalls.push(args);
       if (nativeFails) throw new Error('Native renderer unavailable');
-      return [args[1][0] === 'pdf' && !args[5] ? ink : white];
+      if (args[1][0] !== 'pdf' || args[5]) return args[0].map(() => white);
+      return args[0].map(payload => {
+        const index = Number(JSON.parse(payload).pages[0]);
+        return inkLayers?.[index] ?? (index === lastGroup ? ink : transparent);
+      });
     } };
     throw new Error('Unexpected import: ' + name);
   } });
@@ -159,6 +170,12 @@ test('handwriting appears above inserted images', async () => {
   const result = await harness({ ink: black }).createPageThumbnail(page([photo()]));
   assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
   assert.deepEqual(pixel(result, 100, 100), [0, 0, 0, 255]);
+});
+
+test('an image covers handwriting that predates it', async () => {
+  const result = await harness({ inkLayers: [black, transparent] }).createPageThumbnail(page([photo()]));
+  assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
+  assert.deepEqual(pixel(result, 100, 100), [255, 0, 0, 255]);
 });
 
 test('rendering preserves the original notebook data including unknown legacy fields', async () => {

@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { PixelRatio } from 'react-native';
-import { batchExportPages, projectDocumentPages, type SerializedNotebookData } from '@mathnotes/mobile-ink';
+import { PixelRatio, Platform } from 'react-native';
+import { batchExportPages, projectDocumentPages, splitProjectedPageByLayers, type SerializedNotebookData } from '@mathnotes/mobile-ink';
 import {
   buildPdfHtml,
   NOTE_PAGE_HEIGHT,
@@ -13,6 +13,7 @@ import {
 } from './pdfExportHtml';
 import { PDFUtilsModule } from './pdfUtilsModule';
 import { indexAssetsByPage } from '../utils/continuousAssets';
+import { overlayLayerBoundaries } from '../utils/visualLayerOrder';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
@@ -104,6 +105,8 @@ async function preparePrintablePages(
     pages.push({
       rasterUri: rasters[index].background,
       inkUri: rasters[index].ink,
+      inkGroups: rasters[index].inkGroups,
+      layerBoundaries: rasters[index].boundaries,
       images,
       textBoxes: page.textBoxes ?? [],
     });
@@ -111,7 +114,7 @@ async function preparePrintablePages(
   return pages;
 }
 
-type RenderedPage = { background: string; ink?: string };
+type RenderedPage = { background: string; ink?: string; inkGroups?: (string | null)[]; boundaries?: number[] };
 
 async function renderNativePagesInChunks(options: {
   data: SerializedNotebookData;
@@ -120,7 +123,7 @@ async function renderNativePagesInChunks(options: {
   exportHeight: number;
   pdfBackgroundUri?: string | null;
   batchSize: number;
-  overlayPageIndexes: Set<number>;
+  layerBoundaries: Map<number, number[]>;
 }): Promise<Map<number, RenderedPage>> {
   const {
     data,
@@ -129,7 +132,7 @@ async function renderNativePagesInChunks(options: {
     exportHeight,
     pdfBackgroundUri,
     batchSize,
-    overlayPageIndexes,
+    layerBoundaries,
   } = options;
   const rendered = new Map<number, RenderedPage>();
 
@@ -142,7 +145,7 @@ async function renderNativePagesInChunks(options: {
       chunkPageIndexes,
     );
     const pngUris = await batchExportPages(
-      inkPayloads.map((payload, offset) => overlayPageIndexes.has(chunkPageIndexes[offset]) ? '{"pages":{}}' : payload),
+      inkPayloads.map((payload, offset) => layerBoundaries.has(chunkPageIndexes[offset]) ? '{"pages":{}}' : payload),
       chunkPages.map((p) => p?.pageType ?? 'plain'),
       exportWidth,
       exportHeight,
@@ -153,24 +156,47 @@ async function renderNativePagesInChunks(options: {
       ),
     );
 
-    const overlayOffsets = chunkPageIndexes.map((index, offset) => overlayPageIndexes.has(index) ? offset : -1)
+    const overlayOffsets = chunkPageIndexes.map((index, offset) => layerBoundaries.has(index) ? offset : -1)
       .filter(offset => offset >= 0);
-    const inkUris = overlayOffsets.length ? await batchExportPages(
+    const inkUris = Platform.OS !== 'ios' && overlayOffsets.length ? await batchExportPages(
       overlayOffsets.map(offset => inkPayloads[offset]),
       overlayOffsets.map(() => 'pdf'),
       exportWidth, exportHeight, EXPORT_SCALE, undefined,
       overlayOffsets.map(offset => getPdfPageIndex(chunkPages[offset], chunkPageIndexes[offset])),
     ) : [];
     const inkByOffset = new Map(overlayOffsets.map((offset, index) => [offset, inkUris[index]]));
+    const groupedInk = new Map<number, (string | null)[]>();
+    if (Platform.OS === 'ios') {
+      for (const offset of overlayOffsets) {
+        const boundaries = layerBoundaries.get(chunkPageIndexes[offset])!;
+        const groups = await splitProjectedPageByLayers(inkPayloads[offset], boundaries);
+        if (groups.length !== boundaries.length + 1) throw new Error('Native export returned an invalid layer count');
+        const result: (string | null)[] = groups.map(() => null);
+        const nonempty = groups.map((payload, index) => ({ payload, index }))
+          .filter(({payload}) => Object.keys(JSON.parse(payload).pages ?? {}).length > 0);
+        for (let first = 0; first < nonempty.length; first += batchSize) {
+          const group = nonempty.slice(first, first + batchSize);
+          const uris = await batchExportPages(group.map(item => item.payload), group.map(() => 'pdf'),
+            exportWidth, exportHeight, EXPORT_SCALE, undefined,
+            group.map(() => getPdfPageIndex(chunkPages[offset], chunkPageIndexes[offset])));
+          for (let i = 0; i < group.length; i++) {
+            if (!uris[i]) throw new Error(`Native export omitted ink for page ${chunkPageIndexes[offset] + 1}`);
+            result[group[i].index] = uris[i];
+          }
+        }
+        groupedInk.set(offset, result);
+      }
+    }
 
     for (let offset = 0; offset < chunkPageIndexes.length; offset += 1) {
       const uri = pngUris[offset];
       if (typeof uri === 'string' && uri.length > 0) {
         const ink = inkByOffset.get(offset);
-        if (overlayPageIndexes.has(chunkPageIndexes[offset]) && !ink) {
+        if (Platform.OS !== 'ios' && layerBoundaries.has(chunkPageIndexes[offset]) && !ink) {
           throw new Error(`Native export omitted ink for page ${chunkPageIndexes[offset] + 1}`);
         }
-        rendered.set(chunkPageIndexes[offset], { background: uri, ink });
+        rendered.set(chunkPageIndexes[offset], { background: uri, ink, inkGroups: groupedInk.get(offset),
+          boundaries: layerBoundaries.get(chunkPageIndexes[offset]) });
       }
     }
 
@@ -188,13 +214,13 @@ async function collectExportImages(options: {
   exportWidth: number;
   exportHeight: number;
   pdfBackgroundUri?: string | null;
-  overlayPageIndexes: Set<number>;
+  layerBoundaries: Map<number, number[]>;
 }): Promise<RenderedPage[]> {
-  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, overlayPageIndexes } = options;
+  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, layerBoundaries } = options;
   // Saved thumbnails may omit ink owned by a neighboring page. Always render
   // the canonical document, in bounded batches, for the exported PDF.
   const rendered = await renderNativePagesInChunks({
-    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, overlayPageIndexes,
+    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, layerBoundaries,
     batchSize: DEFAULT_NATIVE_BATCH_SIZE,
   });
   return pageIndexes.map(index => {
@@ -238,8 +264,9 @@ export async function exportNotebookAsPdf(
     const exportHeight = Math.round(NOTE_PAGE_HEIGHT * nativeScale);
     const pageCount = data.pages.length;
     const indexedAssets = indexAssetsByPage(data.pages, NOTE_PAGE_HEIGHT);
-    const overlayPageIndexes = new Set(indexedAssets.flatMap((page, index) =>
-      (page.insertedElements?.length || page.textBoxes?.length) ? [index] : []));
+    const layerBoundaries = new Map(indexedAssets.flatMap((page, index) =>
+      (page.insertedElements?.length || page.textBoxes?.length)
+        ? [[index, overlayLayerBoundaries(page.insertedElements, page.textBoxes)] as const] : []));
 
     for (let start = 0; start < pageCount; start += PRINT_PASS_PAGES) {
       const pageIndexes = Array.from(
@@ -252,7 +279,7 @@ export async function exportNotebookAsPdf(
         exportWidth,
         exportHeight,
         pdfBackgroundUri,
-        overlayPageIndexes,
+        layerBoundaries,
       });
       if (rasterUris.length !== pageIndexes.length) {
         return {
