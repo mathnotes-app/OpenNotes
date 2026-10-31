@@ -77,6 +77,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
             -collect-test-diagnostics never
       - name: Record repeated native zoom interactions
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
         run: |
           simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
           xcrun simctl io "$simulator_id" recordVideo "$RUNNER_TEMP/zoom-interactions.mp4" > "$RUNNER_TEMP/zoom-recording.log" 2>&1 &
@@ -100,6 +101,18 @@ jobs:
         run: |
           python3 scripts/ci/collect-canvas-audits.py "$RUNNER_TEMP/canvas-audit-reports"
           node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
+      - name: Preserve initial interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-initial-interaction-audit
+          path: |
+            /tmp/opennotes-ui-deriveddata/Logs/Test
+            ${{ runner.temp }}/canvas-audit-reports
+            ${{ runner.temp }}/zoom-interactions.mp4
+            ${{ runner.temp }}/zoom-recording.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Profile failed native workloads
         if: ${{ failure() && (steps.interaction_workloads.outcome == 'failure' || (steps.interaction_workloads.outcome == 'success' && steps.canvas_budgets.outcome == 'failure')) }}
         run: |
