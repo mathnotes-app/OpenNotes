@@ -11,9 +11,6 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     if community.waitForExistence(timeout: 2) { community.tap() }
     tap(app, "note-menu-audit-cross-page")
     tap(app, "Choose cover")
-    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-    let allow = springboard.buttons["Allow Full Access"]
-    if allow.waitForExistence(timeout: 4) { allow.tap() }
     let photo = app.collectionViews.cells.firstMatch
     XCTAssertTrue(photo.waitForExistence(timeout: 20), "Photo picker must show the seeded image")
     photo.tap()
