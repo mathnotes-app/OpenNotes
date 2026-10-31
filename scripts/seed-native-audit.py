@@ -112,6 +112,29 @@ catalog['notes'] = [note for note in catalog['notes'] if note['id'] != text_id]
 catalog['notes'].append({'id': text_id, 'title': 'Audit crossing text', 'folderId': None,
     'createdAt': now, 'updatedAt': now, 'backgroundType': 'plain', 'pdfUri': None, 'thumbnailUri': None})
 catalog.setdefault('deletedNoteIds', {}).pop(text_id, None)
+# Editable strokes with dense, overlapping eraser history exercise the
+# background mask optimization without relying on a user's notebook.
+eraser_id = 'audit-eraser-history'
+eraser_payload = bytearray(struct.pack('<II', 4, 12))
+for stroke in range(12):
+    eraser_payload += struct.pack('<BIfBI', 0, 0xff172033, 5 * scale, 255, 40)
+    y = 100 + stroke * 65
+    for point in range(40):
+        eraser_payload += struct.pack('<ffffff', (50 + point * 17) * scale, y * scale,
+                                      .75, 0, math.pi / 2, 5 * scale)
+    eraser_payload += struct.pack('<IfI', 0, 1, 3) + b'pen' + struct.pack('<I', 300)
+    for point in range(300):
+        eraser_payload += struct.pack('<fff', (300 + 35 * math.sin(point * .12)) * scale,
+                                      (y + 12 * math.cos(point * .12)) * scale, 6 * scale)
+eraser_ink = json.dumps({'pages': {'0': base64.b64encode(eraser_payload).decode()}}, separators=(',', ':'))
+eraser_body = {'version': '1.0', 'originalCanvasWidth': width, 'pages': [
+    {'id': 'audit-eraser-page', 'title': 'Page 1', 'rotation': 0, 'data': eraser_ink,
+     'textBoxes': [], 'insertedElements': []}]}
+(bodies / f'{eraser_id}.body').write_text(json.dumps(eraser_body))
+catalog['notes'] = [note for note in catalog['notes'] if note['id'] != eraser_id]
+catalog['notes'].append({'id': eraser_id, 'title': 'Audit eraser history', 'folderId': None,
+    'createdAt': now, 'updatedAt': now, 'backgroundType': 'plain', 'pdfUri': None, 'thumbnailUri': None})
+catalog.setdefault('deletedNoteIds', {}).pop(eraser_id, None)
 # Structurally valid notebook with invalid native drawing bytes. Loading must
 # show recovery controls without saving blank content over the original file.
 invalid_id = 'audit-invalid-native-payload'

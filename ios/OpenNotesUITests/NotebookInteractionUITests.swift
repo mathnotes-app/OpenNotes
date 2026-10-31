@@ -2,6 +2,48 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testDenseEraserHistoryRemainsEditable() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-eraser-history")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let enable = element(app, "Enable finger drawing")
+    if enable.exists { enable.tap() }
+    tap(app, "tool-crayon")
+    let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.65))
+    let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.65))
+    let rect = CGRect(x: viewport.frame.minX + viewport.frame.width * 0.2,
+                      y: viewport.frame.minY + viewport.frame.height * 0.64,
+                      width: viewport.frame.width * 0.55, height: 25)
+    let before = app.screenshot().image
+    start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: rect), 20)
+    tap(app, "Undo")
+    XCTAssertLessThan(changedInkPixels(before, app.screenshot().image, rect: rect), 20)
+    tap(app, "Redo")
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: rect), 20)
+    let withInk = app.screenshot().image
+    tap(app, "tool-eraser")
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.62)).press(forDuration: 0.05,
+      thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.68)),
+      withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertGreaterThan(changedInkPixels(withInk, app.screenshot().image, rect: rect), 20)
+    tap(app, "Undo")
+    XCTAssertLessThan(changedInkPixels(withInk, app.screenshot().image, rect: rect), 20)
+    tap(app, "Redo")
+    XCTAssertGreaterThan(changedInkPixels(withInk, app.screenshot().image, rect: rect), 20)
+    tap(app, "Library")
+    XCTAssertTrue(element(app, "note-audit-eraser-history").waitForExistence(timeout: 20))
+    app.terminate(); launchPrepared(app)
+    tap(app, "note-audit-eraser-history")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    assertDenseInkVisible(app, context: "Eraser history survives reopening")
+  }
+
   func testChoosePhotoCover() {
     NativeCanvasAudit.useRunLoopQuiescence()
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
