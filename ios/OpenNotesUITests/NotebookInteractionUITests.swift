@@ -2,6 +2,54 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testPreferencesAndReturnToPen() {
+    NativeCanvasAudit.useRunLoopQuiescence()
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let community = app.buttons["Not now"]
+    if community.waitForExistence(timeout: 2) { community.tap() }
+    tap(app, "Settings")
+    tap(app, "appearance-dark")
+    let returnToPen = element(app, "return-to-pen")
+    XCTAssertTrue(returnToPen.waitForExistence(timeout: 10))
+    if (returnToPen.value as? String) != "1" { returnToPen.tap() }
+    let holdToShape = element(app, "hold-to-shape")
+    if (holdToShape.value as? String) != "0" { holdToShape.tap() }
+    tap(app, "library-layout-columns")
+    tap(app, "Done")
+    app.terminate()
+    launchPrepared(app)
+    tap(app, "Settings")
+    XCTAssertEqual(element(app, "return-to-pen").value as? String, "1")
+    XCTAssertEqual(element(app, "hold-to-shape").value as? String, "0")
+    tap(app, "Done")
+    XCTAssertTrue(element(app, "All notes").waitForExistence(timeout: 10))
+    tap(app, "note-audit-cross-page")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    let enableFinger = element(app, "Enable finger drawing")
+    if enableFinger.exists { enableFinger.tap() }
+    tap(app, "tool-eraser")
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.4)).press(forDuration: 0.05,
+      thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.4)),
+      withVelocity: .slow, thenHoldForDuration: 0.1)
+    XCTAssertTrue(element(app, "tool-pen").waitForExistence(timeout: 10))
+    XCTAssertTrue(element(app, "tool-pen").isSelected, "The pen should be selected after an eraser stroke")
+    tap(app, "tool-pen")
+    let slider = element(app, "tool-width-slider")
+    XCTAssertTrue(slider.waitForExistence(timeout: 10))
+    slider.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.5)).tap()
+    attach(app, "Tool width slider in dark appearance")
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.8)).tap()
+    tap(app, "editor-preferences")
+    tap(app, "appearance-system")
+    element(app, "return-to-pen").tap()
+    element(app, "hold-to-shape").tap()
+    tap(app, "library-layout-grid")
+    tap(app, "Done")
+  }
+
   func testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

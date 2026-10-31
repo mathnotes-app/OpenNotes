@@ -21,6 +21,7 @@ export interface EditorHeaderProps {
   onRename: () => void;
   onTogglePageSidebar: () => void;
   onExport: () => void;
+  onPreferences: () => void;
 }
 
 export function EditorHeader({
@@ -34,6 +35,7 @@ export function EditorHeader({
   onRename,
   onTogglePageSidebar,
   onExport,
+  onPreferences,
 }: EditorHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -79,11 +81,16 @@ export function EditorHeader({
             ]}
             numberOfLines={1}
           >
-            {t.editor.pageStatus(currentPage + 1, pageCount, statusLabel(status))}
+            {t.preferences.pagePosition(currentPage + 1, pageCount)}
+            {status === 'error' ? ` · ${t.editor.statusError}` : ''}
           </Text>
         </Pressable>
 
         <View style={styles.rightActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.title}
+            testID="editor-preferences" onPress={onPreferences} hitSlop={10} style={styles.iconButton}>
+            <Ionicons name="settings-outline" size={22} color={theme.colors.accent} />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t.editor.pagesA11y}
@@ -121,21 +128,6 @@ export function EditorHeader({
       </View>
     </View>
   );
-}
-
-function statusLabel(status: AutosaveStatus): string {
-  switch (status) {
-    case 'idle':
-      return t.editor.statusReady;
-    case 'pending':
-      return t.editor.statusPending;
-    case 'saving':
-      return t.editor.statusSaving;
-    case 'saved':
-      return t.editor.statusSaved;
-    case 'error':
-      return t.editor.statusError;
-  }
 }
 
 const styles = StyleSheet.create({

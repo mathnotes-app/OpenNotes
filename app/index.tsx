@@ -21,11 +21,15 @@ import { CreateNoteBackgroundSheet } from '../src/components/library/CreateNoteB
 import { OnboardingExperience } from '../src/components/onboarding/OnboardingExperience';
 import { CommunityInviteSheet } from '../src/components/library/CommunityInviteSheet';
 import { OpenNotesSheet } from '../src/components/library/OpenNotesSheet';
+import { PreferencesSheet } from '../src/components/ui/PreferencesSheet';
 import { LibrarySection } from '../src/components/library/LibrarySection';
+import { LibraryColumns, type LibrarySelection } from '../src/components/library/LibraryColumns';
 import { useOnboarding } from '../src/hooks/useOnboarding';
 import { useBackup } from '../src/hooks/useBackup';
 import { useLibrarySupport } from '../src/hooks/useLibrarySupport';
+import { useNoteCover } from '../src/hooks/useNoteCover';
 import { useTheme } from '../src/hooks/useTheme';
+import { usePreferences } from '../src/hooks/Preferences';
 import { spacing } from '../src/theme/spacing';
 import {
   createNote,
@@ -46,6 +50,7 @@ import { t } from '../src/i18n';
 
 type Action =
   | { kind: 'newItem' }
+  | { kind: 'preferences' }
   | { kind: 'openNotes' }
   | { kind: 'community' }
   | { kind: 'createNoteBackground' }
@@ -58,11 +63,13 @@ type Action =
 
 export default function LibraryScreen() {
   const theme = useTheme();
+  const { libraryLayout } = usePreferences();
   const router = useRouter();
   const [notes, setNotes] = useState<NoteMetadata[]>([]);
   const [folders, setFolders] = useState<FolderMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<Action | null>(null);
+  const [selection, setSelection] = useState<LibrarySelection>({ kind: 'all' });
   const creatingNoteRef = useRef(false);
   const onboarding = useOnboarding();
 
@@ -75,6 +82,7 @@ export default function LibraryScreen() {
     setFolders(allFolders);
     setLoading(false);
   }, []);
+  const { chooseCover, removeCover } = useNoteCover(refresh);
 
   useEffect(() => {
     void refresh();
@@ -112,6 +120,11 @@ export default function LibraryScreen() {
         .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
     [notes],
   );
+  const sortedNotes = useMemo(() => [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), [notes]);
+  useEffect(() => {
+    if (selection.kind === 'folder' && !loading && !folders.some(folder => folder.id === selection.id))
+      setSelection({ kind: 'all' });
+  }, [folders, loading, selection]);
   const noteCountByFolder = useMemo(() => {
     const map = new Map<string, number>();
     for (const n of notes) {
@@ -147,7 +160,7 @@ export default function LibraryScreen() {
     try {
       if (backgroundType !== 'pdf') {
         const meta = await createNote({
-          folderId: null,
+          folderId: libraryLayout === 'columns' && selection.kind === 'folder' ? selection.id : null,
           backgroundType,
           title: title.trim() || undefined,
         });
@@ -155,7 +168,7 @@ export default function LibraryScreen() {
         return;
       }
 
-      const meta = await createPdfNoteFromPicker({ folderId: null, title });
+      const meta = await createPdfNoteFromPicker({ folderId: libraryLayout === 'columns' && selection.kind === 'folder' ? selection.id : null, title });
       if (meta) {
         openNote(meta.id);
       }
@@ -165,7 +178,7 @@ export default function LibraryScreen() {
     } finally {
       creatingNoteRef.current = false;
     }
-  }, [openNote]);
+  }, [openNote, libraryLayout, selection]);
 
   const handleCreateFolder = useCallback(() => {
     setAction({ kind: 'createFolder' });
@@ -246,6 +259,11 @@ export default function LibraryScreen() {
         title="OpenNotes"
         rightActions={[
           {
+            key: 'preferences', icon: 'settings-outline',
+            accessibilityLabel: t.preferences.title,
+            onPress: () => setAction({ kind: 'preferences' }),
+          },
+          {
             key: 'openNotes',
             icon: 'heart-outline',
             accessibilityLabel: t.library.supportA11y,
@@ -257,6 +275,10 @@ export default function LibraryScreen() {
         <View style={styles.loader}>
           <ActivityIndicator color={theme.colors.accent} />
         </View>
+      ) : libraryLayout === 'columns' ? (
+        <LibraryColumns folders={sortedFolders} notes={sortedNotes} selection={selection} onSelect={setSelection}
+          onOpenNote={note => openNote(note.id)} onNoteMenu={note => setAction({ kind: 'noteMenu', note })}
+          onFolderMenu={folder => setAction({ kind: 'folderMenu', folder })} />
       ) : sortedFolders.length === 0 && rootNotes.length === 0 ? (
         <EmptyState
           title={t.library.emptyTitle}
@@ -326,6 +348,8 @@ export default function LibraryScreen() {
         onToggleBackup={toggleBackup}
       />
 
+      <PreferencesSheet visible={action?.kind === 'preferences'} onClose={() => setAction(null)} />
+
       <CommunityInviteSheet
         visible={action?.kind === 'community'}
         onClose={() => void dismissCommunity()}
@@ -369,6 +393,8 @@ export default function LibraryScreen() {
         actions={
           action?.kind === 'noteMenu'
             ? [
+                { key: 'cover', label: t.preferences.chooseCover, onPress: () => chooseCover(action.note) },
+                ...(action.note.customCoverUri ? [{ key: 'removeCover', label: t.preferences.removeCover, onPress: () => void removeCover(action.note) }] : []),
                 {
                   key: 'rename',
                   label: t.common.rename,

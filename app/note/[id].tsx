@@ -43,10 +43,12 @@ import {
 } from '../../src/components/editor/FloatingToolbar';
 import { PageSidebar } from '../../src/components/editor/PageSidebar';
 import { ToolSettingsPopover } from '../../src/components/editor/ToolSettingsPopover';
+import { PreferencesSheet } from '../../src/components/ui/PreferencesSheet';
 import { ItemActionsMenu } from '../../src/components/library/ItemActionsMenu';
 import { RenameDialog } from '../../src/components/library/RenameDialog';
 import { OverlayLayer, type OverlaySelection } from '../../src/components/editor/OverlayLayer';
 import { useTheme } from '../../src/hooks/useTheme';
+import { usePreferences } from '../../src/hooks/Preferences';
 import { useToolState } from '../../src/hooks/useToolState';
 import { useAutosave, type AutosaveStatus } from '../../src/hooks/useAutosave';
 import { useViewportTransformStore } from '../../src/hooks/useViewportTransform';
@@ -65,6 +67,7 @@ import {
 import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
+import { insertImagePosition } from '../../src/utils/insertImagePosition';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
 import { t } from '../../src/i18n';
@@ -79,6 +82,7 @@ const FINGER_DRAWING_PREF_KEY = 'opennotes.editor.fingerDrawingEnabled';
 
 type EditorAction =
   | { kind: 'insertImage' }
+  | { kind: 'preferences' }
   | { kind: 'rename' };
 
 interface PageOverlayState {
@@ -193,7 +197,8 @@ export default function NoteScreen() {
     anchor: ToolbarButtonAnchor;
   } | null>(null);
 
-  const { toolState, setToolState, selectTool, toolColors } = useToolState();
+  const { toolState, setToolState, selectTool, selectToolIfActive, toolColors } = useToolState();
+  const { returnToPen, holdToShape } = usePreferences();
   const { store } = useViewportTransformStore();
 
   const safeStatusChange = useCallback((next: AutosaveStatus) => {
@@ -546,8 +551,7 @@ export default function NoteScreen() {
 
   const applyInsertedImage = useCallback(
     (picked: PickedImageResult) => {
-      const pageIdx = Math.min(currentPageIndex, enginePages.length - 1);
-      if (pageIdx < 0) return;
+      if (enginePages.length === 0) return;
       const aspect = picked.width / Math.max(1, picked.height);
       const maxDim = 360;
       let w = picked.width;
@@ -560,11 +564,13 @@ export default function NoteScreen() {
         h = maxDim;
         w = h * aspect;
       }
+      const { pageIndex: pageIdx, x, y } = insertImagePosition(store.getSnapshot(), PAGE_WIDTH, PAGE_HEIGHT,
+        enginePages.length, CONTENT_PADDING, w, h, currentPageIndex);
       const element: InsertedElement = {
         id: insertedElementId(),
         type: 'image',
-        x: Math.max(0, (PAGE_WIDTH - w) / 2),
-        y: Math.max(0, (PAGE_HEIGHT - h) / 2),
+        x,
+        y,
         width: w,
         height: h,
         aspectRatio: aspect,
@@ -585,7 +591,7 @@ export default function NoteScreen() {
       }));
       setSelection({ type: 'image', pageIndex: pageIdx, id: element.id });
     },
-    [currentPageIndex, enginePages.length, mutateOverlay],
+    [currentPageIndex, enginePages.length, mutateOverlay, store],
   );
 
   const handleInsertFromLibrary = useCallback(async () => {
@@ -934,6 +940,7 @@ export default function NoteScreen() {
         onRename={() => setAction({ kind: 'rename' })}
         onTogglePageSidebar={() => setIsPageSidebarOpen((value) => !value)}
         onExport={() => void handleExport()}
+        onPreferences={() => { setToolPopover(null); setAction({ kind: 'preferences' }); }}
       />
 
       <KeyboardAvoidingView
@@ -952,12 +959,16 @@ export default function NoteScreen() {
           pageWidth={PAGE_WIDTH}
           pageHeight={PAGE_HEIGHT}
           toolState={toolState}
+          holdToShapeEnabled={holdToShape}
           backgroundType={metadata?.backgroundType ?? 'plain'}
           pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
           fingerDrawingEnabled={fingerDrawingEnabled}
           onReady={handleCanvasReady}
           onError={handleCanvasLoadError}
           onDrawingChange={handleDrawingChange}
+          onStrokeEnd={tool => {
+            if (returnToPen && tool === 'eraser') selectToolIfActive('eraser', 'pen');
+          }}
           onExternalEdit={payload => history.handleHistoryDrawingChange({nativeEvent: {externalEdit: {payload}}})}
           onHistoryAction={historyAction => history.handleHistoryDrawingChange({nativeEvent: {historyAction}})}
           onCurrentPageChange={handleCurrentPageChange}
@@ -1034,6 +1045,8 @@ export default function NoteScreen() {
         onChange={handleChangeToolSettings}
         onClose={() => setToolPopover(null)}
       />
+
+      <PreferencesSheet visible={action?.kind === 'preferences'} onClose={() => setAction(null)} />
 
       <ItemActionsMenu
         visible={action?.kind === 'insertImage'}

@@ -8,26 +8,52 @@ import { typography } from '../../theme/typography';
 import { formatRelative } from '../../utils/relativeTime';
 import type { NoteMetadata } from '../../types/note';
 import { getNoteThumbnail } from '../../services/notesRepo';
+import { rebaseAppDocumentUri } from '../../utils/appDocumentUri';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface NoteCardProps {
   note: NoteMetadata;
   onPress: () => void;
   onLongPress: () => void;
   onMenuPress: () => void;
+  compact?: boolean;
 }
 
-export function NoteCard({ note, onPress, onLongPress, onMenuPress }: NoteCardProps) {
+export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = false }: NoteCardProps) {
   const theme = useTheme();
   const tileWidth = useLibraryTileWidth();
   const [cover, setCover] = useState<{ note: NoteMetadata; uri: string | null } | null>(null);
-  const thumbnailUri = cover?.note === note ? cover.uri : note.thumbnailUri;
+  const [failedCover, setFailedCover] = useState<string | null>(null);
+  const useCustomCover = Boolean(note.customCoverUri && failedCover !== note.customCoverUri);
+  const thumbnailUri = useCustomCover && note.customCoverUri
+    ? rebaseAppDocumentUri(note.customCoverUri, FileSystem.documentDirectory ?? '')
+    : cover?.note === note ? cover.uri : note.thumbnailUri;
   useEffect(() => {
     let active = true;
+    if (useCustomCover) return () => { active = false; };
     void getNoteThumbnail(note).then(uri => {
       if (active) setCover({ note, uri });
     });
     return () => { active = false; };
-  }, [note]);
+  }, [note, useCustomCover]);
+  const onCoverError = () => { if (useCustomCover && note.customCoverUri) setFailedCover(note.customCoverUri); };
+  if (compact) return (
+    <Pressable testID={`note-${note.id}`} onPress={onPress} onLongPress={onLongPress}
+      delayLongPress={350} style={({ pressed }) => [styles.compactRow, { borderBottomColor: theme.colors.divider, backgroundColor: pressed ? theme.colors.surfaceMuted : 'transparent' }]}>
+      <View style={[styles.compactThumbnail, { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider }]}>
+        {thumbnailUri ? <Image source={{ uri: thumbnailUri }} onError={onCoverError} style={styles.thumbnailImage} resizeMode="cover" />
+          : <Ionicons name="document-text-outline" size={23} color={theme.colors.textTertiary} />}
+      </View>
+      <View style={styles.compactCopy}>
+        <Text style={[typography.body, { color: theme.colors.text, fontWeight: '600' }]} numberOfLines={1}>{note.title || t.common.untitled}</Text>
+        <Text style={[typography.caption, { color: theme.colors.textTertiary }]} numberOfLines={1}>{formatRelative(note.updatedAt)}</Text>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.noteActions} hitSlop={8}
+        onPress={event => { event.stopPropagation(); onMenuPress(); }} style={styles.compactMenu}>
+        <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
+      </Pressable>
+    </Pressable>
+  );
   return (
     <Pressable
       testID={`note-${note.id}`}
@@ -54,6 +80,7 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress }: NoteCardPr
         {thumbnailUri ? (
           <Image
             source={{ uri: thumbnailUri }}
+            onError={onCoverError}
             style={styles.thumbnailImage}
             resizeMode="cover"
           />
@@ -180,6 +207,10 @@ function useLibraryTileWidth(): number {
 }
 
 const styles = StyleSheet.create({
+  compactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 70, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth },
+  compactThumbnail: { width: 40, height: 52, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  compactCopy: { flex: 1, gap: 4 },
+  compactMenu: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center' },
   tile: {
     flexShrink: 0,
   },

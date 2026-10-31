@@ -25,6 +25,16 @@ test('catalog reload preserves composed thumbnail versions and still accepts old
   assert.equal(restored.notes[1].thumbnailVersion, 1);
 });
 
+test('custom photo covers survive catalog serialization without replacing generated previews', () => {
+  const source = { version: 1, folders: [], notes: [
+    { id: 'cover', title: 'Covered', thumbnailUri: 'generated', thumbnailVersion: 1,
+      customCoverUri: 'file:///old/Documents/images/cover/photo.jpg' },
+  ] };
+  const restored = parseCatalog(JSON.stringify(parseCatalog(JSON.stringify(source))));
+  assert.equal(restored.notes[0].customCoverUri, 'file:///old/Documents/images/cover/photo.jpg');
+  assert.equal(restored.notes[0].thumbnailUri, 'generated');
+});
+
 function makeKv(initial = {}) {
   const map = new Map(Object.entries(initial));
   return {

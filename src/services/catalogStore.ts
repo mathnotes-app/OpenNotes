@@ -123,6 +123,7 @@ function normalizeNote(value: unknown): NoteMetadata | null {
     backgroundType,
     pdfUri: isNonEmptyString(v.pdfUri) ? v.pdfUri : null,
     thumbnailUri: isNonEmptyString(v.thumbnailUri) ? v.thumbnailUri : null,
+    ...(isNonEmptyString(v.customCoverUri) ? { customCoverUri: v.customCoverUri } : {}),
     ...(v.thumbnailVersion === 1 ? { thumbnailVersion: 1 } : {}),
   };
 }

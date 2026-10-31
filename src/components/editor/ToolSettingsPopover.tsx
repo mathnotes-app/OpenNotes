@@ -1,7 +1,8 @@
 import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
+  PanResponder,
   Pressable,
   StyleSheet,
   Text,
@@ -82,7 +83,7 @@ export function ToolSettingsPopover({
   const palette = toolType === 'highlighter' ? HIGHLIGHTER_COLORS : STROKE_COLORS;
   const [minWidth, maxWidth] = WIDTH_RANGE[toolType];
 
-  const estimatedHeight = 180;
+  const estimatedHeight = 90 + (descriptor.supportsColor ? 76 : 0) + (toolType === 'eraser' ? 48 : 0) + (descriptor.supportsWidth ? 88 : 0);
   let left = anchor.screenX + anchor.width / 2 - CARD_WIDTH / 2;
   let top = anchor.screenY + anchor.height + GAP_FROM_ANCHOR;
 
@@ -184,7 +185,7 @@ export function ToolSettingsPopover({
           ) : null}
 
           {descriptor.supportsWidth ? (
-            <WidthStops
+            <WidthControl
               value={width}
               min={minWidth}
               max={maxWidth}
@@ -198,7 +199,7 @@ export function ToolSettingsPopover({
   );
 }
 
-function WidthStops({
+function WidthControl({
   value,
   min,
   max,
@@ -211,14 +212,43 @@ function WidthStops({
   onChange: (v: number) => void;
   theme: ReturnType<typeof useTheme>;
 }) {
+  const [trackWidth, setTrackWidth] = useState(0);
+  const [preview, setPreview] = useState(value);
+  const latest = useRef({ min, max, trackWidth, onChange, preview, value });
+  latest.current = { min, max, trackWidth, onChange, preview, value };
+  const startX = useRef(0);
+  useEffect(() => { setPreview(value); }, [value, min, max]);
+  const positionToValue = (x: number) => {
+    const state = latest.current;
+    const fraction = Math.max(0, Math.min(1, (x - 12) / Math.max(1, state.trackWidth - 24)));
+    return Math.round((state.min + fraction * (state.max - state.min)) * 2) / 2;
+  };
+  const pan = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: event => {
+      startX.current = event.nativeEvent.locationX;
+      const next = positionToValue(startX.current);
+      latest.current.preview = next;
+      setPreview(next);
+    },
+    onPanResponderMove: (_event, gesture) => {
+      const next = positionToValue(startX.current + gesture.dx);
+      latest.current.preview = next;
+      setPreview(next);
+    },
+    onPanResponderRelease: () => latest.current.onChange(latest.current.preview),
+    onPanResponderTerminate: () => setPreview(latest.current.value),
+  }), []);
   const steps = 6;
   const stride = (max - min) / (steps - 1);
   const stops = Array.from({ length: steps }, (_, i) => Math.round(min + i * stride));
   const maxVisual = 28;
-  return (
+  const fraction = Math.max(0, Math.min(1, (preview - min) / Math.max(1, max - min)));
+  return <View>
     <View style={styles.sliderRow}>
       {stops.map((w) => {
-        const active = Math.abs(w - value) <= stride / 2;
+        const active = Math.abs(w - value) < 0.01;
         const t = (w - min) / Math.max(1, max - min);
         const size = 6 + t * maxVisual;
         return (
@@ -245,7 +275,20 @@ function WidthStops({
         );
       })}
     </View>
-  );
+    <View style={styles.widthLabel}>
+      <Text style={[typography.caption, { color: theme.colors.textSecondary }]}>{t.preferences.size}</Text>
+      <Text style={[typography.caption, { color: theme.colors.textSecondary }]}>{preview}</Text>
+    </View>
+    <View testID="tool-width-slider" accessibilityRole="adjustable" accessibilityLabel={t.preferences.size}
+      accessibilityValue={{ min, max, now: preview }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={({ nativeEvent }) => onChange(Math.max(min, Math.min(max, value + (nativeEvent.actionName === 'increment' ? 0.5 : -0.5))))}
+      onLayout={event => setTrackWidth(event.nativeEvent.layout.width)} {...pan.panHandlers} style={styles.sliderTouch}>
+      <View style={[styles.sliderTrack, { backgroundColor: theme.colors.divider }]} />
+      <View style={[styles.sliderFill, { width: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
+      <View style={[styles.sliderThumb, { left: Math.max(0, (trackWidth - 24) * fraction), backgroundColor: theme.colors.accent }]} />
+    </View>
+  </View>;
 }
 
 const styles = StyleSheet.create({
@@ -295,4 +338,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
   },
+  widthLabel: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  sliderTouch: { height: 40, justifyContent: 'center' },
+  sliderTrack: { position: 'absolute', left: 12, right: 12, height: 4, borderRadius: 2 },
+  sliderFill: { position: 'absolute', left: 12, height: 4, borderRadius: 2 },
+  sliderThumb: { position: 'absolute', width: 24, height: 24, borderRadius: 12 },
 });

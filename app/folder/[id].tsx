@@ -13,6 +13,7 @@ import { RenameDialog } from '../../src/components/library/RenameDialog';
 import { FolderPickerSheet } from '../../src/components/library/FolderPickerSheet';
 import { CreateNoteBackgroundSheet } from '../../src/components/library/CreateNoteBackgroundSheet';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useNoteCover } from '../../src/hooks/useNoteCover';
 import { spacing } from '../../src/theme/spacing';
 import {
   createNote,
@@ -59,6 +60,7 @@ export default function FolderScreen() {
     setAllFolders(folders);
     setLoading(false);
   }, [id]);
+  const { chooseCover, removeCover } = useNoteCover(refresh);
 
   useEffect(() => {
     void refresh();
@@ -193,6 +195,8 @@ export default function FolderScreen() {
         actions={
           action?.kind === 'noteMenu'
             ? [
+                { key: 'cover', label: t.preferences.chooseCover, onPress: () => chooseCover(action.note) },
+                ...(action.note.customCoverUri ? [{ key: 'removeCover', label: t.preferences.removeCover, onPress: () => void removeCover(action.note) }] : []),
                 {
                   key: 'rename',
                   label: t.common.rename,

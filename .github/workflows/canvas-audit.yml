@@ -72,6 +72,8 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testStrokeCrossesPageBoundary \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDenseInteractionAudit \
             -collect-test-diagnostics never
       - name: Verify persisted lecture content
         if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
