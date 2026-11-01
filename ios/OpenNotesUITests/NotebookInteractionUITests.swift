@@ -646,7 +646,12 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertEqual(asset.frame.minY - restoredBoundary.frame.midY, savedTop, accuracy: 3)
     attach(app, "Crossing asset survives full restart")
     tap(app, "Export")
-    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 30))
+    // iOS hosts the share sheet in a separate process which can populate its
+    // actions well after the PDF preview and container have appeared.
+    XCTAssertTrue(element(app, "ShareSheet.RemoteContainerView").waitForExistence(timeout: 30),
+      "Export must present the system share sheet")
+    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 60),
+      "The PDF share sheet must provide its actions")
     attach(app, "Crossing asset PDF export")
   }
 
