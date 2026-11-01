@@ -554,7 +554,14 @@ final class NotebookInteractionUITests: NotebookUITestCase {
       .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
     let asset = element(app, overlayID)
     XCTAssertTrue(asset.waitForExistence(timeout: 10))
-    let boundary = element(app, "ink-page-boundary-1").frame.midY
+    // The asset can be reported while its crossing is still at the bottom
+    // edge of the viewport, where the thin page boundary drops out of the
+    // accessibility snapshot. Bring it into view before measuring geometry.
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
+      .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)), withVelocity: .slow, thenHoldForDuration: 0.5)
+    let boundaryElement = element(app, "ink-page-boundary-1")
+    XCTAssertTrue(boundaryElement.waitForExistence(timeout: 10))
+    let boundary = boundaryElement.frame.midY
     XCTAssertLessThan(asset.frame.minY, boundary)
     XCTAssertGreaterThan(asset.frame.maxY, boundary)
     tap(app, "tool-select")
@@ -656,6 +663,9 @@ final class NotebookInteractionUITests: NotebookUITestCase {
       .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)),
         withVelocity: .slow, thenHoldForDuration: 0.5)
     XCTAssertTrue(asset.waitForExistence(timeout: 10))
+    viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.8))
+      .press(forDuration: 0.1, thenDragTo: viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.4)),
+        withVelocity: .slow, thenHoldForDuration: 0.5)
     let restoredBoundary = element(app, "ink-page-boundary-1")
     XCTAssertTrue(restoredBoundary.waitForExistence(timeout: 10))
     XCTAssertEqual(asset.frame.width, savedWidth, accuracy: 3)
