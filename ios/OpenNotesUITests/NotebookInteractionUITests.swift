@@ -313,8 +313,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
       "Saved crossing stroke must survive full application relaunch")
     attach(app, "Cross-page stroke after undo, redo, save and relaunch")
     tap(app, "Export")
-    let copy = element(app, "Copy")
-    XCTAssertTrue(copy.waitForExistence(timeout: 30), "Expected the generated PDF share sheet")
+    assertPDFShareSheet(app)
     attach(app, "Cross-page PDF export share sheet")
   }
 
@@ -400,7 +399,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
       "Newer ink must remain above the image")
     attach(app, "Ink above an image after reload")
     tap(app, "Export")
-    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 30), "Layered note must export successfully")
+    assertPDFShareSheet(app)
   }
 
   func testFingerTapSelectsImageWhilePenIsActive() {
@@ -514,7 +513,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertEqual(asset.frame.minY - element(app, "ink-page-boundary-1").frame.midY, savedTop, accuracy: 3)
     attach(app, "Rotated crop restored after restart")
     tap(app, "Export")
-    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 30))
+    assertPDFShareSheet(app)
   }
 
   func testCrossPageTextHistory() {
@@ -646,12 +645,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertEqual(asset.frame.minY - restoredBoundary.frame.midY, savedTop, accuracy: 3)
     attach(app, "Crossing asset survives full restart")
     tap(app, "Export")
-    // iOS hosts the share sheet in a separate process which can populate its
-    // actions well after the PDF preview and container have appeared.
-    XCTAssertTrue(element(app, "ShareSheet.RemoteContainerView").waitForExistence(timeout: 30),
-      "Export must present the system share sheet")
-    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 60),
-      "The PDF share sheet must provide its actions")
+    assertPDFShareSheet(app)
     attach(app, "Crossing asset PDF export")
   }
 

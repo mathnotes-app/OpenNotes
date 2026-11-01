@@ -21,6 +21,15 @@ class NotebookUITestCase: XCTestCase {
     item.tap()
   }
 
+  func assertPDFShareSheet(_ app: XCUIApplication) {
+    // The iOS share sheet is hosted in a separate process; its action list can
+    // populate after the container becomes visible on a busy simulator.
+    XCTAssertTrue(element(app, "ShareSheet.RemoteContainerView").waitForExistence(timeout: 30),
+      "Export must present the system share sheet")
+    XCTAssertTrue(element(app, "Copy").waitForExistence(timeout: 60),
+      "The PDF share sheet must provide its actions")
+  }
+
   func launchPrepared(_ app: XCUIApplication) {
     app.launchEnvironment["MOBILE_INK_AUDIT"] = "1"
     app.launchEnvironment["MOBILE_INK_AUDIT_SCENARIO"] = name
