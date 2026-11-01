@@ -53,6 +53,9 @@ test('saving uses a composed cover without flattening overlays into the note bod
   const original = body();
   const result = await h.saveNoteBody('note', original);
   assert.equal(result.ok, true);
+  assert.equal(h.note().thumbnailUri, ink);
+  assert.equal(h.note().thumbnailVersion, undefined);
+  assert.equal(await h.getNoteThumbnail(h.note()), composite);
   assert.equal(h.note().thumbnailUri, composite);
   assert.equal(h.note().thumbnailVersion, 1);
   assert.deepEqual(h.stored(), original);
@@ -70,6 +73,7 @@ test('thumbnail failure cannot fail a note save or discard its images', async ()
   const h = harness({ renderFails: true });
   assert.equal((await h.saveNoteBody('note', body())).ok, true);
   assert.equal(h.stored().pages[0].insertedElements[0].sourceUri, photo.sourceUri);
+  assert.equal(await h.getNoteThumbnail(h.note()), ink);
   assert.equal(h.note().thumbnailUri, ink);
   assert.notEqual(h.note().thumbnailVersion, 1);
 });
@@ -94,6 +98,7 @@ test('image-only saves compose the first page even when no ink preview exists', 
   const original = body();
   delete original.pages[0].previewUri;
   assert.equal((await h.saveNoteBody('note', original)).ok, true);
+  await h.getNoteThumbnail(h.note());
   assert.equal(h.note().thumbnailUri, composite);
   assert.equal(h.stored().pages[0].previewUri, undefined);
 });
@@ -103,15 +108,18 @@ test('saving an image-only edit uses the new overlay data instead of the previou
   const original = body();
   original.pages[0].insertedElements = [{ ...photo, x: 300 }];
   await h.saveNoteBody('note', original);
+  await h.getNoteThumbnail(h.note());
   assert.equal(h.note().thumbnailUri, composite);
 });
 
 test('deleting all overlays restores the original ink-only cover', async () => {
   const h = harness({ render: async page => page.insertedElements?.length ? composite : page.previewUri });
   await h.saveNoteBody('note', body());
+  await h.getNoteThumbnail(h.note());
   const original = body();
   original.pages[0].insertedElements = [];
   await h.saveNoteBody('note', original);
+  await h.getNoteThumbnail(h.note());
   assert.equal(h.note().thumbnailUri, ink);
 });
 
@@ -129,6 +137,63 @@ test('current thumbnail versions do not re-read or rewrite legacy bodies', async
   await h.updateMetadata('note', { thumbnailVersion: 1, thumbnailUri: composite });
   assert.equal(await h.getNoteThumbnail(h.note()), composite);
   assert.equal(h.reads(), 0);
+});
+
+test('a missing current-version thumbnail is regenerated', async () => {
+  const h = harness();
+  await h.updateMetadata('note', { thumbnailVersion: 1, thumbnailUri: null });
+  assert.equal(await h.getNoteThumbnail(h.note()), composite);
+  assert.equal(h.reads(), 1);
+});
+
+test('a new note without a saved body gets a blank page thumbnail', async () => {
+  const h = harness({ readKind: 'missing', render: async page => page.data === '{"pages":{}}' ? composite : null });
+  await h.updateMetadata('note', { thumbnailUri: null });
+  assert.equal(await h.getNoteThumbnail(h.note()), composite);
+});
+
+test('changing a page background regenerates its thumbnail', async () => {
+  const h = harness({ render: async (_page, background) => background === 'grid' ? composite : ink });
+  await h.updateMetadata('note', { thumbnailVersion: 1, thumbnailUri: ink });
+  await h.setNoteBackground('note', 'grid', null);
+  assert.equal(h.note().thumbnailVersion, undefined);
+  assert.equal(await h.getNoteThumbnail(h.note()), composite);
+});
+
+test('saving does not render thumbnails during drawing', async () => {
+  let renders = 0;
+  const h = harness({ render: async () => { renders++; return composite; } });
+  await h.saveNoteBody('note', body());
+  await h.saveNoteBody('note', body());
+  assert.equal(renders, 0);
+  await h.getNoteThumbnail(h.note());
+  assert.equal(renders, 1);
+});
+
+test('an in-flight repair cannot replace a newer save even if its timestamp matches', async () => {
+  let finishRender, startRender;
+  const started = new Promise(resolve => { startRender = resolve; });
+  const h = harness({ render: () => new Promise(resolve => { finishRender = resolve; startRender(); }) });
+  const prior = structuredClone(h.note());
+  const repairing = h.getNoteThumbnail(prior);
+  await started;
+  await h.saveNoteBody('note', body());
+  await h.updateMetadata('note', { updatedAt: prior.updatedAt });
+  finishRender(composite);
+  assert.equal(await repairing, ink);
+  assert.notEqual(h.note().thumbnailVersion, 1);
+});
+
+test('opening an editor cancels library thumbnail repairs without changing the note', async () => {
+  let finishRender, startRender;
+  const started = new Promise(resolve => { startRender = resolve; });
+  const h = harness({ render: () => new Promise(resolve => { finishRender = resolve; startRender(); }) });
+  const repairing = h.getNoteThumbnail(h.note());
+  await started;
+  h.cancelThumbnailRepairs();
+  finishRender(composite);
+  assert.equal(await repairing, ink);
+  assert.notEqual(h.note().thumbnailVersion, 1);
 });
 
 test('an old thumbnail repair cannot overwrite a newer note save', async () => {

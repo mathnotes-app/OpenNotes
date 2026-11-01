@@ -24,10 +24,12 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
   const tileWidth = useLibraryTileWidth();
   const [cover, setCover] = useState<{ note: NoteMetadata; uri: string | null } | null>(null);
   const [failedCover, setFailedCover] = useState<string | null>(null);
+  const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   const useCustomCover = Boolean(note.customCoverUri && failedCover !== note.customCoverUri);
-  const thumbnailUri = useCustomCover && note.customCoverUri
+  const requestedUri = useCustomCover && note.customCoverUri
     ? rebaseAppDocumentUri(note.customCoverUri, FileSystem.documentDirectory ?? '')
     : cover?.note === note ? cover.uri : note.thumbnailUri;
+  const thumbnailUri = !useCustomCover && requestedUri === failedThumbnail ? null : requestedUri;
   useEffect(() => {
     let active = true;
     if (useCustomCover) return () => { active = false; };
@@ -36,7 +38,12 @@ export function NoteCard({ note, onPress, onLongPress, onMenuPress, compact = fa
     });
     return () => { active = false; };
   }, [note, useCustomCover]);
-  const onCoverError = () => { if (useCustomCover && note.customCoverUri) setFailedCover(note.customCoverUri); };
+  const onCoverError = () => {
+    if (useCustomCover && note.customCoverUri) { setFailedCover(note.customCoverUri); return; }
+    if (!requestedUri || requestedUri === failedThumbnail) return;
+    setFailedThumbnail(requestedUri);
+    void getNoteThumbnail(note, true).then(uri => setCover({ note, uri }));
+  };
   if (compact) return (
     <View style={[styles.compactRow, { borderBottomColor: theme.colors.divider }]}>
     <Pressable testID={`note-${note.id}`} onPress={onPress} onLongPress={onLongPress}

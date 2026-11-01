@@ -102,11 +102,21 @@ function pixel(uri, x, y) {
   return [...lastRaster.pixels.subarray(offset, offset + 4)];
 }
 
-test('legacy ink-only previews are returned byte-for-byte without rendering', async () => {
+test('ink-only thumbnails are rendered from the saved page even without a preview', async () => {
   const h = harness();
-  assert.equal(await h.createPageThumbnail(page()), white);
-  assert.equal(h.nativeCalls.length, 0);
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, data: '{"pages":{"0":"ink"}}'}), 'lined'), white);
+  assert.equal(h.nativeCalls.length, 1);
+  assert.equal(h.nativeCalls[0][0][0], '{"pages":{"0":"ink"}}');
+  assert.equal(h.nativeCalls[0][1][0], 'lined');
   assert.equal(await h.createPageThumbnail(undefined), null);
+});
+
+test('PDF-only thumbnails render the specified page and source', async () => {
+  const h = harness();
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, pageType: 'pdf', pdfPageNumber: 3}),
+    'pdf', 'file:///document.pdf'), white);
+  assert.equal(h.nativeCalls[0][5], 'file:///document.pdf');
+  assert.equal(h.nativeCalls[0][6][0], 2);
 });
 
 test('a photo is visible at its page coordinates over the background', async () => {

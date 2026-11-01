@@ -5,7 +5,7 @@ import { createPromiseQueue } from '../utils/promiseQueue';
 import { PDFUtilsModule } from './pdfUtilsModule';
 import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../utils/visualLayerOrder';
 
-export const THUMBNAIL_VERSION = 3;
+export const THUMBNAIL_VERSION = 4;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const SCALE = 0.5;
@@ -62,7 +62,14 @@ async function composePageThumbnail(
     .sort((a, b) => finite(a.zIndex, 1) - finite(b.zIndex, 1)
       || finite(a.zIndex, 0) - finite(b.zIndex, 0));
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
-  if (!elements.length && !textBoxes.length) return page.previewUri ?? null;
+  if (!elements.length && !textBoxes.length) {
+    const [rendered] = await batchExportPages(
+      [page.data ?? '{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+    );
+    if (!rendered) throw new Error('Thumbnail page could not be rendered');
+    return rendered;
+  }
 
   let raster: string | undefined;
   const boundaries = overlayLayerBoundaries(elements, textBoxes);

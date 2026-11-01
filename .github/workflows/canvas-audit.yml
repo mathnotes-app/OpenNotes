@@ -91,6 +91,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testStrokeCrossesPageBoundary \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDenseEraserHistoryRemainsEditable \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testLibraryGeneratesMissingInkThumbnail \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageTextHistory \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testRotatedImageResizeAndCrop \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDrawingOverImageSurvivesUndoAndReload \

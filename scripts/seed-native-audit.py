@@ -146,6 +146,35 @@ catalog['notes'] = [note for note in catalog['notes'] if note['id'] != invalid_i
 catalog['notes'].append({'id': invalid_id, 'title': 'Audit invalid native payload', 'folderId': None,
     'createdAt': now, 'updatedAt': now, 'backgroundType': 'plain', 'pdfUri': None, 'thumbnailUri': None})
 catalog.setdefault('deletedNoteIds', {}).pop(invalid_id, None)
+# A PDF-only page with no cached preview exercises thumbnail regeneration.
+pdf_id = 'audit-pdf-thumbnail'
+pdf_dir = documents / 'pdfs'
+pdf_dir.mkdir(parents=True, exist_ok=True)
+pdf_path = pdf_dir / f'{pdf_id}.pdf'
+stream = b'0.15 0.45 0.85 rg 0 0 320 480 re f\n'
+objects = [b'<< /Type /Catalog /Pages 2 0 R >>',
+           b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+           b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 320 480] /Resources << >> /Contents 4 0 R >>',
+           b'<< /Length ' + str(len(stream)).encode() + b' >>\nstream\n' + stream + b'endstream']
+pdf = bytearray(b'%PDF-1.4\n')
+offsets = [0]
+for index, obj in enumerate(objects, 1):
+    offsets.append(len(pdf))
+    pdf += f'{index} 0 obj\n'.encode() + obj + b'\nendobj\n'
+xref = len(pdf)
+pdf += f'xref\n0 {len(offsets)}\n0000000000 65535 f \n'.encode()
+for offset in offsets[1:]: pdf += f'{offset:010d} 00000 n \n'.encode()
+pdf += f'trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode()
+pdf_path.write_bytes(pdf)
+pdf_body = {'version': '1.0', 'originalCanvasWidth': width, 'pages': [
+    {'id': 'audit-pdf-page', 'title': 'Page 1', 'rotation': 0,
+     'data': '{"pages":{}}', 'pageType': 'pdf', 'pdfPageNumber': 1,
+     'textBoxes': [], 'insertedElements': []}]}
+(bodies / f'{pdf_id}.body').write_text(json.dumps(pdf_body))
+catalog['notes'] = [note for note in catalog['notes'] if note['id'] != pdf_id]
+catalog['notes'].append({'id': pdf_id, 'title': 'Audit PDF thumbnail', 'folderId': None,
+    'createdAt': now, 'updatedAt': now, 'backgroundType': 'pdf', 'pdfUri': pdf_path.as_uri(), 'thumbnailUri': None})
+catalog.setdefault('deletedNoteIds', {}).pop(pdf_id, None)
 if catalog_path.exists():
     backup = catalog_path.with_suffix('.before-native-audit.json')
     if not backup.exists():

@@ -55,6 +55,7 @@ import { useToolState } from '../../src/hooks/useToolState';
 import { useAutosave, type AutosaveStatus } from '../../src/hooks/useAutosave';
 import { useViewportTransformStore } from '../../src/hooks/useViewportTransform';
 import {
+  cancelThumbnailRepairs,
   getNote,
   readNoteBody,
   renameNote,
@@ -889,6 +890,7 @@ export default function NoteScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      cancelThumbnailRepairs();
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
         void handleBack();
         return true;

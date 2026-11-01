@@ -2,6 +2,56 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testLibraryGeneratesMissingInkThumbnail() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    for id in ["audit-cross-page", "audit-pdf-thumbnail"] {
+      let note = element(app, "note-\(id)")
+      XCTAssertTrue(note.waitForExistence(timeout: 20))
+      for _ in 0..<6 {
+        if note.isHittable { break }
+        app.swipeUp()
+      }
+      XCTAssertTrue(note.isHittable)
+      let rendered = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+        let image = app.screenshot().image
+        return id == "audit-pdf-thumbnail"
+          ? self.bluePixels(image, in: note.frame) > 1000
+          : contrastingInkPixels(image, rect: note.frame) > 100
+      }, object: nil)
+      XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 45), .completed,
+                     "A saved page without a preview must display its ink or PDF thumbnail")
+    }
+  }
+
+  private func bluePixels(_ image: UIImage, in rect: CGRect) -> Int {
+    guard let source = image.cgImage else { return 0 }
+    let width = source.width, height = source.height
+    var pixels = [UInt8](repeating: 0, count: width * height * 4)
+    return pixels.withUnsafeMutableBytes { bytes in
+      guard let context = CGContext(data: bytes.baseAddress, width: width, height: height, bitsPerComponent: 8,
+        bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return 0 }
+      context.draw(source, in: CGRect(x: 0, y: 0, width: width, height: height))
+      let scale = CGFloat(width) / image.size.width
+      let area = rect.applying(CGAffineTransform(scaleX: scale, y: scale))
+        .intersection(CGRect(x: 0, y: 0, width: width, height: height))
+      guard !area.isNull, !area.isEmpty else { return 0 }
+      let data = bytes.bindMemory(to: UInt8.self)
+      var count = 0
+      for y in Int(area.minY)..<Int(area.maxY) {
+        for x in Int(area.minX)..<Int(area.maxX) {
+          let i = (y * width + x) * 4
+          if data[i + 2] > 150 && Int(data[i + 2]) > Int(data[i]) * 2 { count += 1 }
+        }
+      }
+      return count
+    }
+  }
+
   func testSwitchingToEraserDoesNotShowStaleCursor() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
