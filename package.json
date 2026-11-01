@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@mathnotes/mobile-ink": "file:vendor/mathnotes-mobile-ink-testflight-575ca63.tgz",
+    "@mathnotes/mobile-ink": "file:vendor/mathnotes-mobile-ink-testflight-c64ad4e.tgz",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.2.12",
     "expo": "54.0.34",
