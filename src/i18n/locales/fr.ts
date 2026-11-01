@@ -143,6 +143,11 @@ export const fr: Strings = {
     returnToPenDetail: "Revenir au stylo après chaque coup de gomme.",
     size: "Taille",
   },
+  mathNotes: {
+    title: "Découvrir MathNotes",
+    description: "Une application de notes de maths distincte avec des offres payantes facultatives.",
+    dismiss: "Fermer la suggestion MathNotes",
+  },
   sheet: {
     title: 'Les notes libres ont besoin d’un coup de main.',
     subtitle: 'Tout ici est facultatif. Écrire des notes n’en dépend jamais.',

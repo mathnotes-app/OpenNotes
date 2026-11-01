@@ -143,6 +143,11 @@ export const pt: Strings = {
     returnToPenDetail: "Voltar à caneta após cada traço de borracha.",
     size: "Tamanho",
   },
+  mathNotes: {
+    title: "Conheça o MathNotes",
+    description: "Um aplicativo separado para notas de matemática com planos pagos opcionais.",
+    dismiss: "Dispensar sugestão do MathNotes",
+  },
   sheet: {
     title: 'Notas livres precisam de uma ajudinha.',
     subtitle: 'Tudo aqui é opcional. Escrever notas nunca depende disso.',

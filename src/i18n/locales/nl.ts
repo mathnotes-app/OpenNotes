@@ -143,6 +143,11 @@ export const nl: Strings = {
     returnToPenDetail: "Ga na elke wisbeweging terug naar de pen.",
     size: "Grootte",
   },
+  mathNotes: {
+    title: "Ontdek MathNotes",
+    description: "Een aparte app voor wiskundenotities met optionele betaalde abonnementen.",
+    dismiss: "MathNotes-suggestie sluiten",
+  },
   sheet: {
     title: 'Vrije notities hebben een beetje hulp nodig.',
     subtitle: 'Alles hier is optioneel. Notities schrijven hangt er nooit van af.',

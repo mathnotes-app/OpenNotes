@@ -21,6 +21,7 @@ import { CreateNoteBackgroundSheet } from '../src/components/library/CreateNoteB
 import { OnboardingExperience } from '../src/components/onboarding/OnboardingExperience';
 import { CommunityInviteSheet } from '../src/components/library/CommunityInviteSheet';
 import { OpenNotesSheet } from '../src/components/library/OpenNotesSheet';
+import { MathNotesInvitation } from '../src/components/library/MathNotesInvitation';
 import { PreferencesSheet } from '../src/components/ui/PreferencesSheet';
 import { LibrarySection } from '../src/components/library/LibrarySection';
 import { LibraryColumns, type LibrarySelection } from '../src/components/library/LibraryColumns';
@@ -271,6 +272,9 @@ export default function LibraryScreen() {
           },
         ]}
       />
+      {!loading && onboarding.ready && !onboarding.visible ? (
+        <MathNotesInvitation noteCount={notes.length} />
+      ) : null}
       {loading || !onboarding.ready ? (
         <View style={styles.loader}>
           <ActivityIndicator color={theme.colors.accent} />

@@ -142,6 +142,11 @@ export const zhHans: Strings = {
     returnToPenDetail: "每次擦除后切回笔。",
     size: "大小",
   },
+  mathNotes: {
+    title: "了解 MathNotes",
+    description: "独立的数学笔记应用，提供可选付费方案。",
+    dismiss: "关闭 MathNotes 推荐",
+  },
   sheet: {
     title: '自由的笔记，需要一点支持。',
     subtitle: '这里的一切都是可选的。写笔记从不依赖于此。',

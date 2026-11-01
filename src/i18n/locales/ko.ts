@@ -143,6 +143,11 @@ export const ko: Strings = {
     returnToPenDetail: "지우개를 사용할 때마다 펜으로 돌아갑니다.",
     size: "크기",
   },
+  mathNotes: {
+    title: "MathNotes 살펴보기",
+    description: "선택형 유료 요금제가 있는 별도의 수학 노트 앱입니다.",
+    dismiss: "MathNotes 추천 닫기",
+  },
   sheet: {
     title: '자유로운 노트에는 작은 도움이 필요합니다.',
     subtitle: '여기 있는 것은 모두 선택 사항입니다. 노트 쓰기는 이것에 좌우되지 않습니다.',

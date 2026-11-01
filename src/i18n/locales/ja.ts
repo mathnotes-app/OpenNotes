@@ -143,6 +143,11 @@ export const ja: Strings = {
     returnToPenDetail: "消す操作のたびにペンに戻します。",
     size: "サイズ",
   },
+  mathNotes: {
+    title: "MathNotes を見る",
+    description: "数学ノート用の別アプリです。有料プランは任意です。",
+    dismiss: "MathNotes の案内を閉じる",
+  },
   sheet: {
     title: '自由なノートには、少しの支えが必要です。',
     subtitle: 'ここにあるものはすべて任意です。ノートを書くことには一切影響しません。',

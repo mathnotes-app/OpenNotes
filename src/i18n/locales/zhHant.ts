@@ -142,6 +142,11 @@ export const zhHant: Strings = {
     returnToPenDetail: "每次擦除後切回筆。",
     size: "大小",
   },
+  mathNotes: {
+    title: "了解 MathNotes",
+    description: "獨立的數學筆記 App，提供選用的付費方案。",
+    dismiss: "關閉 MathNotes 推薦",
+  },
   sheet: {
     title: '自由的筆記，需要一點支持。',
     subtitle: '這裡的一切都是選擇性的。寫筆記從不倚賴這些。',

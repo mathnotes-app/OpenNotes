@@ -143,6 +143,11 @@ export const en = {
     returnToPenDetail: "Switch back to the pen after each eraser stroke.",
     size: "Size",
   },
+  mathNotes: {
+    title: "Explore MathNotes",
+    description: "A separate math notes app with optional paid plans.",
+    dismiss: "Dismiss MathNotes suggestion",
+  },
   sheet: {
     title: 'Free notes need a little help.',
     subtitle: 'Everything here is optional. Writing notes never depends on it.',

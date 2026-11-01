@@ -143,6 +143,11 @@ export const es: Strings = {
     returnToPenDetail: "Volver al bolígrafo después de cada trazo de borrador.",
     size: "Tamaño",
   },
+  mathNotes: {
+    title: "Descubre MathNotes",
+    description: "Una app independiente para notas de matemáticas con planes de pago opcionales.",
+    dismiss: "Cerrar sugerencia de MathNotes",
+  },
   sheet: {
     title: 'Las notas libres necesitan una pequeña ayuda.',
     subtitle: 'Todo lo de aquí es opcional. Escribir notas nunca depende de ello.',

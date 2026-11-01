@@ -143,6 +143,11 @@ export const de: Strings = {
     returnToPenDetail: "Nach jedem Radierstrich zum Stift zurückkehren.",
     size: "Größe",
   },
+  mathNotes: {
+    title: "MathNotes entdecken",
+    description: "Eine separate Mathe-Notizen-App mit optionalen kostenpflichtigen Abos.",
+    dismiss: "MathNotes-Empfehlung schließen",
+  },
   sheet: {
     title: 'Freie Notizen brauchen etwas Hilfe.',
     subtitle: 'Alles hier ist freiwillig. Notizen schreiben hängt nie davon ab.',

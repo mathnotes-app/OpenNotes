@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
@@ -84,6 +84,16 @@ export function OpenNotesSheet({
               void openExternalLink(OPEN_NOTES_LINKS.github, 'OpenNotesSheet');
             }}
           />
+          {Platform.OS === 'ios' ? (
+            <SupportRow
+              icon="calculator-outline"
+              title={t.mathNotes.title}
+              subtitle={t.mathNotes.description}
+              onPress={() => {
+                void openExternalLink(OPEN_NOTES_LINKS.mathNotes, 'OpenNotesSheet');
+              }}
+            />
+          ) : null}
           <SupportRow
             icon="book-outline"
             title={t.sheet.missionTitle}

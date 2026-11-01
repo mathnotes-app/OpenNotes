@@ -2,6 +2,24 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testMathNotesInvitationCanBeDismissedPermanently() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let communityDismiss = app.buttons["Not now"]
+    if communityDismiss.waitForExistence(timeout: 2) { communityDismiss.tap() }
+    let dismiss = app.buttons["Dismiss MathNotes suggestion"]
+    XCTAssertTrue(dismiss.waitForExistence(timeout: 15))
+    XCTAssertTrue(app.links.matching(NSPredicate(format: "label CONTAINS %@", "Explore MathNotes")).firstMatch.exists)
+    dismiss.tap()
+    XCTAssertFalse(dismiss.exists)
+    app.terminate()
+    launchPrepared(app)
+    XCTAssertFalse(dismiss.waitForExistence(timeout: 3))
+    tap(app, "Support OpenNotes")
+    let supportLink = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Explore MathNotes")).firstMatch
+    XCTAssertTrue(supportLink.waitForExistence(timeout: 5))
+  }
   func testLibraryGeneratesMissingInkThumbnail() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
