@@ -1,1 +1,1 @@
-PDFs importados não desaparecem mais das notas após uma atualização do app. Corrigimos falhas ao apagar uma seleção depois de Desfazer e ao exportar cadernos longos para PDF. Se o OpenNotes fechar inesperadamente, agora você pode compartilhar os detalhes do erro para nos ajudar a corrigi-lo.
+Escrita e zoom mais suaves, temas claro e escuro, tamanhos de ferramentas ajustáveis e organização mais simples. Imagens e traços mantêm sua ordem.
