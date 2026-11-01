@@ -81,6 +81,12 @@ jobs:
       - name: Run real native interaction workloads
         id: interaction_workloads
         run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl spawn "$simulator_id" log stream --style compact --level debug \
+            --predicate 'process == "OpenNotes" AND eventMessage CONTAINS "[OverlayHistory]"' \
+            > "$RUNNER_TEMP/overlay-history.log" 2>&1 &
+          log_pid=$!
+          trap 'kill "$log_pid" 2>/dev/null || true; wait "$log_pid" 2>/dev/null || true' EXIT
           xcodebuild test-without-building \
             -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
             -derivedDataPath /tmp/opennotes-ui-deriveddata \
@@ -105,6 +111,14 @@ jobs:
         with:
           name: canvas-interaction-results
           path: /tmp/opennotes-ui-deriveddata/Logs/Test
+          retention-days: 7
+      - name: Preserve overlay history diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: overlay-history-diagnostics
+          path: ${{ runner.temp }}/overlay-history.log
+          if-no-files-found: ignore
           retention-days: 7
       - name: Record repeated native zoom interactions
         if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
