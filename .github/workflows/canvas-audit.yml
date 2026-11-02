@@ -78,6 +78,8 @@ jobs:
           path: ${{ runner.temp }}/photo-picker-test.log
           if-no-files-found: warn
           retention-days: 7
+      - name: Wait for the simulator host to settle
+        run: node scripts/ci/wait-for-audit-host.mjs
       - name: Run real native interaction workloads
         id: interaction_workloads
         run: |
