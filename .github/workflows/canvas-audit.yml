@@ -23,7 +23,7 @@ jobs:
   canvas-interaction-audit:
     name: iPad canvas interaction stall audit
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 80
     env:
       IOS_SIMULATOR_FAMILY: ipad
     steps:
