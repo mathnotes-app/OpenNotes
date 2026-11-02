@@ -469,9 +469,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 40;
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
+				CODE_SIGN_IDENTITY = "Apple Development: Mark Miller (FUJJVKJJFH)";
+				PROVISIONING_PROFILE_SPECIFIER = "OpenNotes Isolated Device Audit 20261101";
+				CURRENT_PROJECT_VERSION = 40;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -490,7 +492,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.deviceaudit;
 				PRODUCT_NAME = OpenNotes;
 				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -508,9 +510,11 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 40;
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
+				CODE_SIGN_IDENTITY = "Apple Development: Mark Miller (FUJJVKJJFH)";
+				PROVISIONING_PROFILE_SPECIFIER = "OpenNotes Isolated Device Audit 20261101";
+				CURRENT_PROJECT_VERSION = 40;
 				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -524,7 +528,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.deviceaudit;
 				PRODUCT_NAME = OpenNotes;
 				SWIFT_OBJC_BRIDGING_HEADER = "OpenNotes/OpenNotes-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -655,11 +659,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = U2CPXQV7AJ;
+				CODE_SIGN_IDENTITY = "Apple Development: Mark Miller (FUJJVKJJFH)";
+				PROVISIONING_PROFILE_SPECIFIER = "OpenNotes Isolated Device Audit 20261101";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.deviceaudit.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -672,11 +679,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = U2CPXQV7AJ;
+				CODE_SIGN_IDENTITY = "Apple Development: Mark Miller (FUJJVKJJFH)";
+				PROVISIONING_PROFILE_SPECIFIER = "OpenNotes Isolated Device Audit 20261101";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.uitests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.builderpro.opennotes.deviceaudit.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;

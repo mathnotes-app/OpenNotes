@@ -1,7 +1,7 @@
 import XCTest
 
 final class NotebookStallUITests: NotebookUITestCase {
-  private let bundle = "com.builderpro.opennotes"
+  private let bundle = "com.builderpro.opennotes.deviceaudit"
 
   func testDensePagesAndKeyboardInteractionAudit() {
     let app = prepare()

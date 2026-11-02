@@ -40,14 +40,14 @@ class NotebookUITestCase: XCTestCase {
 
   func prepare() -> XCUIApplication {
     NativeCanvasAudit.useRunLoopQuiescence()
-    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes.deviceaudit")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
     launchPrepared(app)
     let communityDismiss = app.buttons["Not now"]
     if communityDismiss.waitForExistence(timeout: 2) { communityDismiss.tap() }
     let skip = element(app, "Skip introduction")
     if skip.waitForExistence(timeout: 3) { skip.tap() }
-    NativeCanvasAudit.startup(bundle: "com.builderpro.opennotes") {
+    NativeCanvasAudit.startup(bundle: "com.builderpro.opennotes.deviceaudit") {
       tap(app, "note-audit-performance-100-pages")
     }
     XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
