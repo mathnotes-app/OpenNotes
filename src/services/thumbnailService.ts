@@ -1,9 +1,11 @@
 import { ClipOp, Skia, type SkImage } from '@shopify/react-native-skia';
-import { batchExportPages, type InsertedElement, type NotebookPage } from '@mathnotes/mobile-ink';
+import { batchExportPages, splitProjectedPageByLayers, type InkTextBox, type InsertedElement, type NotebookPage } from '@mathnotes/mobile-ink';
+import { Platform } from 'react-native';
 import { createPromiseQueue } from '../utils/promiseQueue';
 import { PDFUtilsModule } from './pdfUtilsModule';
+import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../utils/visualLayerOrder';
 
-export const THUMBNAIL_VERSION = 1;
+export const THUMBNAIL_VERSION = 4;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const SCALE = 0.5;
@@ -60,15 +62,40 @@ async function composePageThumbnail(
     .sort((a, b) => finite(a.zIndex, 1) - finite(b.zIndex, 1)
       || finite(a.zIndex, 0) - finite(b.zIndex, 0));
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
-  if (!elements.length && !textBoxes.length) return page.previewUri ?? null;
-
-  let raster = page.previewUri;
-  if (!raster) {
-    [raster] = await batchExportPages(
+  if (!elements.length && !textBoxes.length) {
+    const [rendered] = await batchExportPages(
       [page.data ?? '{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
       pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
+    if (!rendered) throw new Error('Thumbnail page could not be rendered');
+    return rendered;
+  }
+
+  let raster: string | undefined;
+  const boundaries = overlayLayerBoundaries(elements, textBoxes);
+  let inkGroups: (string | null)[];
+  {
+    [raster] = await batchExportPages(
+      ['{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+    );
     if (!raster) throw new Error('Thumbnail background could not be rendered');
+    const payload = page.data ?? '{"pages":{}}';
+    const groups = Platform.OS === 'ios' ? await splitProjectedPageByLayers(payload, boundaries)
+      : [...boundaries.map(() => '{"pages":{}}'), payload];
+    if (groups.length !== boundaries.length + 1) throw new Error('Thumbnail layer count is invalid');
+    inkGroups = groups.map(() => null);
+    const nonempty = groups.map((data, index) => ({data, index}))
+      .filter(({data}) => Object.keys(JSON.parse(data).pages ?? {}).length > 0);
+    for (let first = 0; first < nonempty.length; first += 8) {
+      const batch = nonempty.slice(first, first + 8);
+      const uris = await batchExportPages(batch.map(item => item.data), batch.map(() => 'pdf'), PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+        undefined, batch.map(() => page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex));
+      batch.forEach((item, index) => {
+        if (!uris[index]) throw new Error('Thumbnail ink could not be rendered');
+        inkGroups[item.index] = uris[index];
+      });
+    }
   }
 
   const surface = Skia.Surface.Make(PAGE_WIDTH * SCALE, Math.ceil(PAGE_HEIGHT * SCALE));
@@ -114,12 +141,7 @@ async function composePageThumbnail(
       }
     };
 
-    // Text siblings have zIndex 0; image siblings default to zIndex 1.
-    for (const element of elements.filter(element => finite(element.zIndex, 1) <= 0)) {
-      await drawElement(element);
-    }
-
-    for (const box of textBoxes) {
+    const drawText = (box: InkTextBox) => {
       const builder = Skia.ParagraphBuilder.Make();
       builder.pushStyle({
         color: Skia.Color(box.color || '#000000'), fontSize: Math.max(1, finite(box.fontSize, 18)),
@@ -141,9 +163,25 @@ async function composePageThumbnail(
         // Skia 2.2's native builder is garbage-collected and omits this method.
         builder.dispose?.();
       }
-    }
-    for (const element of elements.filter(element => finite(element.zIndex, 1) > 0)) {
-      await drawElement(element);
+    };
+    const overlays = [
+      ...elements.map(element => ({layer: imageLayerOrder(element), z: finite(element.zIndex, 1), element})),
+      ...textBoxes.map(box => ({layer: textLayerOrder(box), z: 0, box})),
+    ].sort((a, b) => a.layer - b.layer || a.z - b.z);
+    const drawInk = async (uri: string | null) => {
+      if (!uri) return;
+      const ink = await decodeImage(uri);
+      try {
+        canvas.drawImageRect(ink, Skia.XYWHRect(0, 0, ink.width(), ink.height()),
+          Skia.XYWHRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT), paint);
+      } finally { ink.dispose(); }
+    };
+    await drawInk(inkGroups[0]);
+    for (let index = 0; index < boundaries.length; index++) {
+      for (const overlay of overlays.filter(item => item.layer === boundaries[index])) {
+        if ('element' in overlay) await drawElement(overlay.element); else drawText(overlay.box);
+      }
+      await drawInk(inkGroups[index + 1]);
     }
     surface.flush();
     const image = surface.makeImageSnapshot();

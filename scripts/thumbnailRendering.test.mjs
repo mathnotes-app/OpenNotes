@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { createPromiseQueue } from '../src/utils/promiseQueue.ts';
+import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../src/utils/visualLayerOrder.ts';
 
 const require = createRequire(import.meta.url);
 const initCanvasKit = require('canvaskit-wasm/bin/full/canvaskit.js');
@@ -43,12 +44,16 @@ const white = solid('#ffffff');
 const red = solid('#ff0000');
 const blue = solid('#0000ff');
 const black = solid('#000000');
+const transparent = solid('#00000000');
 
-function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage } = {}) {
+function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent, inkLayers } = {}) {
   const exports = {};
   const nativeCalls = [];
+  let lastGroup = 0;
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '../utils/promiseQueue') return { createPromiseQueue };
+    if (name === '../utils/visualLayerOrder') return { imageLayerOrder, overlayLayerBoundaries, textLayerOrder };
+    if (name === 'react-native') return { Platform: { OS: 'ios' } };
     if (name === './pdfUtilsModule') return { PDFUtilsModule: nativeImage ? {
       readImageForThumbnail: nativeImage,
     } : undefined };
@@ -59,10 +64,17 @@ function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeIm
         return builder;
       } },
     } : Skia, ClipOp: { Intersect: 1 } };
-    if (name === '@mathnotes/mobile-ink') return { batchExportPages: async (...args) => {
+    if (name === '@mathnotes/mobile-ink') return { splitProjectedPageByLayers: async (_payload, boundaries) => {
+      lastGroup = boundaries.length;
+      return Array.from({length: boundaries.length + 1}, (_, index) => JSON.stringify({pages: {0: String(index)}}));
+    }, batchExportPages: async (...args) => {
       nativeCalls.push(args);
       if (nativeFails) throw new Error('Native renderer unavailable');
-      return [white];
+      if (args[1][0] !== 'pdf' || args[5]) return args[0].map(() => white);
+      return args[0].map(payload => {
+        const index = Number(JSON.parse(payload).pages[0]);
+        return inkLayers?.[index] ?? (index === lastGroup ? ink : transparent);
+      });
     } };
     throw new Error('Unexpected import: ' + name);
   } });
@@ -90,11 +102,21 @@ function pixel(uri, x, y) {
   return [...lastRaster.pixels.subarray(offset, offset + 4)];
 }
 
-test('legacy ink-only previews are returned byte-for-byte without rendering', async () => {
+test('ink-only thumbnails are rendered from the saved page even without a preview', async () => {
   const h = harness();
-  assert.equal(await h.createPageThumbnail(page()), white);
-  assert.equal(h.nativeCalls.length, 0);
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, data: '{"pages":{"0":"ink"}}'}), 'lined'), white);
+  assert.equal(h.nativeCalls.length, 1);
+  assert.equal(h.nativeCalls[0][0][0], '{"pages":{"0":"ink"}}');
+  assert.equal(h.nativeCalls[0][1][0], 'lined');
   assert.equal(await h.createPageThumbnail(undefined), null);
+});
+
+test('PDF-only thumbnails render the specified page and source', async () => {
+  const h = harness();
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, pageType: 'pdf', pdfPageNumber: 3}),
+    'pdf', 'file:///document.pdf'), white);
+  assert.equal(h.nativeCalls[0][5], 'file:///document.pdf');
+  assert.equal(h.nativeCalls[0][6][0], 2);
 });
 
 test('a photo is visible at its page coordinates over the background', async () => {
@@ -154,8 +176,14 @@ test('crop rectangles select the requested portion of an image', async () => {
   image.dispose(); surface.dispose(); paint.dispose();
 });
 
-test('handwriting remains below inserted images', async () => {
-  const result = await harness().createPageThumbnail(page([photo()], { previewUri: black }));
+test('handwriting appears above inserted images', async () => {
+  const result = await harness({ ink: black }).createPageThumbnail(page([photo()]));
+  assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
+  assert.deepEqual(pixel(result, 100, 100), [0, 0, 0, 255]);
+});
+
+test('an image covers handwriting that predates it', async () => {
+  const result = await harness({ inkLayers: [black, transparent] }).createPageThumbnail(page([photo()]));
   assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
   assert.deepEqual(pixel(result, 100, 100), [255, 0, 0, 255]);
 });

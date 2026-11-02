@@ -1,4 +1,5 @@
 import type { InkTextBox, InsertedElement } from '@mathnotes/mobile-ink';
+import { imageLayerOrder, textLayerOrder } from '../utils/visualLayerOrder.ts';
 
 export const NOTE_PAGE_WIDTH = 820;
 export const NOTE_PAGE_HEIGHT = 1061;
@@ -16,6 +17,9 @@ export interface PrintableImage {
 
 export interface PrintablePage {
   rasterUri: string;
+  inkUri?: string;
+  inkGroups?: (string | null)[];
+  layerBoundaries?: number[];
   images: PrintableImage[];
   textBoxes: InkTextBox[];
 }
@@ -92,17 +96,32 @@ function textBoxHtml(box: InkTextBox, order: number): string {
 
 export function buildPdfHtml(pages: PrintablePage[]): string {
   const pageHtml = pages.map((page) => {
-    const images = [...page.images]
-      .sort((a, b) => finite(a.element.zIndex, 0) - finite(b.element.zIndex, 0))
-      .map((image, index) => imageHtml(image, index + 1))
-      .join('');
-    const textBoxes = page.textBoxes
-      .map((box, index) => textBoxHtml(box, page.images.length + index + 1))
-      .join('');
+    const items = [
+      ...page.images.map(image => ({ layer: imageLayerOrder(image.element), z: finite(image.element.zIndex, 1), image })),
+      ...page.textBoxes.map(box => ({ layer: textLayerOrder(box), z: 0, box })),
+    ].sort((a, b) => a.layer - b.layer || a.z - b.z);
+    let index = 0;
+    let overlays = '';
+    if (page.inkGroups && page.layerBoundaries) {
+      const ink = (uri: string | null) => uri ? '<img class="raster ink" style="z-index:' +
+        (++index) + '" src="' + imageSrc(uri) + '" />' : '';
+      overlays += ink(page.inkGroups[0]);
+      page.layerBoundaries.forEach((boundary, group) => {
+        for (const entry of items.filter(item => item.layer === boundary)) {
+          overlays += 'image' in entry ? imageHtml(entry.image, ++index) : textBoxHtml(entry.box, ++index);
+        }
+        overlays += ink(page.inkGroups![group + 1]);
+      });
+    } else {
+      overlays = items.map(entry => 'image' in entry
+        ? imageHtml(entry.image, ++index) : textBoxHtml(entry.box, ++index)).join('');
+      if (page.inkUri) overlays += '<img class="raster ink" style="z-index:' +
+        (++index) + '" src="' + imageSrc(page.inkUri) + '" />';
+    }
     return '<section class="page"><div class="content" style="left:' +
       CONTENT_LEFT + 'px;top:' + CONTENT_TOP + 'px;transform:scale(' +
       CONTENT_SCALE + ')"><img class="raster" src="' +
-      imageSrc(page.rasterUri) + '" />' + images + textBoxes +
+      imageSrc(page.rasterUri) + '" />' + overlays +
       '</div></section>';
   }).join('');
 

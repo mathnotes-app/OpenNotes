@@ -1,1 +1,1 @@
-Geïmporteerde pdf's verdwijnen na een app-update niet meer uit notities. Crashes bij het verwijderen van een selectie na Ongedaan maken en bij het exporteren van lange notitieboeken naar pdf zijn opgelost. Als OpenNotes onverwacht sluit, kun je nu de foutdetails delen om ons te helpen het op te lossen.
+Vloeiender schrijven en zoomen, lichte en donkere weergave, instelbare gereedschapsgroottes en eenvoudiger ordenen. Afbeeldingen en inkt behouden hun volgorde.

@@ -1,1 +1,1 @@
-I PDF importati non scompaiono più dalle note dopo un aggiornamento dell'app. Corretti i crash durante l'eliminazione di una selezione dopo Annulla e l'esportazione in PDF di quaderni lunghi. Se OpenNotes si chiude inaspettatamente, ora puoi condividere i dettagli dell'errore per aiutarci a risolverlo.
+Scrittura e zoom più fluidi, aspetto chiaro e scuro, dimensioni degli strumenti regolabili e organizzazione semplificata. Immagini e tratti mantengono il loro ordine.

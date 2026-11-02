@@ -19,11 +19,12 @@ import { radius, spacing } from '../../theme/spacing';
 export interface SheetProps {
   visible: boolean;
   onClose: () => void;
+  onDismiss?: () => void;
   children: React.ReactNode;
   topInsetOverride?: number;
 }
 
-export function Sheet({ visible, onClose, children }: SheetProps) {
+export function Sheet({ visible, onClose, onDismiss, children }: SheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -51,6 +52,7 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
+      onDismiss={onDismiss}
     >
       <View style={StyleSheet.absoluteFill}>
         <Animated.View

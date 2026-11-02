@@ -19,14 +19,15 @@
     "android": "expo run:android",
     "test:lifecycle": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs",
     "test:catalog": "node --experimental-strip-types --test scripts/catalogStore.test.mjs",
-    "test": "node --experimental-strip-types --test scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs scripts/appDocumentUri.test.mjs scripts/crashReport.test.mjs scripts/noteThumbnails.test.mjs scripts/thumbnailRendering.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/libraryLayoutPreference.test.mjs scripts/lifecyclePolicy.test.mjs scripts/reviewPromptService.test.mjs scripts/catalogStore.test.mjs scripts/backupEngine.test.mjs scripts/exportService.test.mjs scripts/overlayTextInsertion.test.mjs scripts/appDocumentUri.test.mjs scripts/crashReport.test.mjs scripts/noteThumbnails.test.mjs scripts/thumbnailRendering.test.mjs scripts/autosaveQueue.test.mjs scripts/continuousAssets.test.mjs scripts/nativeCallback.test.mjs scripts/overlayGeometry.test.mjs scripts/overlayHistory.test.mjs scripts/overlayTouchRects.test.mjs scripts/ci/verify-canvas-audit.test.mjs scripts/insertImagePosition.test.mjs scripts/imageTapSelection.test.mjs",
     "test:backup": "node --experimental-strip-types --test scripts/backupEngine.test.mjs",
     "test:thumbnail-native": "xcrun swiftc ios/OpenNotes/ImageThumbnailEncoder.swift scripts/imageThumbnailSmoke.swift -o /tmp/opennotes-image-thumbnail-smoke && /tmp/opennotes-image-thumbnail-smoke",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "postinstall": "node scripts/ios/fix-expo-view-construction.mjs && node scripts/ios/fix-worklets-simulator-lookup.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@mathnotes/mobile-ink": "0.3.6",
+    "@mathnotes/mobile-ink": "file:vendor/mathnotes-mobile-ink-testflight-c56a32d.tgz",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.2.12",
     "expo": "54.0.34",

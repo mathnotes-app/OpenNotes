@@ -1,0 +1,197 @@
+name: Native Canvas Stall Audit
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'src/**'
+      - 'app/**'
+      - 'vendor/**'
+      - 'package*.json'
+      - 'scripts/ci/**'
+      - 'scripts/ios/**'
+      - '.github/workflows/canvas-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  canvas-interaction-audit:
+    name: iPad canvas interaction stall audit
+    runs-on: macos-15
+    timeout-minutes: 80
+    env:
+      IOS_SIMULATOR_FAMILY: ipad
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: node --test scripts/ci/verify-canvas-audit.test.mjs
+      - name: Select compatible native audit toolchain
+        run: echo "DEVELOPER_DIR=$(python3 scripts/ci/select-ios-toolchain.py)" >> "$GITHUB_ENV"
+      - name: Install iOS pods
+        run: pod install --project-directory=ios
+      - name: Resolve iPad simulator
+        run: echo "IOS_SIMULATOR_DESTINATION=$(node scripts/ci/resolve-ios-simulator.mjs)" >> "$GITHUB_ENV"
+      - name: Record toolchain and host conditions
+        run: |
+          xcodebuild -version
+          uname -m
+          uptime
+          xcrun simctl list runtimes
+      - name: Build native interaction tests
+        run: |
+          UITEST_FORCE_BUNDLING=1 xcodebuild build-for-testing \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 COMPILER_INDEX_STORE_ENABLE=NO
+      - name: Seed owned 100-page lecture fixtures
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
+          xcrun simctl install "$simulator_id" /tmp/opennotes-ui-deriveddata/Build/Products/Release-iphonesimulator/OpenNotes.app
+          xcrun simctl addmedia "$simulator_id" assets/icon.png
+          xcrun simctl privacy "$simulator_id" grant photos com.builderpro.opennotes
+          python3 scripts/seed-native-audit.py "$simulator_id"
+      - name: Inspect photo picker
+        continue-on-error: true
+        run: |
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
+            -collect-test-diagnostics never > "$RUNNER_TEMP/photo-picker-test.log" 2>&1
+      - name: Preserve photo picker output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: photo-picker-diagnostic
+          path: ${{ runner.temp }}/photo-picker-test.log
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Wait for the simulator host to settle
+        run: node scripts/ci/wait-for-audit-host.mjs
+      - name: Run real native interaction workloads
+        id: interaction_workloads
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl spawn "$simulator_id" log stream --style compact --level debug \
+            --predicate 'process == "OpenNotes" AND eventMessage CONTAINS "[OverlayHistory]"' \
+            > "$RUNNER_TEMP/overlay-history.log" 2>&1 &
+          log_pid=$!
+          trap 'kill "$log_pid" 2>/dev/null || true; wait "$log_pid" 2>/dev/null || true' EXIT
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testStrokeCrossesPageBoundary \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDenseEraserHistoryRemainsEditable \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testLibraryGeneratesMissingInkThumbnail \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testMathNotesInvitationCanBeDismissedPermanently \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageTextHistory \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testRotatedImageResizeAndCrop \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDrawingOverImageSurvivesUndoAndReload \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
+            -collect-test-diagnostics never
+      - name: Preserve interaction test evidence
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-results
+          path: /tmp/opennotes-ui-deriveddata/Logs/Test
+          retention-days: 7
+      - name: Preserve overlay history diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: overlay-history-diagnostics
+          path: ${{ runner.temp }}/overlay-history.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Record repeated native zoom interactions
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          xcrun simctl io "$simulator_id" recordVideo "$RUNNER_TEMP/zoom-interactions.mp4" > "$RUNNER_TEMP/zoom-recording.log" 2>&1 &
+          recording_pid=$!
+          trap 'kill -INT "$recording_pid" 2>/dev/null || true; wait "$recording_pid" || true' EXIT
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDenseInteractionAudit \
+            -collect-test-diagnostics never
+      - name: Verify persisted lecture content
+        if: ${{ always() && (steps.interaction_workloads.outcome == 'success' || steps.interaction_workloads.outcome == 'failure') }}
+        run: |
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          python3 -c 'import subprocess,sys; subprocess.run(["xcrun", "simctl", "bootstatus", sys.argv[1], "-b"], check=True, timeout=180)' "$simulator_id"
+          python3 scripts/verify-native-audit.py "$simulator_id"
+      - name: Validate native responsiveness and render budgets
+        id: canvas_budgets
+        if: always()
+        run: |
+          python3 scripts/ci/collect-canvas-audits.py "$RUNNER_TEMP/canvas-audit-reports"
+          node scripts/ci/verify-canvas-audit.mjs "$RUNNER_TEMP/canvas-audit-reports"
+      - name: Preserve initial interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-initial-interaction-audit
+          path: |
+            /tmp/opennotes-ui-deriveddata/Logs/Test
+            ${{ runner.temp }}/canvas-audit-reports
+            ${{ runner.temp }}/zoom-interactions.mp4
+            ${{ runner.temp }}/zoom-recording.log
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Profile failed native workloads
+        if: ${{ failure() && (steps.interaction_workloads.outcome == 'failure' || (steps.interaction_workloads.outcome == 'success' && steps.canvas_budgets.outcome == 'failure')) }}
+        run: |
+          # Restore known geometry before rerunning the edit/relaunch case.
+          # Timing reports above remain the unprofiled evidence.
+          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
+          app_data=$(xcrun simctl get_app_container "$simulator_id" com.builderpro.opennotes data)
+          mkdir -p "$RUNNER_TEMP/canvas-audit-profiles"
+          cp -R "$app_data/Documents/notebook-bodies" "$RUNNER_TEMP/canvas-audit-profiles/before-profile-bodies"
+          python3 scripts/seed-native-audit.py "$simulator_id"
+          python3 scripts/ci/sample-canvas-process.py OpenNotes "$RUNNER_TEMP/canvas-audit-profiles" &
+          profile_pid=$!
+          trap 'kill "$profile_pid" 2>/dev/null || true; wait "$profile_pid" || true' EXIT
+          xcodebuild test-without-building \
+            -workspace ios/OpenNotes.xcworkspace -scheme OpenNotesIntegrity \
+            -derivedDataPath /tmp/opennotes-ui-deriveddata \
+            -destination "$IOS_SIMULATOR_DESTINATION" -parallel-testing-enabled NO \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testCrossPageAssetHistory \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePagesAndKeyboardInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDensePanZoomInteractionAudit \
+            -only-testing:OpenNotesUITests/NotebookStallUITests/testDenseWritingDuringAutosaveInteractionAudit \
+            -collect-test-diagnostics never
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-audit
+          path: |
+            /tmp/opennotes-ui-deriveddata/Logs/Test
+            ${{ runner.temp }}/canvas-audit-reports
+            ${{ runner.temp }}/canvas-audit-profiles
+            ${{ runner.temp }}/zoom-interactions.mp4
+            ${{ runner.temp }}/zoom-recording.log
+          if-no-files-found: warn
+          retention-days: 7

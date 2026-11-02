@@ -14,15 +14,25 @@ test('catalog reload preserves composed thumbnail versions and still accepts old
   const catalog = parseCatalog(JSON.stringify({
     version: 1, folders: [], notes: [
       { id: 'old', title: 'Old note', thumbnailUri: 'old-ink-preview' },
-      { id: 'new', title: 'Photo note', thumbnailUri: 'composed-cover', thumbnailVersion: 1 },
+      { id: 'new', title: 'Photo note', thumbnailUri: 'composed-cover', thumbnailVersion: 4 },
     ],
   }));
   assert.equal(catalog.notes[0].thumbnailUri, 'old-ink-preview');
   assert.equal(catalog.notes[0].thumbnailVersion, undefined);
-  assert.equal(catalog.notes[1].thumbnailVersion, 1);
+  assert.equal(catalog.notes[1].thumbnailVersion, 4);
   const restored = parseCatalog(JSON.stringify(catalog));
   assert.equal(restored.notes[1].thumbnailUri, 'composed-cover');
-  assert.equal(restored.notes[1].thumbnailVersion, 1);
+  assert.equal(restored.notes[1].thumbnailVersion, 4);
+});
+
+test('custom photo covers survive catalog serialization without replacing generated previews', () => {
+  const source = { version: 1, folders: [], notes: [
+    { id: 'cover', title: 'Covered', thumbnailUri: 'generated', thumbnailVersion: 1,
+      customCoverUri: 'file:///old/Documents/images/cover/photo.jpg' },
+  ] };
+  const restored = parseCatalog(JSON.stringify(parseCatalog(JSON.stringify(source))));
+  assert.equal(restored.notes[0].customCoverUri, 'file:///old/Documents/images/cover/photo.jpg');
+  assert.equal(restored.notes[0].thumbnailUri, 'generated');
 });
 
 function makeKv(initial = {}) {

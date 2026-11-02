@@ -32,4 +32,5 @@ export interface NoteMetadata {
   pdfUri: string | null;
   thumbnailUri: string | null;
   thumbnailVersion?: number;
+  customCoverUri?: string | null;
 }
