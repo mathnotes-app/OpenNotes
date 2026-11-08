@@ -121,6 +121,8 @@ function normalizeNote(value: unknown): NoteMetadata | null {
     createdAt: isNonEmptyString(v.createdAt) ? v.createdAt : new Date(0).toISOString(),
     updatedAt: isNonEmptyString(v.updatedAt) ? v.updatedAt : new Date(0).toISOString(),
     backgroundType,
+    ...(v.lineSpacing === 'narrow' || v.lineSpacing === 'compact' || v.lineSpacing === 'standard'
+      ? { lineSpacing: v.lineSpacing } : {}),
     pdfUri: isNonEmptyString(v.pdfUri) ? v.pdfUri : null,
     thumbnailUri: isNonEmptyString(v.thumbnailUri) ? v.thumbnailUri : null,
     ...(isNonEmptyString(v.customCoverUri) ? { customCoverUri: v.customCoverUri } : {}),

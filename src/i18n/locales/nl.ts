@@ -56,6 +56,8 @@ export const nl: Strings = {
     couldNotCreateNote: 'Kon notitie niet aanmaken',
     couldNotDeleteNote: 'Kon notitie niet verwijderen',
     couldNotDeleteFolder: 'Kon map niet verwijderen',
+    lineSpacingTitle: 'Deze notitie · Regelafstand',
+    lineSpacing: { standard: 'Standaard', narrow: 'Smal', compact: 'Extra smal' },
     backgrounds: {
       plain: 'Blanco',
       lined: 'Gelinieerd',

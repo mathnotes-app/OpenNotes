@@ -2,6 +2,37 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testLineSpacingSurvivesRelaunch() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "library-create")
+    tap(app, "New Note")
+    let title = app.textFields["Title"]
+    XCTAssertTrue(title.waitForExistence(timeout: 10))
+    title.tap()
+    title.typeText("Paper spacing test\n")
+    tap(app, "paper-lined-narrow")
+    XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
+    tap(app, "editor-preferences")
+    XCTAssertTrue(element(app, "note-line-spacing-narrow").isSelected)
+    tap(app, "note-line-spacing-compact")
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"),
+      object: element(app, "note-line-spacing-compact"))
+    XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed)
+    tap(app, "Done")
+    tap(app, "Library")
+    XCTAssertTrue(element(app, "Paper spacing test").waitForExistence(timeout: 20))
+    app.terminate()
+    launchPrepared(app)
+    tap(app, "Paper spacing test")
+    XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
+    tap(app, "editor-preferences")
+    XCTAssertTrue(element(app, "note-line-spacing-compact").isSelected)
+  }
+
   func testMathNotesInvitationCanBeDismissedPermanently() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

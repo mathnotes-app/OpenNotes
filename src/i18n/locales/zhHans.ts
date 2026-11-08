@@ -56,6 +56,8 @@ export const zhHans: Strings = {
     couldNotCreateNote: '无法创建笔记',
     couldNotDeleteNote: '无法删除笔记',
     couldNotDeleteFolder: '无法删除文件夹',
+    lineSpacingTitle: '此笔记 · 行距',
+    lineSpacing: { standard: '标准', narrow: '窄', compact: '极窄' },
     backgrounds: {
       plain: '空白',
       lined: '横线',

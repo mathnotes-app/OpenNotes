@@ -5,8 +5,12 @@ import { usePreferences, type Appearance } from '../../hooks/Preferences';
 import { useTheme } from '../../hooks/useTheme';
 import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
+import type { LineSpacing } from '../../types/note';
 
-export function PreferencesSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function PreferencesSheet({ visible, onClose, noteLineSpacing, onNoteLineSpacingChange, lineSpacingBusy }: {
+  visible: boolean; onClose: () => void; noteLineSpacing?: LineSpacing;
+  onNoteLineSpacingChange?: (value: LineSpacing) => void; lineSpacingBusy?: boolean;
+}) {
   const theme = useTheme();
   const { appearance, setAppearance, returnToPen, setReturnToPen, libraryLayout, setLibraryLayout, holdToShape, setHoldToShape } = usePreferences();
   const choices: Array<{ value: Appearance; label: string }> = [
@@ -31,6 +35,20 @@ export function PreferencesSheet({ visible, onClose }: { visible: boolean; onClo
           <Text style={{ color: theme.colors.text, fontWeight: appearance === choice.value ? '600' : '400' }}>{choice.label}</Text>
         </Pressable>)}
       </View>
+      {noteLineSpacing && onNoteLineSpacingChange ? <>
+        <Text style={[styles.label, { color: theme.colors.text, marginTop: spacing.lg }]}>{t.library.lineSpacingTitle}</Text>
+        <View style={[styles.segment, { backgroundColor: theme.colors.surfaceMuted }]}>
+          {(['standard', 'narrow', 'compact'] as const).map(value => <Pressable key={value}
+            aria-checked={noteLineSpacing === value}
+            accessibilityRole="radio" accessibilityState={{ checked: noteLineSpacing === value, selected: noteLineSpacing === value, disabled: lineSpacingBusy }}
+            disabled={lineSpacingBusy} testID={`note-line-spacing-${value}`} onPress={() => onNoteLineSpacingChange(value)}
+            style={[styles.choice, noteLineSpacing === value && { backgroundColor: theme.colors.surfaceElevated }]}>
+            <Text numberOfLines={2} style={{ textAlign: 'center', color: theme.colors.text, fontWeight: noteLineSpacing === value ? '600' : '400' }}>
+              {t.library.lineSpacing[value]}
+            </Text>
+          </Pressable>)}
+        </View>
+      </> : null}
       <Text style={[styles.label, { color: theme.colors.text, marginTop: spacing.lg }]}>{t.preferences.libraryView}</Text>
       <View style={[styles.segment, { backgroundColor: theme.colors.surfaceMuted }]}>
         {(['grid', 'columns'] as const).map(value => <Pressable key={value} accessibilityRole="radio"

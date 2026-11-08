@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { createPromiseQueue } from '../src/utils/promiseQueue.ts';
 import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../src/utils/visualLayerOrder.ts';
+import { pageBackgroundType } from '../src/utils/paperSpacing.ts';
 
 const require = createRequire(import.meta.url);
 const initCanvasKit = require('canvaskit-wasm/bin/full/canvaskit.js');
@@ -53,6 +54,7 @@ function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeIm
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '../utils/promiseQueue') return { createPromiseQueue };
     if (name === '../utils/visualLayerOrder') return { imageLayerOrder, overlayLayerBoundaries, textLayerOrder };
+    if (name === '../utils/paperSpacing') return { pageBackgroundType };
     if (name === 'react-native') return { Platform: { OS: 'ios' } };
     if (name === './pdfUtilsModule') return { PDFUtilsModule: nativeImage ? {
       readImageForThumbnail: nativeImage,
@@ -109,6 +111,14 @@ test('ink-only thumbnails are rendered from the saved page even without a previe
   assert.equal(h.nativeCalls[0][0][0], '{"pages":{"0":"ink"}}');
   assert.equal(h.nativeCalls[0][1][0], 'lined');
   assert.equal(await h.createPageThumbnail(undefined), null);
+});
+
+test('thumbnail paper follows the note spacing even when the page is marked plain', async () => {
+  const h = harness();
+  await h.createPageThumbnail(page([], {pageType: 'plain'}), 'lined-narrow');
+  assert.equal(h.nativeCalls[0][1][0], 'lined-narrow');
+  await h.createPageThumbnail(page([photo()], {pageType: 'plain'}), 'lined-compact');
+  assert.equal(h.nativeCalls[1][1][0], 'lined-compact');
 });
 
 test('PDF-only thumbnails render the specified page and source', async () => {

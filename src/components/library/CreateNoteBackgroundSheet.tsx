@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,11 +14,16 @@ import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { BACKGROUND_TYPES } from '../../types/note';
 import { t } from '../../i18n';
-import type { BackgroundType } from '../../types/note';
+import type { BackgroundType, LineSpacing } from '../../types/note';
+
+const PAPER_CHOICES = BACKGROUND_TYPES.flatMap<{ type: BackgroundType; lineSpacing: LineSpacing }>((type) =>
+  type === 'lined'
+    ? (['standard', 'narrow', 'compact'] as const).map(lineSpacing => ({ type, lineSpacing }))
+    : [{ type, lineSpacing: 'standard' }]);
 
 export interface CreateNoteBackgroundSheetProps {
   visible: boolean;
-  onPick: (type: BackgroundType, title: string) => void;
+  onPick: (type: BackgroundType, title: string, lineSpacing: LineSpacing) => void;
   onClose: () => void;
 }
 
@@ -27,7 +33,7 @@ export function CreateNoteBackgroundSheet({
   onClose,
 }: CreateNoteBackgroundSheetProps) {
   const theme = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [title, setTitle] = useState('');
   const cellWidth = Math.max(
     104,
@@ -40,6 +46,7 @@ export function CreateNoteBackgroundSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose}>
+      <ScrollView bounces={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: height * 0.72 }}>
       <View style={styles.content}>
         <Text style={[typography.title, styles.title, { color: theme.colors.text }]}>
           {t.library.newNoteSheetTitle}
@@ -62,10 +69,13 @@ export function CreateNoteBackgroundSheet({
         />
       </View>
       <View style={styles.grid}>
-        {BACKGROUND_TYPES.map((type) => (
+        {PAPER_CHOICES.map(({ type, lineSpacing }) => (
           <Pressable
-            key={type}
-            onPress={() => onPick(type, title)}
+            key={`${type}-${lineSpacing}`}
+            accessibilityRole="button"
+            accessibilityLabel={type === 'lined' ? `${t.library.backgrounds.lined}, ${t.library.lineSpacing[lineSpacing]}` : t.library.backgrounds[type]}
+            testID={`paper-${type}-${lineSpacing}`}
+            onPress={() => onPick(type, title, lineSpacing)}
             style={({ pressed }) => [
               styles.cell,
               { width: cellWidth },
@@ -77,7 +87,7 @@ export function CreateNoteBackgroundSheet({
               },
             ]}
           >
-            <BackgroundThumbnail type={type} />
+            <BackgroundThumbnail type={type} lineSpacing={lineSpacing} />
             <Text
               style={[
                 typography.callout,
@@ -88,16 +98,19 @@ export function CreateNoteBackgroundSheet({
               adjustsFontSizeToFit
               minimumFontScale={0.85}
             >
-              {t.library.backgrounds[type]}
+              {type === 'lined' && lineSpacing !== 'standard'
+                ? t.library.lineSpacing[lineSpacing]
+                : t.library.backgrounds[type]}
             </Text>
           </Pressable>
         ))}
       </View>
+      </ScrollView>
     </Sheet>
   );
 }
 
-function BackgroundThumbnail({ type }: { type: BackgroundType }) {
+function BackgroundThumbnail({ type, lineSpacing }: { type: BackgroundType; lineSpacing: LineSpacing }) {
   if (type === 'pdf') {
     return (
       <View style={styles.pdfLogo}>
@@ -110,13 +123,13 @@ function BackgroundThumbnail({ type }: { type: BackgroundType }) {
   }
 
   return (
-    <View style={styles.paperPreview}>
-      {type === 'plain' ? null : Array.from({ length: type === 'dotted' ? 6 : 7 }, (_, index) => (
+    <View style={[styles.paperPreview, type === 'lined' && lineSpacing !== 'standard'
+      ? { gap: lineSpacing === 'narrow' ? 4.5 : 2.5 } : null]}>
+      {type === 'plain' ? null : Array.from({ length: type === 'dotted' ? 6 : type === 'lined' && lineSpacing === 'compact' ? 15 : type === 'lined' && lineSpacing === 'narrow' ? 11 : 7 }, (_, index) => (
         <View
           key={index}
           style={[
             type === 'dotted' ? styles.dotRow : styles.paperLine,
-            type === 'lined' && index === 0 ? styles.marginLine : null,
           ]}
         />
       ))}
@@ -191,9 +204,6 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     width: '100%',
     backgroundColor: 'rgba(10, 132, 255, 0.42)',
-  },
-  marginLine: {
-    backgroundColor: 'rgba(255, 59, 48, 0.46)',
   },
   paperLineVertical: {
     position: 'absolute',

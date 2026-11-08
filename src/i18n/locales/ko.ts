@@ -56,6 +56,8 @@ export const ko: Strings = {
     couldNotCreateNote: '노트를 만들지 못했습니다',
     couldNotDeleteNote: '노트를 삭제하지 못했습니다',
     couldNotDeleteFolder: '폴더를 삭제하지 못했습니다',
+    lineSpacingTitle: '이 노트 · 줄 간격',
+    lineSpacing: { standard: '기본', narrow: '좁게', compact: '매우 좁게' },
     backgrounds: {
       plain: '무지',
       lined: '줄노트',

@@ -56,6 +56,8 @@ export const pt: Strings = {
     couldNotCreateNote: 'Não foi possível criar a nota',
     couldNotDeleteNote: 'Não foi possível apagar a nota',
     couldNotDeleteFolder: 'Não foi possível apagar a pasta',
+    lineSpacingTitle: 'Esta nota · Espaçamento',
+    lineSpacing: { standard: 'Padrão', narrow: 'Estreito', compact: 'Muito estreito' },
     backgrounds: {
       plain: 'Liso',
       lined: 'Pautado',

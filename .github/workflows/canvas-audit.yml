@@ -106,6 +106,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDrawingOverImageSurvivesUndoAndReload \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testLineSpacingSurvivesRelaunch \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
             -collect-test-diagnostics never
       - name: Preserve interaction test evidence

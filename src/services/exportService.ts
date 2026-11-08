@@ -14,6 +14,7 @@ import {
 import { PDFUtilsModule } from './pdfUtilsModule';
 import { indexAssetsByPage } from '../utils/continuousAssets';
 import { overlayLayerBoundaries } from '../utils/visualLayerOrder';
+import { pageBackgroundType } from '../utils/paperSpacing';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
@@ -27,6 +28,7 @@ const PRINT_PASS_PAGES = 8;
 export interface ExportOptions {
   data: SerializedNotebookData;
   pdfBackgroundUri?: string | null;
+  backgroundType?: string;
   filename: string;
 }
 
@@ -122,6 +124,7 @@ async function renderNativePagesInChunks(options: {
   exportWidth: number;
   exportHeight: number;
   pdfBackgroundUri?: string | null;
+  backgroundType?: string;
   batchSize: number;
   layerBoundaries: Map<number, number[]>;
 }): Promise<Map<number, RenderedPage>> {
@@ -131,6 +134,7 @@ async function renderNativePagesInChunks(options: {
     exportWidth,
     exportHeight,
     pdfBackgroundUri,
+    backgroundType,
     batchSize,
     layerBoundaries,
   } = options;
@@ -146,7 +150,7 @@ async function renderNativePagesInChunks(options: {
     );
     const pngUris = await batchExportPages(
       inkPayloads.map((payload, offset) => layerBoundaries.has(chunkPageIndexes[offset]) ? '{"pages":{}}' : payload),
-      chunkPages.map((p) => p?.pageType ?? 'plain'),
+      chunkPages.map((p) => pageBackgroundType(backgroundType, p?.pageType)),
       exportWidth,
       exportHeight,
       EXPORT_SCALE,
@@ -214,13 +218,14 @@ async function collectExportImages(options: {
   exportWidth: number;
   exportHeight: number;
   pdfBackgroundUri?: string | null;
+  backgroundType?: string;
   layerBoundaries: Map<number, number[]>;
 }): Promise<RenderedPage[]> {
-  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, layerBoundaries } = options;
+  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, backgroundType, layerBoundaries } = options;
   // Saved thumbnails may omit ink owned by a neighboring page. Always render
   // the canonical document, in bounded batches, for the exported PDF.
   const rendered = await renderNativePagesInChunks({
-    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, layerBoundaries,
+    data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, backgroundType, layerBoundaries,
     batchSize: DEFAULT_NATIVE_BATCH_SIZE,
   });
   return pageIndexes.map(index => {
@@ -250,7 +255,7 @@ async function deleteFiles(uris: string[]): Promise<void> {
 export async function exportNotebookAsPdf(
   options: ExportOptions,
 ): Promise<{ ok: boolean; uri?: string; error?: string }> {
-  const { data, pdfBackgroundUri, filename } = options;
+  const { data, pdfBackgroundUri, backgroundType, filename } = options;
   if (!data.pages || data.pages.length === 0) {
     return { ok: false, error: 'Empty notebook' };
   }
@@ -279,6 +284,7 @@ export async function exportNotebookAsPdf(
         exportWidth,
         exportHeight,
         pdfBackgroundUri,
+        backgroundType,
         layerBoundaries,
       });
       if (rasterUris.length !== pageIndexes.length) {

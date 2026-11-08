@@ -46,7 +46,7 @@ import {
   listFolders,
   renameFolder,
 } from '../src/services/foldersRepo';
-import type { BackgroundType, FolderMetadata, NoteMetadata } from '../src/types/note';
+import type { BackgroundType, FolderMetadata, LineSpacing, NoteMetadata } from '../src/types/note';
 import { t } from '../src/i18n';
 
 type Action =
@@ -154,7 +154,7 @@ export default function LibraryScreen() {
     [router],
   );
 
-  const handleCreateNote = useCallback(async (backgroundType: BackgroundType, title: string) => {
+  const handleCreateNote = useCallback(async (backgroundType: BackgroundType, title: string, lineSpacing: LineSpacing) => {
     if (creatingNoteRef.current) return;
     creatingNoteRef.current = true;
     setAction(null);
@@ -163,6 +163,7 @@ export default function LibraryScreen() {
         const meta = await createNote({
           folderId: libraryLayout === 'columns' && selection.kind === 'folder' ? selection.id : null,
           backgroundType,
+          lineSpacing,
           title: title.trim() || undefined,
         });
         openNote(meta.id);
@@ -387,7 +388,7 @@ export default function LibraryScreen() {
 
       <CreateNoteBackgroundSheet
         visible={action?.kind === 'createNoteBackground'}
-        onPick={(type, title) => void handleCreateNote(type, title)}
+        onPick={(type, title, lineSpacing) => void handleCreateNote(type, title, lineSpacing)}
         onClose={() => setAction(null)}
       />
 
