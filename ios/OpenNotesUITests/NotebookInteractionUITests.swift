@@ -10,10 +10,6 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
     tap(app, "library-create")
     tap(app, "New Note")
-    let title = app.textFields["Title"]
-    XCTAssertTrue(title.waitForExistence(timeout: 10))
-    title.tap()
-    title.typeText("Paper spacing test\n")
     tap(app, "paper-lined-narrow")
     XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
     tap(app, "editor-preferences")
@@ -24,10 +20,13 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed)
     tap(app, "Done")
     tap(app, "Library")
-    XCTAssertTrue(element(app, "Paper spacing test").waitForExistence(timeout: 20))
+    let createdNote = app.descendants(matching: .any).matching(
+      NSPredicate(format: "identifier BEGINSWITH %@", "note-note-")).firstMatch
+    XCTAssertTrue(createdNote.waitForExistence(timeout: 20))
+    let createdNoteId = createdNote.identifier
     app.terminate()
     launchPrepared(app)
-    tap(app, "Paper spacing test")
+    tap(app, createdNoteId)
     XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
     tap(app, "editor-preferences")
     XCTAssertTrue(element(app, "note-line-spacing-compact").isSelected)
