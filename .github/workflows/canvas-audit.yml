@@ -27,6 +27,8 @@ jobs:
     env:
       IOS_SIMULATOR_FAMILY: ipad
     steps:
+      - name: Disable Spotlight indexing on the disposable audit runner
+        run: sudo mdutil -i off /
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -78,10 +80,6 @@ jobs:
           path: ${{ runner.temp }}/photo-picker-test.log
           if-no-files-found: warn
           retention-days: 7
-      - name: Close the diagnostic app before measuring host load
-        run: |
-          simulator_id="${IOS_SIMULATOR_DESTINATION##*id=}"
-          xcrun simctl terminate "$simulator_id" com.builderpro.opennotes || true
       - name: Wait for the simulator host to settle
         run: node scripts/ci/wait-for-audit-host.mjs
       - name: Run real native interaction workloads
