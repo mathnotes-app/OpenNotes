@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as paperSpacing from '../src/utils/paperSpacing.ts';
 
 const source = ts.transpileModule(
   readFileSync(new URL('../src/services/notesRepo.ts', import.meta.url), 'utf8'),
@@ -39,6 +40,7 @@ function harness({ writeOk = true, renderFails = false, render = async () => com
       };
       if (name === '../i18n') return { t: { common: { untitled: 'Untitled' } } };
       if (name === '../utils/id') return {};
+      if (name === '../utils/paperSpacing') return paperSpacing;
       if (name === './catalogStore') return {};
       if (name === './pdfStorage' || name === './imageInsertStorage') return {};
       throw new Error('Unexpected import: ' + name);

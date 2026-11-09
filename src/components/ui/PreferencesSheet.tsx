@@ -6,6 +6,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { t } from '../../i18n';
 import { radius, spacing } from '../../theme/spacing';
 import type { LineSpacing } from '../../types/note';
+import { customLineSpacing, lineCount } from '../../utils/paperSpacing';
+import { LineSpacingSlider } from './LineSpacingSlider';
 
 export function PreferencesSheet({ visible, onClose, noteLineSpacing, onNoteLineSpacingChange, lineSpacingBusy }: {
   visible: boolean; onClose: () => void; noteLineSpacing?: LineSpacing;
@@ -48,6 +50,10 @@ export function PreferencesSheet({ visible, onClose, noteLineSpacing, onNoteLine
             </Text>
           </Pressable>)}
         </View>
+        <LineSpacingSlider value={lineCount(noteLineSpacing)}
+          onCommit={value => onNoteLineSpacingChange(customLineSpacing(value))} disabled={lineSpacingBusy}
+          label={t.library.customSpacing} unit={t.library.linesPerPage}
+          color={theme.colors.text} muted={theme.colors.textSecondary} accent={theme.colors.accent} />
       </> : null}
       <Text style={[styles.label, { color: theme.colors.text, marginTop: spacing.lg }]}>{t.preferences.libraryView}</Text>
       <View style={[styles.segment, { backgroundColor: theme.colors.surfaceMuted }]}>

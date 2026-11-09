@@ -57,6 +57,9 @@ export const it: Strings = {
     couldNotDeleteNote: 'Impossibile eliminare la nota',
     couldNotDeleteFolder: 'Impossibile eliminare la cartella',
     lineSpacingTitle: 'Questa nota · Interlinea',
+    customSpacing: 'Interlinea personalizzata',
+    linesPerPage: 'righe/pagina',
+    createCustomLined: 'Crea nota a righe personalizzata',
     lineSpacing: { standard: 'Standard', narrow: 'Stretta', compact: 'Molto stretta' },
     backgrounds: {
       plain: 'Bianco',

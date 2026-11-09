@@ -9,14 +9,17 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Sheet } from '../ui/Sheet';
+import { LineSpacingSlider } from '../ui/LineSpacingSlider';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { BACKGROUND_TYPES } from '../../types/note';
 import { t } from '../../i18n';
 import type { BackgroundType, LineSpacing } from '../../types/note';
+import { customLineSpacing, lineCount } from '../../utils/paperSpacing';
 
-const PAPER_CHOICES = BACKGROUND_TYPES.flatMap<{ type: BackgroundType; lineSpacing: LineSpacing }>((type) =>
+type PresetSpacing = Exclude<LineSpacing, `custom-${number}`>;
+const PAPER_CHOICES = BACKGROUND_TYPES.flatMap<{ type: BackgroundType; lineSpacing: PresetSpacing }>((type) =>
   type === 'lined'
     ? (['standard', 'narrow', 'compact'] as const).map(lineSpacing => ({ type, lineSpacing }))
     : [{ type, lineSpacing: 'standard' }]);
@@ -35,13 +38,14 @@ export function CreateNoteBackgroundSheet({
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
   const [title, setTitle] = useState('');
+  const [customCount, setCustomCount] = useState(24);
   const cellWidth = Math.max(
     104,
     Math.min(148, Math.floor((width - spacing.lg * 2 - spacing.sm * 2) / 3)),
   );
 
   useEffect(() => {
-    if (visible) setTitle('');
+    if (visible) { setTitle(''); setCustomCount(24); }
   }, [visible]);
 
   return (
@@ -105,6 +109,21 @@ export function CreateNoteBackgroundSheet({
           </Pressable>
         ))}
       </View>
+      <View style={styles.custom}>
+        <View style={styles.customRow}>
+          <BackgroundThumbnail type="lined" lineSpacing={customLineSpacing(customCount)} />
+          <View style={styles.customSlider}>
+            <LineSpacingSlider value={customCount} onPreview={setCustomCount} onCommit={setCustomCount}
+              label={t.library.customSpacing} unit={t.library.linesPerPage}
+              color={theme.colors.text} muted={theme.colors.textSecondary} accent={theme.colors.accent} />
+          </View>
+        </View>
+        <Pressable accessibilityRole="button" testID="paper-lined-custom-create"
+          onPress={() => onPick('lined', title, customLineSpacing(customCount))}
+          style={[styles.customButton, {backgroundColor: theme.colors.accent}]}>
+          <Text style={styles.customButtonText}>{t.library.createCustomLined}</Text>
+        </Pressable>
+      </View>
       </ScrollView>
     </Sheet>
   );
@@ -122,10 +141,12 @@ function BackgroundThumbnail({ type, lineSpacing }: { type: BackgroundType; line
     );
   }
 
+  const custom = type === 'lined' && lineSpacing.startsWith('custom-');
+  const previewCount = custom ? Math.max(5, Math.round(lineCount(lineSpacing) * 0.42)) : 0;
   return (
-    <View style={[styles.paperPreview, type === 'lined' && lineSpacing !== 'standard'
+    <View style={[styles.paperPreview, custom ? {paddingTop: 5, gap: 74 / previewCount - 0.5} : type === 'lined' && lineSpacing !== 'standard'
       ? { gap: lineSpacing === 'narrow' ? 4.5 : 2.5 } : null]}>
-      {type === 'plain' ? null : Array.from({ length: type === 'dotted' ? 6 : type === 'lined' && lineSpacing === 'compact' ? 15 : type === 'lined' && lineSpacing === 'narrow' ? 11 : 7 }, (_, index) => (
+      {type === 'plain' ? null : Array.from({ length: custom ? previewCount : type === 'dotted' ? 6 : type === 'lined' && lineSpacing === 'compact' ? 15 : type === 'lined' && lineSpacing === 'narrow' ? 11 : 7 }, (_, index) => (
         <View
           key={index}
           style={[
@@ -180,6 +201,11 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
+  custom: {width: '100%', maxWidth: 460, alignSelf: 'center', marginTop: spacing.lg},
+  customRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  customSlider: {flex: 1},
+  customButton: {marginTop: spacing.sm, minHeight: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.sm},
+  customButtonText: {color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center'},
   cell: {
     height: 122,
     borderRadius: radius.md,

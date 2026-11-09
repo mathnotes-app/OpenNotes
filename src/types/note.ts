@@ -6,7 +6,7 @@ export type BackgroundType =
   | 'graph'
   | 'pdf';
 
-export type LineSpacing = 'standard' | 'narrow' | 'compact';
+export type LineSpacing = 'standard' | 'narrow' | 'compact' | `custom-${number}`;
 
 export const BACKGROUND_TYPES: BackgroundType[] = [
   'plain',

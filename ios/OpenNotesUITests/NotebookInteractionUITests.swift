@@ -18,6 +18,15 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"),
       object: element(app, "note-line-spacing-compact"))
     XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed)
+    let slider = element(app, "line-spacing-slider")
+    XCTAssertTrue(slider.waitForExistence(timeout: 10))
+    let previous = String(describing: slider.value)
+    slider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)))
+    let custom = String(describing: slider.value)
+    XCTAssertNotEqual(previous, custom, "Dragging must change the custom line spacing")
+    let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: slider)
+    XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 10), .completed)
     tap(app, "Done")
     tap(app, "Library")
     let createdNote = app.descendants(matching: .any).matching(
@@ -29,7 +38,7 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     tap(app, createdNoteId)
     XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
     tap(app, "editor-preferences")
-    XCTAssertTrue(element(app, "note-line-spacing-compact").isSelected)
+    XCTAssertEqual(String(describing: element(app, "line-spacing-slider").value), custom)
   }
 
   func testMathNotesInvitationCanBeDismissedPermanently() {

@@ -57,6 +57,9 @@ export const en = {
     couldNotDeleteNote: 'Could not delete note',
     couldNotDeleteFolder: 'Could not delete folder',
     lineSpacingTitle: 'This note · Line spacing',
+    customSpacing: 'Custom spacing',
+    linesPerPage: 'lines/page',
+    createCustomLined: 'Create custom lined note',
     lineSpacing: { standard: 'Standard', narrow: 'Narrow', compact: 'Extra narrow' },
     backgrounds: {
       plain: 'Plain',

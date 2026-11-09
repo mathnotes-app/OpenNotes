@@ -57,6 +57,9 @@ export const zhHant: Strings = {
     couldNotDeleteNote: '無法刪除筆記',
     couldNotDeleteFolder: '無法刪除資料夾',
     lineSpacingTitle: '此筆記 · 行距',
+    customSpacing: '自訂行距',
+    linesPerPage: '行／頁',
+    createCustomLined: '建立自訂橫線筆記',
     lineSpacing: { standard: '標準', narrow: '窄', compact: '極窄' },
     backgrounds: {
       plain: '空白',
