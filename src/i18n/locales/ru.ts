@@ -65,6 +65,11 @@ export const ru: Strings = {
     couldNotCreateNote: 'Не удалось создать заметку',
     couldNotDeleteNote: 'Не удалось удалить заметку',
     couldNotDeleteFolder: 'Не удалось удалить папку',
+    lineSpacingTitle: 'Эта заметка · Межстрочный интервал',
+    customSpacing: 'Свой интервал',
+    linesPerPage: 'строк/страницу',
+    createCustomLined: 'Создать заметку со своим интервалом',
+    lineSpacing: { standard: 'Обычный', narrow: 'Узкий', compact: 'Очень узкий' },
     backgrounds: {
       plain: 'Чистый лист',
       lined: 'В линейку',

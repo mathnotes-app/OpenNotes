@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
+import { t } from '../../i18n';
 
 export interface NewItemFABProps {
   onPress: () => void;
@@ -21,6 +22,9 @@ export function NewItemFAB({ onPress }: NewItemFABProps) {
       ]}
     >
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t.library.createTitle}
+        testID="library-create"
         onPress={onPress}
         style={({ pressed }) => [
           styles.button,

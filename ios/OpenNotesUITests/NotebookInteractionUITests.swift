@@ -2,6 +2,45 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testLineSpacingSurvivesRelaunch() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "library-create")
+    tap(app, "New Note")
+    tap(app, "paper-lined-narrow")
+    XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
+    tap(app, "editor-preferences")
+    XCTAssertTrue(element(app, "note-line-spacing-narrow").isSelected)
+    tap(app, "note-line-spacing-compact")
+    let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"),
+      object: element(app, "note-line-spacing-compact"))
+    XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 10), .completed)
+    let slider = element(app, "line-spacing-slider")
+    XCTAssertTrue(slider.waitForExistence(timeout: 10))
+    let previous = String(describing: slider.value)
+    slider.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: slider.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)))
+    let custom = String(describing: slider.value)
+    XCTAssertNotEqual(previous, custom, "Dragging must change the custom line spacing")
+    let saved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: slider)
+    XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 10), .completed)
+    tap(app, "Done")
+    tap(app, "Library")
+    let createdNote = app.descendants(matching: .any).matching(
+      NSPredicate(format: "identifier BEGINSWITH %@", "note-note-")).firstMatch
+    XCTAssertTrue(createdNote.waitForExistence(timeout: 20))
+    let createdNoteId = createdNote.identifier
+    app.terminate()
+    launchPrepared(app)
+    tap(app, createdNoteId)
+    XCTAssertTrue(element(app, "ink-viewport").waitForExistence(timeout: 20))
+    tap(app, "editor-preferences")
+    XCTAssertEqual(String(describing: element(app, "line-spacing-slider").value), custom)
+  }
+
   func testMathNotesInvitationCanBeDismissedPermanently() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

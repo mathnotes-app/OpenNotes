@@ -9,6 +9,22 @@ import {
   createCatalogStore,
   parseCatalog,
 } from '../src/services/catalogStore.ts';
+import { paperBackgroundType } from '../src/utils/paperSpacing.ts';
+
+test('line spacing survives catalog and older notes retain their original paper', () => {
+  const input = {version: 1, folders: [], notes: [
+    {id: 'old', backgroundType: 'lined'},
+    {id: 'new', backgroundType: 'lined', lineSpacing: 'narrow'},
+    {id: 'custom', backgroundType: 'lined', lineSpacing: 'custom-47'},
+    {id: 'invalid', backgroundType: 'lined', lineSpacing: 'invalid'},
+  ]};
+  const notes = parseCatalog(JSON.stringify(parseCatalog(JSON.stringify(input)))).notes;
+  assert.equal(paperBackgroundType(notes[0].backgroundType, notes[0].lineSpacing), 'lined');
+  assert.equal(paperBackgroundType(notes[1].backgroundType, notes[1].lineSpacing), 'lined-narrow');
+  assert.equal(paperBackgroundType(notes[2].backgroundType, notes[2].lineSpacing), 'lined-custom-47');
+  assert.equal(paperBackgroundType(notes[3].backgroundType, notes[3].lineSpacing), 'lined');
+  assert.equal(paperBackgroundType('pdf', 'compact'), 'pdf');
+});
 
 test('catalog reload preserves composed thumbnail versions and still accepts old notes', () => {
   const catalog = parseCatalog(JSON.stringify({

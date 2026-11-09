@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { indexAssetsByPage } from '../src/utils/continuousAssets.ts';
 import { buildPdfHtml } from '../src/services/pdfExportHtml.ts';
 import { overlayLayerBoundaries } from '../src/utils/visualLayerOrder.ts';
+import { pageBackgroundType } from '../src/utils/paperSpacing.ts';
 
 const source = ts.transpileModule(
   readFileSync(new URL('../src/services/exportService.ts', import.meta.url), 'utf8'),
@@ -90,6 +91,7 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       if (name === '@mathnotes/mobile-ink') return mobileInk;
       if (name === '../utils/continuousAssets') return { indexAssetsByPage };
       if (name === '../utils/visualLayerOrder') return { overlayLayerBoundaries };
+      if (name === '../utils/paperSpacing') return { pageBackgroundType };
       if (name === './pdfExportHtml') {
         return {
           buildPdfHtml,
@@ -112,6 +114,22 @@ function harness(files = {}, { mergePdfFiles } = {}) {
     mergeCalls,
   };
 }
+
+test('exports the note paper spacing while keeping PDF backgrounds intact', async () => {
+  const h = harness();
+  const data = notebook([{pageType: undefined}, {pageType: 'pdf'}]);
+  const result = await h.exportNotebookAsPdf({ data, filename: 'paper', backgroundType: 'lined-narrow' });
+  assert.equal(result.ok, true);
+  assert.deepEqual(Array.from(h.batchCalls[0][1]), ['lined-narrow', 'pdf']);
+});
+
+test('does not apply an imported PDF background to a subsequently added blank page', async () => {
+  const h = harness();
+  const data = notebook([{pageType: 'pdf'}, {pageType: undefined}]);
+  const result = await h.exportNotebookAsPdf({ data, filename: 'mixed', backgroundType: 'pdf', pdfBackgroundUri: 'file:///note.pdf' });
+  assert.equal(result.ok, true);
+  assert.deepEqual(Array.from(h.batchCalls[0][1]), ['pdf', 'plain']);
+});
 
 test('a three-page PDF includes a photo and typed text on their original page', async () => {
   const photo = 'file:///notes/photo.jpg';

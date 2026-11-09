@@ -1,5 +1,6 @@
 import type { SerializedNotebookData } from '@mathnotes/mobile-ink';
-import type { BackgroundType, NoteMetadata } from '../types/note';
+import type { BackgroundType, LineSpacing, NoteMetadata } from '../types/note';
+import { paperBackgroundType } from '../utils/paperSpacing';
 import { noteId as makeNoteId } from '../utils/id';
 import { t } from '../i18n';
 import { catalogStore } from './catalogEnv';
@@ -28,6 +29,7 @@ export async function createNote(opts: {
   folderId?: string | null;
   title?: string;
   backgroundType?: BackgroundType;
+  lineSpacing?: LineSpacing;
 } = {}): Promise<NoteMetadata> {
   const now = new Date().toISOString();
   const meta: NoteMetadata = {
@@ -37,6 +39,7 @@ export async function createNote(opts: {
     createdAt: now,
     updatedAt: now,
     backgroundType: opts.backgroundType ?? 'plain',
+    lineSpacing: opts.lineSpacing ?? 'standard',
     pdfUri: null,
     thumbnailUri: null,
   };
@@ -101,7 +104,7 @@ export function getNoteThumbnail(note: NoteMetadata, force = false): Promise<str
         id: 'thumbnail-blank', title: 'Page 1', data: '{"pages":{}}', rotation: 0,
         pageType: note.pdfUri ? 'pdf' as const : undefined, pdfPageNumber: note.pdfUri ? 1 : undefined,
       };
-      const uri = await createPageThumbnail(page, note.backgroundType, note.pdfUri, 0,
+      const uri = await createPageThumbnail(page, paperBackgroundType(note.backgroundType, note.lineSpacing), note.pdfUri, 0,
         () => epoch !== thumbnailEpoch);
       if (!uri) return note.thumbnailUri;
       let currentUri = note.thumbnailUri;
@@ -164,6 +167,11 @@ export async function setNoteBackground(
 ): Promise<NoteMetadata | null> {
   thumbnailRevisions.set(id, (thumbnailRevisions.get(id) ?? 0) + 1);
   return updateMetadata(id, { backgroundType, pdfUri, thumbnailVersion: undefined });
+}
+
+export async function setNoteLineSpacing(id: string, lineSpacing: LineSpacing): Promise<NoteMetadata | null> {
+  thumbnailRevisions.set(id, (thumbnailRevisions.get(id) ?? 0) + 1);
+  return updateMetadata(id, { lineSpacing, thumbnailVersion: undefined });
 }
 
 async function deleteNoteFiles(id: string): Promise<void> {

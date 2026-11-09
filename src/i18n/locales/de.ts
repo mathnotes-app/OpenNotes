@@ -56,6 +56,11 @@ export const de: Strings = {
     couldNotCreateNote: 'Notiz konnte nicht erstellt werden',
     couldNotDeleteNote: 'Notiz konnte nicht gelöscht werden',
     couldNotDeleteFolder: 'Ordner konnte nicht gelöscht werden',
+    lineSpacingTitle: 'Diese Notiz · Zeilenabstand',
+    customSpacing: 'Eigener Abstand',
+    linesPerPage: 'Linien/Seite',
+    createCustomLined: 'Eigene linierte Notiz erstellen',
+    lineSpacing: { standard: 'Standard', narrow: 'Schmal', compact: 'Extra schmal' },
     backgrounds: {
       plain: 'Blanko',
       lined: 'Liniert',

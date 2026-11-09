@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -8,16 +9,24 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Sheet } from '../ui/Sheet';
+import { LineSpacingSlider } from '../ui/LineSpacingSlider';
 import { useTheme } from '../../hooks/useTheme';
 import { radius, spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { BACKGROUND_TYPES } from '../../types/note';
 import { t } from '../../i18n';
-import type { BackgroundType } from '../../types/note';
+import type { BackgroundType, LineSpacing } from '../../types/note';
+import { customLineSpacing, lineCount } from '../../utils/paperSpacing';
+
+type PresetSpacing = Exclude<LineSpacing, `custom-${number}`>;
+const PAPER_CHOICES = BACKGROUND_TYPES.flatMap<{ type: BackgroundType; lineSpacing: PresetSpacing }>((type) =>
+  type === 'lined'
+    ? (['standard', 'narrow', 'compact'] as const).map(lineSpacing => ({ type, lineSpacing }))
+    : [{ type, lineSpacing: 'standard' }]);
 
 export interface CreateNoteBackgroundSheetProps {
   visible: boolean;
-  onPick: (type: BackgroundType, title: string) => void;
+  onPick: (type: BackgroundType, title: string, lineSpacing: LineSpacing) => void;
   onClose: () => void;
 }
 
@@ -27,19 +36,21 @@ export function CreateNoteBackgroundSheet({
   onClose,
 }: CreateNoteBackgroundSheetProps) {
   const theme = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [title, setTitle] = useState('');
+  const [customCount, setCustomCount] = useState(24);
   const cellWidth = Math.max(
     104,
     Math.min(148, Math.floor((width - spacing.lg * 2 - spacing.sm * 2) / 3)),
   );
 
   useEffect(() => {
-    if (visible) setTitle('');
+    if (visible) { setTitle(''); setCustomCount(24); }
   }, [visible]);
 
   return (
     <Sheet visible={visible} onClose={onClose}>
+      <ScrollView bounces={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: height * 0.72 }}>
       <View style={styles.content}>
         <Text style={[typography.title, styles.title, { color: theme.colors.text }]}>
           {t.library.newNoteSheetTitle}
@@ -62,10 +73,13 @@ export function CreateNoteBackgroundSheet({
         />
       </View>
       <View style={styles.grid}>
-        {BACKGROUND_TYPES.map((type) => (
+        {PAPER_CHOICES.map(({ type, lineSpacing }) => (
           <Pressable
-            key={type}
-            onPress={() => onPick(type, title)}
+            key={`${type}-${lineSpacing}`}
+            accessibilityRole="button"
+            accessibilityLabel={type === 'lined' ? `${t.library.backgrounds.lined}, ${t.library.lineSpacing[lineSpacing]}` : t.library.backgrounds[type]}
+            testID={`paper-${type}-${lineSpacing}`}
+            onPress={() => onPick(type, title, lineSpacing)}
             style={({ pressed }) => [
               styles.cell,
               { width: cellWidth },
@@ -77,7 +91,7 @@ export function CreateNoteBackgroundSheet({
               },
             ]}
           >
-            <BackgroundThumbnail type={type} />
+            <BackgroundThumbnail type={type} lineSpacing={lineSpacing} />
             <Text
               style={[
                 typography.callout,
@@ -88,16 +102,34 @@ export function CreateNoteBackgroundSheet({
               adjustsFontSizeToFit
               minimumFontScale={0.85}
             >
-              {t.library.backgrounds[type]}
+              {type === 'lined' && lineSpacing !== 'standard'
+                ? t.library.lineSpacing[lineSpacing]
+                : t.library.backgrounds[type]}
             </Text>
           </Pressable>
         ))}
       </View>
+      <View style={styles.custom}>
+        <View style={styles.customRow}>
+          <BackgroundThumbnail type="lined" lineSpacing={customLineSpacing(customCount)} />
+          <View style={styles.customSlider}>
+            <LineSpacingSlider value={customCount} onPreview={setCustomCount} onCommit={setCustomCount}
+              label={t.library.customSpacing} unit={t.library.linesPerPage}
+              color={theme.colors.text} muted={theme.colors.textSecondary} accent={theme.colors.accent} />
+          </View>
+        </View>
+        <Pressable accessibilityRole="button" testID="paper-lined-custom-create"
+          onPress={() => onPick('lined', title, customLineSpacing(customCount))}
+          style={[styles.customButton, {backgroundColor: theme.colors.accent}]}>
+          <Text style={styles.customButtonText}>{t.library.createCustomLined}</Text>
+        </Pressable>
+      </View>
+      </ScrollView>
     </Sheet>
   );
 }
 
-function BackgroundThumbnail({ type }: { type: BackgroundType }) {
+function BackgroundThumbnail({ type, lineSpacing }: { type: BackgroundType; lineSpacing: LineSpacing }) {
   if (type === 'pdf') {
     return (
       <View style={styles.pdfLogo}>
@@ -109,14 +141,16 @@ function BackgroundThumbnail({ type }: { type: BackgroundType }) {
     );
   }
 
+  const custom = type === 'lined' && lineSpacing.startsWith('custom-');
+  const previewCount = custom ? Math.max(5, Math.round(lineCount(lineSpacing) * 0.42)) : 0;
   return (
-    <View style={styles.paperPreview}>
-      {type === 'plain' ? null : Array.from({ length: type === 'dotted' ? 6 : 7 }, (_, index) => (
+    <View style={[styles.paperPreview, custom ? {paddingTop: 5, gap: 74 / previewCount - 0.5} : type === 'lined' && lineSpacing !== 'standard'
+      ? { gap: lineSpacing === 'narrow' ? 4.5 : 2.5 } : null]}>
+      {type === 'plain' ? null : Array.from({ length: custom ? previewCount : type === 'dotted' ? 6 : type === 'lined' && lineSpacing === 'compact' ? 15 : type === 'lined' && lineSpacing === 'narrow' ? 11 : 7 }, (_, index) => (
         <View
           key={index}
           style={[
             type === 'dotted' ? styles.dotRow : styles.paperLine,
-            type === 'lined' && index === 0 ? styles.marginLine : null,
           ]}
         />
       ))}
@@ -167,6 +201,11 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
+  custom: {width: '100%', maxWidth: 460, alignSelf: 'center', marginTop: spacing.lg},
+  customRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  customSlider: {flex: 1},
+  customButton: {marginTop: spacing.sm, minHeight: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.sm},
+  customButtonText: {color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center'},
   cell: {
     height: 122,
     borderRadius: radius.md,
@@ -191,9 +230,6 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     width: '100%',
     backgroundColor: 'rgba(10, 132, 255, 0.42)',
-  },
-  marginLine: {
-    backgroundColor: 'rgba(255, 59, 48, 0.46)',
   },
   paperLineVertical: {
     position: 'absolute',

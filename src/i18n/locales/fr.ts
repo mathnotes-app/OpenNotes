@@ -56,6 +56,11 @@ export const fr: Strings = {
     couldNotCreateNote: 'Impossible de créer la note',
     couldNotDeleteNote: 'Impossible de supprimer la note',
     couldNotDeleteFolder: 'Impossible de supprimer le dossier',
+    lineSpacingTitle: 'Cette note · Interligne',
+    customSpacing: 'Interligne personnalisé',
+    linesPerPage: 'lignes/page',
+    createCustomLined: 'Créer une note lignée personnalisée',
+    lineSpacing: { standard: 'Standard', narrow: 'Étroit', compact: 'Très étroit' },
     backgrounds: {
       plain: 'Uni',
       lined: 'Ligné',

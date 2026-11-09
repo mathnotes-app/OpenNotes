@@ -60,6 +60,7 @@ import {
   readNoteBody,
   renameNote,
   saveNoteBody,
+  setNoteLineSpacing,
 } from '../../src/services/notesRepo';
 import { createEmptyNotebookData } from '../../src/services/noteBodyStorage';
 import {
@@ -72,11 +73,12 @@ import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
 import { documentVisualLayers, imageAtContentPoint } from '../../src/utils/visualLayerOrder';
 import { insertImagePosition } from '../../src/utils/insertImagePosition';
+import { paperBackgroundType, resolveLineSpacing } from '../../src/utils/paperSpacing';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
 import { t } from '../../src/i18n';
 import { typography } from '../../src/theme/typography';
-import type { NoteMetadata } from '../../src/types/note';
+import type { LineSpacing, NoteMetadata } from '../../src/types/note';
 import type { ToolDescriptor } from '../../src/utils/toolPalette';
 
 const CONTENT_PADDING = 16;
@@ -160,6 +162,8 @@ export default function NoteScreen() {
   const lastPenToolRef = useRef<'pen' | 'highlighter' | 'crayon' | 'calligraphy'>('pen');
 
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
+  const [lineSpacingBusy, setLineSpacingBusy] = useState(false);
+  const lineSpacingBusyRef = useRef(false);
   const [enginePages, setEnginePages] = useState<NotebookPage[]>([]);
   const enginePagesRef = useRef(enginePages);
   const updateEnginePages = useCallback((pages: NotebookPage[]) => {
@@ -788,6 +792,23 @@ export default function NoteScreen() {
     [id],
   );
 
+  const handleLineSpacing = useCallback(async (value: LineSpacing) => {
+    if (!id || lineSpacingBusyRef.current) return;
+    lineSpacingBusyRef.current = true;
+    setLineSpacingBusy(true);
+    try {
+      const next = await setNoteLineSpacing(id, value);
+      if (!next) throw new Error('Note not found');
+      if (isMountedRef.current) setMetadata(next);
+    } catch (error) {
+      if (__DEV__) console.warn('[NoteScreen] line spacing update failed', error);
+      Alert.alert(t.editor.statusError, t.common.pleaseTryAgain);
+    } finally {
+      lineSpacingBusyRef.current = false;
+      if (isMountedRef.current) setLineSpacingBusy(false);
+    }
+  }, [id]);
+
   const handleExport = useCallback(async () => {
     if (!id || !canvasRef.current || isExporting) return;
     setIsExporting(true);
@@ -810,6 +831,7 @@ export default function NoteScreen() {
       const result = await exportNotebookAsPdf({
         data: { ...canvasData, pages: mergedPages },
         pdfBackgroundUri: metadata?.pdfUri ?? null,
+        backgroundType: paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing),
         filename,
       });
       if (!result.ok) {
@@ -830,6 +852,8 @@ export default function NoteScreen() {
     isExporting,
     mergeStoredPreviews,
     metadata?.pdfUri,
+    metadata?.backgroundType,
+    metadata?.lineSpacing,
     metadata?.title,
     rememberPagePreviews,
   ]);
@@ -1039,7 +1063,7 @@ export default function NoteScreen() {
           pageHeight={PAGE_HEIGHT}
           toolState={toolState}
           holdToShapeEnabled={holdToShape}
-          backgroundType={metadata?.backgroundType ?? 'plain'}
+          backgroundType={paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing)}
           pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
           fingerDrawingEnabled={fingerDrawingEnabled}
           onContentTap={hasSelectableImages && !fingerDrawingEnabled && !['select', 'text', 'insert'].includes(toolState.toolType)
@@ -1098,7 +1122,7 @@ export default function NoteScreen() {
       <PageSidebar
         visible={isPageSidebarOpen}
         pages={pagesForOverlay}
-        backgroundType={metadata?.backgroundType ?? 'plain'}
+        backgroundType={paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing)}
         pdfUri={metadata?.pdfUri}
         currentPage={currentPageIndex}
         topInset={headerHeight}
@@ -1128,7 +1152,9 @@ export default function NoteScreen() {
         onClose={() => setToolPopover(null)}
       />
 
-      <PreferencesSheet visible={action?.kind === 'preferences'} onClose={() => setAction(null)} />
+      <PreferencesSheet visible={action?.kind === 'preferences'} onClose={() => setAction(null)}
+        noteLineSpacing={metadata?.backgroundType === 'lined' ? resolveLineSpacing(metadata.lineSpacing) : undefined}
+        onNoteLineSpacingChange={value => void handleLineSpacing(value)} lineSpacingBusy={lineSpacingBusy} />
 
       <ItemActionsMenu
         visible={action?.kind === 'insertImage'}

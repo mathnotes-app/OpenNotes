@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { createPromiseQueue } from '../utils/promiseQueue';
 import { PDFUtilsModule } from './pdfUtilsModule';
 import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../utils/visualLayerOrder';
+import { pageBackgroundType } from '../utils/paperSpacing';
 
 export const THUMBNAIL_VERSION = 4;
 const PAGE_WIDTH = 820;
@@ -64,7 +65,7 @@ async function composePageThumbnail(
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
   if (!elements.length && !textBoxes.length) {
     const [rendered] = await batchExportPages(
-      [page.data ?? '{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      [page.data ?? '{"pages":{}}'], [pageBackgroundType(backgroundType, page.pageType)], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
       pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!rendered) throw new Error('Thumbnail page could not be rendered');
@@ -76,7 +77,7 @@ async function composePageThumbnail(
   let inkGroups: (string | null)[];
   {
     [raster] = await batchExportPages(
-      ['{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      ['{"pages":{}}'], [pageBackgroundType(backgroundType, page.pageType)], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
       pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!raster) throw new Error('Thumbnail background could not be rendered');

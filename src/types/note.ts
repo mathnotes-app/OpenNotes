@@ -6,6 +6,8 @@ export type BackgroundType =
   | 'graph'
   | 'pdf';
 
+export type LineSpacing = 'standard' | 'narrow' | 'compact' | `custom-${number}`;
+
 export const BACKGROUND_TYPES: BackgroundType[] = [
   'plain',
   'lined',
@@ -29,6 +31,7 @@ export interface NoteMetadata {
   createdAt: string;
   updatedAt: string;
   backgroundType: BackgroundType;
+  lineSpacing?: LineSpacing;
   pdfUri: string | null;
   thumbnailUri: string | null;
   thumbnailVersion?: number;

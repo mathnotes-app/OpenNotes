@@ -56,6 +56,11 @@ export const ja: Strings = {
     couldNotCreateNote: 'ノートを作成できませんでした',
     couldNotDeleteNote: 'ノートを削除できませんでした',
     couldNotDeleteFolder: 'フォルダを削除できませんでした',
+    lineSpacingTitle: 'このノート · 行間',
+    customSpacing: 'カスタム行間',
+    linesPerPage: '行／ページ',
+    createCustomLined: 'カスタム罫線ノートを作成',
+    lineSpacing: { standard: '標準', narrow: '狭い', compact: 'とても狭い' },
     backgrounds: {
       plain: '無地',
       lined: '罫線',

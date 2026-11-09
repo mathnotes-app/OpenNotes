@@ -27,6 +27,8 @@ jobs:
     env:
       IOS_SIMULATOR_FAMILY: ipad
     steps:
+      - name: Disable Spotlight indexing on the disposable audit runner
+        run: sudo mdutil -i off /
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -106,6 +108,7 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testDrawingOverImageSurvivesUndoAndReload \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testLineSpacingSurvivesRelaunch \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
             -collect-test-diagnostics never
       - name: Preserve interaction test evidence
