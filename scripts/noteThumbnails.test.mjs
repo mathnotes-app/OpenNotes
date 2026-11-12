@@ -9,6 +9,11 @@ const source = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
+const importSource = ts.transpileModule(
+  readFileSync(new URL('../src/services/pdfImportService.ts', import.meta.url), 'utf8'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
 const ink = 'data:image/png;base64,aW5r';
 const composite = 'data:image/png;base64,cGhvdG8=';
 const photo = { id: 'photo', type: 'image', sourceUri: 'file:///photo.jpg', x: 20, y: 30, width: 100, height: 80 };
@@ -31,14 +36,14 @@ function harness({ writeOk = true, renderFails = false, render = async () => com
         readBody: async () => { reads += 1; return { kind: readKind, data: structuredClone(stored) }; },
       };
       if (name === './thumbnailService') return {
-        THUMBNAIL_VERSION: 1,
+        THUMBNAIL_VERSION: 2,
         createPageThumbnail: async (...args) => {
           if (renderFails) throw new Error('Image decoder unavailable');
           return render(...args);
         },
       };
       if (name === '../i18n') return { t: { common: { untitled: 'Untitled' } } };
-      if (name === '../utils/id') return {};
+      if (name === '../utils/id') return { noteId: () => 'imported' };
       if (name === './catalogStore') return {};
       if (name === './pdfStorage' || name === './imageInsertStorage') return {};
       throw new Error('Unexpected import: ' + name);
@@ -54,7 +59,7 @@ test('saving uses a composed cover without flattening overlays into the note bod
   const result = await h.saveNoteBody('note', original);
   assert.equal(result.ok, true);
   assert.equal(h.note().thumbnailUri, composite);
-  assert.equal(h.note().thumbnailVersion, 1);
+  assert.equal(h.note().thumbnailVersion, 2);
   assert.deepEqual(h.stored(), original);
   assert.equal(h.stored().pages[0].previewUri, ink);
 });
@@ -71,22 +76,23 @@ test('thumbnail failure cannot fail a note save or discard its images', async ()
   assert.equal((await h.saveNoteBody('note', body())).ok, true);
   assert.equal(h.stored().pages[0].insertedElements[0].sourceUri, photo.sourceUri);
   assert.equal(h.note().thumbnailUri, ink);
-  assert.notEqual(h.note().thumbnailVersion, 1);
+  assert.notEqual(h.note().thumbnailVersion, 2);
 });
 
-test('legacy thumbnail repair leaves the note body and modification date untouched', async () => {
+test('repairing a version-one cover leaves the note body and modification date untouched', async () => {
   const h = harness();
+  await h.updateMetadata('note', { thumbnailVersion: 1, updatedAt: '2026-01-02' });
   const before = structuredClone(h.stored());
   assert.equal(await h.getNoteThumbnail(h.note()), composite);
   assert.equal(h.note().updatedAt, '2026-01-02');
-  assert.equal(h.note().thumbnailVersion, 1);
+  assert.equal(h.note().thumbnailVersion, 2);
   assert.deepEqual(h.stored(), before);
 });
 
 test('failed legacy thumbnail repair keeps the existing cover eligible for retry', async () => {
   const h = harness({ renderFails: true });
   assert.equal(await h.getNoteThumbnail(h.note()), ink);
-  assert.notEqual(h.note().thumbnailVersion, 1);
+  assert.notEqual(h.note().thumbnailVersion, 2);
 });
 
 test('image-only saves compose the first page even when no ink preview exists', async () => {
@@ -126,7 +132,7 @@ for (const readKind of ['unreadable', 'missing']) {
 
 test('current thumbnail versions do not re-read or rewrite legacy bodies', async () => {
   const h = harness();
-  await h.updateMetadata('note', { thumbnailVersion: 1, thumbnailUri: composite });
+  await h.updateMetadata('note', { thumbnailVersion: 2, thumbnailUri: composite });
   assert.equal(await h.getNoteThumbnail(h.note()), composite);
   assert.equal(h.reads(), 0);
 });
@@ -138,7 +144,7 @@ test('an old thumbnail repair cannot overwrite a newer note save', async () => {
   const h = harness({ render: () => new Promise(resolve => { finishRender = resolve; startRender(); }) });
   const repairing = h.getNoteThumbnail(structuredClone(h.note()));
   await started;
-  await h.updateMetadata('note', { updatedAt: '2026-10-22', thumbnailUri: 'new-cover', thumbnailVersion: 1 });
+  await h.updateMetadata('note', { updatedAt: '2026-10-22', thumbnailUri: 'new-cover', thumbnailVersion: 2 });
   finishRender(composite);
   assert.equal(await repairing, 'new-cover');
   assert.equal(h.note().thumbnailUri, 'new-cover');
@@ -164,4 +170,28 @@ test('duplicate card requests share a single repair of the same legacy cover', a
   assert.equal(await first, composite);
   assert.equal(await second, composite);
   assert.equal(h.reads(), 1);
+});
+
+test('importing a PDF generates its first cover with the copied PDF already available', async () => {
+  const pdfUri = 'file:///notes/pdfs/imported.pdf';
+  const h = harness({ render: async (_page, background, uri) =>
+    background === 'pdf' && uri === pdfUri ? composite : null });
+  const exports = {};
+  vm.runInNewContext(importSource, { exports, require(name) {
+    if (name === './notesRepo') return h;
+    if (name === './lifecycleService') return { recordSuccessfulNoteSave: async () => {} };
+    if (name === './pdfStorage') return {
+      importPdfFromUri: async () => ({ uri: pdfUri, name: 'Lecture.pdf', pageCount: 1 }),
+      createPdfNotebookData: () => ({
+        version: '1.0', pages: [{ id: 'page-1', data: '', pageType: 'pdf', pdfPageNumber: 1 }],
+      }),
+    };
+    throw new Error('Unexpected import: ' + name);
+  } });
+
+  const imported = await exports.createPdfNoteFromUri('file:///incoming/lecture.pdf');
+
+  assert.equal(imported.pdfUri, pdfUri);
+  assert.equal(imported.thumbnailUri, composite);
+  assert.equal(imported.thumbnailVersion, 2);
 });

@@ -14,15 +14,16 @@ test('catalog reload preserves composed thumbnail versions and still accepts old
   const catalog = parseCatalog(JSON.stringify({
     version: 1, folders: [], notes: [
       { id: 'old', title: 'Old note', thumbnailUri: 'old-ink-preview' },
-      { id: 'new', title: 'Photo note', thumbnailUri: 'composed-cover', thumbnailVersion: 1 },
+      { id: 'v1', title: 'Old cover', thumbnailUri: 'old-cover', thumbnailVersion: 1 },
+      { id: 'new', title: 'PDF note', thumbnailUri: 'composed-cover', thumbnailVersion: 2 },
     ],
   }));
   assert.equal(catalog.notes[0].thumbnailUri, 'old-ink-preview');
   assert.equal(catalog.notes[0].thumbnailVersion, undefined);
   assert.equal(catalog.notes[1].thumbnailVersion, 1);
   const restored = parseCatalog(JSON.stringify(catalog));
-  assert.equal(restored.notes[1].thumbnailUri, 'composed-cover');
-  assert.equal(restored.notes[1].thumbnailVersion, 1);
+  assert.equal(restored.notes[2].thumbnailUri, 'composed-cover');
+  assert.equal(restored.notes[2].thumbnailVersion, 2);
 });
 
 function makeKv(initial = {}) {
