@@ -178,6 +178,8 @@ export const zhHans: Strings = {
     goToPageA11y: (page: number) => `前往第 ${page} 页`,
     undo: '撤销',
     redo: '重做',
+    enableFullscreen: '啟用全螢幕',
+    disableFullscreen: '停用全螢幕',
     enableFingerDrawing: '开启手指绘画',
     disableFingerDrawing: '关闭手指绘画',
     tapToAddText: '点按以添加文本',

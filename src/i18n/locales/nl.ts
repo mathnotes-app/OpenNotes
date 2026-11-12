@@ -181,6 +181,8 @@ export const nl: Strings = {
     goToPageA11y: (page: number) => `Ga naar pagina ${page}`,
     undo: 'Herstel',
     redo: 'Opnieuw',
+    enableFullscreen: 'Volledig scherm inschakelen',
+    disableFullscreen: 'Volledig scherm uitschakelen',
     enableFingerDrawing: 'Tekenen met vinger aanzetten',
     disableFingerDrawing: 'Tekenen met vinger uitzetten',
     tapToAddText: 'Tik om tekst toe te voegen',
