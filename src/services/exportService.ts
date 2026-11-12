@@ -11,7 +11,7 @@ import {
   PDF_PAGE_WIDTH,
   type PrintablePage,
 } from './pdfExportHtml';
-import { PDFUtilsModule } from './pdfUtilsModule';
+import { PDFUtilsModule, resolvePdfRenderUri } from './pdfUtilsModule';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
@@ -41,6 +41,10 @@ function getPdfPageIndex(
   return typeof page.pdfPageNumber === 'number' && page.pdfPageNumber > 0
     ? page.pdfPageNumber - 1
     : pageIndex;
+}
+
+function getPageType(page: SerializedNotebookData['pages'][number], pdfBackgroundUri?: string): string {
+  return page.pageType ?? (pdfBackgroundUri ? 'pdf' : 'plain');
 }
 
 async function toPrintableImageUri(uri: string | undefined): Promise<string | null> {
@@ -131,7 +135,7 @@ async function renderNativePagesInChunks(options: {
   pageIndexes: number[];
   exportWidth: number;
   exportHeight: number;
-  pdfBackgroundUri?: string | null;
+  pdfBackgroundUri?: string;
   batchSize: number;
 }): Promise<Map<number, string>> {
   const {
@@ -149,11 +153,11 @@ async function renderNativePagesInChunks(options: {
     const chunkPages = chunkPageIndexes.map((pageIndex) => data.pages[pageIndex]);
     const pngUris = await batchExportPages(
       chunkPages.map((p) => p?.data ?? '{"pages":{}}'),
-      chunkPages.map((p) => p?.pageType ?? 'plain'),
+      chunkPages.map((p) => getPageType(p, pdfBackgroundUri)),
       exportWidth,
       exportHeight,
       EXPORT_SCALE,
-      pdfBackgroundUri ?? undefined,
+      pdfBackgroundUri,
       chunkPages.map((page, offset) =>
         getPdfPageIndex(page, chunkPageIndexes[offset]),
       ),
@@ -179,16 +183,21 @@ async function collectExportImages(options: {
   pageIndexes: number[];
   exportWidth: number;
   exportHeight: number;
-  pdfBackgroundUri?: string | null;
+  pdfBackgroundUri?: string;
+  hasBakedAnnotations: boolean;
 }): Promise<string[]> {
-  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri } = options;
+  const { data, pageIndexes, exportWidth, exportHeight, pdfBackgroundUri, hasBakedAnnotations } = options;
   const images = new Map<number, string>();
   const nativePageIndexes: number[] = [];
   const preferStoredPreviews = data.pages.length >= LARGE_NOTEBOOK_PREVIEW_THRESHOLD;
 
   if (preferStoredPreviews) {
     for (const pageIndex of pageIndexes) {
-      const previewUri = await toPrintableImageUri(data.pages[pageIndex]?.previewUri);
+      const page = data.pages[pageIndex];
+      // Saved previews may have been captured before the annotations were baked in.
+      const previewUri = hasBakedAnnotations && getPageType(page, pdfBackgroundUri) === 'pdf'
+        ? null
+        : await toPrintableImageUri(page.previewUri);
       if (previewUri) {
         images.set(pageIndex, previewUri);
       } else {
@@ -246,6 +255,8 @@ export async function exportNotebookAsPdf(
   const passUris: string[] = [];
   let mergedUri: string | null = null;
   try {
+    const renderPdfUri = await resolvePdfRenderUri(pdfBackgroundUri);
+    const hasBakedAnnotations = renderPdfUri !== undefined && renderPdfUri !== pdfBackgroundUri;
     const pixelRatio = PixelRatio.get();
     const nativeScale = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
     const exportWidth = Math.round(NOTE_PAGE_WIDTH * nativeScale);
@@ -262,7 +273,8 @@ export async function exportNotebookAsPdf(
         pageIndexes,
         exportWidth,
         exportHeight,
-        pdfBackgroundUri,
+        pdfBackgroundUri: renderPdfUri,
+        hasBakedAnnotations,
       });
       if (rasterUris.length !== pageIndexes.length) {
         return {
