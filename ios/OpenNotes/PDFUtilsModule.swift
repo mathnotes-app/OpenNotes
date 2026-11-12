@@ -4,8 +4,33 @@ import UIKit
 
 @objc(PDFUtilsModule)
 class PDFUtilsModule: NSObject {
+  private static let pdfRenderQueue = DispatchQueue(label: "OpenNotes.pdf-render-copy", qos: .userInitiated)
+
   @objc static func requiresMainQueueSetup() -> Bool {
     return false
+  }
+
+  @objc
+  func preparePdfForRendering(_ fileUri: String,
+                              resolver: @escaping RCTPromiseResolveBlock,
+                              rejecter: @escaping RCTPromiseRejectBlock) {
+    Self.pdfRenderQueue.async {
+      autoreleasepool {
+        guard let source = Self.localFileURL(fileUri) else {
+          rejecter("E_INVALID_PATH", "Invalid PDF file URL", nil)
+          return
+        }
+        do {
+          let caches = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask,
+                                                   appropriateFor: nil, create: true)
+          let directory = caches.appendingPathComponent("pdf-render-v1", isDirectory: true)
+          let rendered = try PDFRenderCopy.url(for: source, cacheDirectory: directory)
+          resolver(rendered == source ? fileUri : rendered.absoluteString)
+        } catch {
+          rejecter("E_PDF_RENDER_COPY", "Could not prepare the PDF annotations for rendering", error)
+        }
+      }
+    }
   }
 
   @objc

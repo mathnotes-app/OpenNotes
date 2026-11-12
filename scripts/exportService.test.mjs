@@ -24,7 +24,7 @@ function notebook(pages) {
   };
 }
 
-function harness(files = {}, { mergePdfFiles } = {}) {
+function harness(files = {}, { mergePdfFiles, preparePdfForRendering } = {}) {
   const printCalls = [];
   const batchCalls = [];
   const fileReads = [];
@@ -66,14 +66,14 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       if (name === 'react-native') return { PixelRatio: { get: () => 2 } };
       if (name === './pdfUtilsModule') {
         return {
-          PDFUtilsModule: mergePdfFiles === null
-            ? {}
-            : {
-                mergePdfFiles: async (uris) => {
-                  mergeCalls.push(uris);
-                  return mergePdfFiles ? mergePdfFiles(uris) : 'file:///merged.pdf';
-                },
-              },
+          PDFUtilsModule: {
+            preparePdfForRendering,
+            mergePdfFiles: mergePdfFiles === null ? undefined : async (uris) => {
+              mergeCalls.push(uris);
+              return mergePdfFiles ? mergePdfFiles(uris) : 'file:///merged.pdf';
+            },
+          },
+          resolvePdfRenderUri: async uri => uri ? preparePdfForRendering?.(uri) ?? uri : undefined,
         };
       }
       if (name === '@mathnotes/mobile-ink') return mobileInk;
@@ -255,4 +255,56 @@ test('base64 page rasters are embedded verbatim instead of escaped copies', () =
   assert.ok(html.includes('src="' + raster + '"'));
   const unsafe = buildPdfHtml([{ rasterUri: 'file:///a"b.png', images: [], textBoxes: [] }]);
   assert.ok(unsafe.includes('file:///a&quot;b.png'));
+});
+
+test('PDF export uses the prepared copy and preserves the source page index', async () => {
+  const source = 'file:///imported.pdf';
+  const prepared = 'file:///cache/annotated.pdf';
+  const h = harness({}, { preparePdfForRendering: async uri => {
+    assert.equal(uri, source);
+    return prepared;
+  } });
+
+  const result = await h.exportNotebookAsPdf({
+    data: notebook([{ pageType: 'pdf', pdfPageNumber: 3 }]),
+    pdfBackgroundUri: source,
+    filename: 'marked-up',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(h.batchCalls[0][5], prepared);
+  assert.equal(h.batchCalls[0][6][0], 2);
+});
+
+test('large exports regenerate annotated PDF pages while reusing other saved previews', async () => {
+  const oldPreview = 'file:///stale-preview.png';
+  const plainPreview = 'data:image/png;base64,UEdF';
+  const prepared = 'file:///cache/annotated.pdf';
+  const h = harness({ [oldPreview]: 'T0xE' }, { preparePdfForRendering: async () => prepared });
+  const data = notebook([
+    { pageType: undefined, pdfPageNumber: 5, previewUri: oldPreview },
+    ...Array.from({ length: 149 }, () => ({ previewUri: plainPreview })),
+  ]);
+
+  const result = await h.exportNotebookAsPdf({ data, pdfBackgroundUri: 'file:///imported.pdf', filename: 'large' });
+
+  assert.equal(result.ok, true);
+  assert.equal(h.batchCalls.length, 1);
+  assert.equal(h.batchCalls[0][5], prepared);
+  assert.equal(h.batchCalls[0][6][0], 4);
+  assert.deepEqual(h.fileReads, []);
+  assert.doesNotMatch(h.printCalls[0].html, /T0xE/);
+  assert.match(h.printCalls[0].html, /UEdF/);
+});
+
+test('large unannotated PDF exports can still use saved previews', async () => {
+  const h = harness({}, { preparePdfForRendering: async uri => uri });
+  const previewUri = 'data:image/png;base64,UERG';
+  const data = notebook(Array.from({ length: 150 }, () => ({ pageType: 'pdf', previewUri })));
+
+  const result = await h.exportNotebookAsPdf({ data, pdfBackgroundUri: 'file:///imported.pdf', filename: 'large' });
+
+  assert.equal(result.ok, true);
+  assert.equal(h.batchCalls.length, 0);
+  assert.match(h.printCalls[0].html, /UERG/);
 });

@@ -1,12 +1,14 @@
 import { ClipOp, Skia, type SkImage } from '@shopify/react-native-skia';
 import { batchExportPages, type InsertedElement, type NotebookPage } from '@mathnotes/mobile-ink';
+import { PixelRatio } from 'react-native';
 import { createPromiseQueue } from '../utils/promiseQueue';
-import { PDFUtilsModule } from './pdfUtilsModule';
+import { PDFUtilsModule, resolvePdfRenderUri } from './pdfUtilsModule';
 
-export const THUMBNAIL_VERSION = 1;
+export const THUMBNAIL_VERSION = 2;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const SCALE = 0.5;
+const THUMBNAIL_HEIGHT = Math.ceil(PAGE_HEIGHT * SCALE);
 const renderQueue = createPromiseQueue();
 
 function finite(value: number | undefined, fallback: number): number {
@@ -60,18 +62,32 @@ async function composePageThumbnail(
     .sort((a, b) => finite(a.zIndex, 1) - finite(b.zIndex, 1)
       || finite(a.zIndex, 0) - finite(b.zIndex, 0));
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
-  if (!elements.length && !textBoxes.length) return page.previewUri ?? null;
+  const pageType = page.pageType ?? backgroundType;
+  const isPdf = pageType === 'pdf';
+  const hasOverlays = elements.length > 0 || textBoxes.length > 0;
+  if (!isPdf && !hasOverlays) return page.previewUri ?? null;
 
-  let raster = page.previewUri;
+  // Round the PDF raster up to a full thumbnail row so the native renderer cannot clip the page edge.
+  const rasterHeight = isPdf ? THUMBNAIL_HEIGHT / SCALE : PAGE_HEIGHT;
+  // The editor preview can contain stale PDF content or mis-scaled ink.
+  let raster = isPdf ? undefined : page.previewUri;
   if (!raster) {
+    const renderPdfUri = isPdf ? await resolvePdfRenderUri(pdfUri) : undefined;
+    if (isPdf && !renderPdfUri) throw new Error('Thumbnail PDF background is missing');
+    const density = isPdf ? PixelRatio.get() : 1;
+    const nativeScale = Number.isFinite(density) && density > 0 ? density : 1;
+    // Mobile Ink stores ink in device pixels.
+    const width = Math.ceil(PAGE_WIDTH * nativeScale);
+    const height = Math.ceil(rasterHeight * nativeScale);
     [raster] = await batchExportPages(
-      [page.data ?? '{"pages":{}}'], [page.pageType ?? backgroundType], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
-      pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+      [page.data || '{"pages":{}}'], [pageType], width, height, SCALE / nativeScale,
+      renderPdfUri, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!raster) throw new Error('Thumbnail background could not be rendered');
   }
+  if (!hasOverlays) return raster;
 
-  const surface = Skia.Surface.Make(PAGE_WIDTH * SCALE, Math.ceil(PAGE_HEIGHT * SCALE));
+  const surface = Skia.Surface.Make(PAGE_WIDTH * SCALE, THUMBNAIL_HEIGHT);
   if (!surface) throw new Error('Thumbnail surface could not be allocated');
   const paint = Skia.Paint();
   try {
@@ -81,7 +97,7 @@ async function composePageThumbnail(
     const base = await decodeImage(raster);
     try {
       canvas.drawImageRect(base, Skia.XYWHRect(0, 0, base.width(), base.height()),
-        Skia.XYWHRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT), paint);
+        Skia.XYWHRect(0, 0, PAGE_WIDTH, rasterHeight), paint);
     } finally {
       base.dispose();
     }

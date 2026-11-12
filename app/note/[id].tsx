@@ -60,6 +60,7 @@ import {
   type PickedImageResult,
 } from '../../src/services/imageInsertStorage';
 import { exportNotebookAsPdf } from '../../src/services/exportService';
+import { resolvePdfRenderUri } from '../../src/services/pdfUtilsModule';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
@@ -147,6 +148,7 @@ export default function NoteScreen() {
   const lastPenToolRef = useRef<'pen' | 'highlighter' | 'crayon' | 'calligraphy'>('pen');
 
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
+  const [pdfRenderUri, setPdfRenderUri] = useState<string>();
   const [enginePages, setEnginePages] = useState<NotebookPage[]>([]);
   const [overlayMap, setOverlayMap] = useState<Map<string, PageOverlayState>>(
     () => new Map(),
@@ -309,7 +311,11 @@ export default function NoteScreen() {
       try {
         const [meta, body] = await Promise.all([getNote(id), readNoteBody(id)]);
         if (cancelled) return;
-        if (meta) setMetadata(meta);
+        const sourceUri = meta?.pdfUri ?? undefined;
+        const renderUri = await resolvePdfRenderUri(sourceUri).catch(() => sourceUri);
+        if (cancelled) return;
+        setPdfRenderUri(renderUri);
+        setMetadata(meta);
         if (body.kind === 'unreadable') {
           // A body file exists but cannot be read. Never fall back to an empty
           // notebook here: autosave would overwrite the file and destroy
@@ -905,7 +911,7 @@ export default function NoteScreen() {
           pageHeight={PAGE_HEIGHT}
           toolState={toolState}
           backgroundType={metadata?.backgroundType ?? 'plain'}
-          pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
+          pdfBackgroundBaseUri={pdfRenderUri}
           fingerDrawingEnabled={fingerDrawingEnabled}
           onReady={handleCanvasReady}
           onDrawingChange={handleDrawingChange}
