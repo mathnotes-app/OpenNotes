@@ -185,6 +185,8 @@ export interface FloatingToolbarProps {
   historyEnabled?: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  containerWidth?: number;
+  screenOffsetX?: number;
 }
 
 interface ButtonLayout {
@@ -207,10 +209,13 @@ export function FloatingToolbar({
   historyEnabled = true,
   onUndo,
   onRedo,
+  containerWidth,
+  screenOffsetX = 0,
 }: FloatingToolbarProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { width: windowWidth, height: screenHeight } = useWindowDimensions();
+  const screenWidth = containerWidth ?? windowWidth;
 
   const [dockedEdge, setDockedEdge] = useState<DockedEdge>('top');
   const orientation = orientationForEdge(dockedEdge);
@@ -298,6 +303,13 @@ export function FloatingToolbar({
     dockedEdgeRef.current = nextEdge;
     setDockedEdge((prev) => (prev === nextEdge ? prev : nextEdge));
   }, []);
+
+  useEffect(() => {
+    if (containerWidth !== undefined && containerWidth < 380 &&
+        (dockedEdge === 'top' || dockedEdge === 'bottom')) {
+      commitDockedEdge(EDGE_LEFT);
+    }
+  }, [containerWidth, dockedEdge, commitDockedEdge]);
 
   const startDrag = useCallback(() => {
     draggingRef.current = true;
@@ -441,7 +453,7 @@ export function FloatingToolbar({
       if (!layout) {
         return {
           toolType,
-          screenX: x + pill.width / 2,
+          screenX: screenOffsetX + x + pill.width / 2,
           screenY: y + pill.height / 2,
           width: 0,
           height: 0,
@@ -450,14 +462,14 @@ export function FloatingToolbar({
       }
       return {
         toolType,
-        screenX: x + layout.offsetX,
+        screenX: screenOffsetX + x + layout.offsetX,
         screenY: y + layout.offsetY,
         width: layout.width,
         height: layout.height,
         dockedEdge: edge,
       };
     },
-    [translateX, translateY],
+    [translateX, translateY, screenOffsetX],
   );
 
   return (

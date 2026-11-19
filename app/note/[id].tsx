@@ -44,6 +44,7 @@ import {
   type ToolbarButtonAnchor,
 } from '../../src/components/editor/FloatingToolbar';
 import { PageSidebar } from '../../src/components/editor/PageSidebar';
+import { SplitNotePicker } from '../../src/components/editor/SplitNotePicker';
 import { ToolSettingsPopover } from '../../src/components/editor/ToolSettingsPopover';
 import { PreferencesSheet } from '../../src/components/ui/PreferencesSheet';
 import { ItemActionsMenu } from '../../src/components/library/ItemActionsMenu';
@@ -69,6 +70,7 @@ import {
   type PickedImageResult,
 } from '../../src/services/imageInsertStorage';
 import { exportNotebookAsPdf } from '../../src/services/exportService';
+import { resolvePdfRenderUri } from '../../src/services/pdfUtilsModule';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
 import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
 import { documentVisualLayers, imageAtContentPoint } from '../../src/utils/visualLayerOrder';
@@ -144,11 +146,49 @@ function defaultFingerDrawingForViewport(width: number, height: number): boolean
 }
 
 export default function NoteScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { width } = useWindowDimensions();
+  const [workspaceWidth, setWorkspaceWidth] = useState(width);
+  const [secondId, setSecondId] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const secondFlush = useRef<(() => Promise<boolean>) | null>(null);
+  const closePicker = useCallback(() => setPicking(false), []);
+  const closeSecond = useCallback(() => { secondFlush.current = null; setSecondId(null); }, []);
+  const beforeLeave = useCallback(async () => {
+    if (!secondId || !secondFlush.current) return true;
+    if (await secondFlush.current()) return true;
+    Alert.alert(t.editor.saveFailedTitle, t.editor.saveFailedBody);
+    return false;
+  }, [secondId]);
+  const paneWidth = secondId ? (workspaceWidth - StyleSheet.hairlineWidth) / 2 : workspaceWidth;
+  if (!id) return null;
+  return <View style={{flex: 1, flexDirection: 'row'}} onLayout={event => setWorkspaceWidth(event.nativeEvent.layout.width)}>
+    <View style={{flex: 1, overflow: 'hidden'}}>
+      <NotePane id={id} paneWidth={paneWidth} isSplit={Boolean(secondId)} onSplit={!secondId && workspaceWidth >= 720 ? () => setPicking(true) : undefined}
+        beforeLeave={beforeLeave} />
+    </View>
+    {secondId && <>
+      <View style={{width: StyleSheet.hairlineWidth, backgroundColor: '#888'}} />
+      <View style={{flex: 1, overflow: 'hidden'}}>
+        <NotePane key={secondId} id={secondId} paneWidth={paneWidth} isSplit screenOffsetX={paneWidth + StyleSheet.hairlineWidth}
+          onClosed={closeSecond} flushRef={secondFlush} />
+      </View>
+    </>}
+    <SplitNotePicker visible={picking} excludeId={id} onClose={closePicker}
+      onChoose={selected => { setPicking(false); setSecondId(selected); }} />
+  </View>;
+}
+
+function NotePane({ id, paneWidth, isSplit = false, screenOffsetX = 0, onSplit, onClosed, beforeLeave, flushRef }: {
+  id: string; paneWidth: number; isSplit?: boolean; screenOffsetX?: number; onSplit?: () => void;
+  onClosed?: () => void; beforeLeave?: () => Promise<boolean>;
+  flushRef?: React.MutableRefObject<(() => Promise<boolean>) | null>;
+}) {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { width: windowWidth, height: viewportHeight } = useWindowDimensions();
+  const viewportWidth = paneWidth;
 
   const canvasRef = useRef<ContinuousDocumentCanvasRef | null>(null);
   const pendingBodyRef = useRef<SerializedNotebookData | null>(null);
@@ -164,6 +204,7 @@ export default function NoteScreen() {
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
   const [lineSpacingBusy, setLineSpacingBusy] = useState(false);
   const lineSpacingBusyRef = useRef(false);
+  const [pdfRenderUri, setPdfRenderUri] = useState<string>();
   const [enginePages, setEnginePages] = useState<NotebookPage[]>([]);
   const enginePagesRef = useRef(enginePages);
   const updateEnginePages = useCallback((pages: NotebookPage[]) => {
@@ -194,8 +235,8 @@ export default function NoteScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isPageSidebarOpen, setIsPageSidebarOpen] = useState(false);
   const defaultFingerDrawingEnabled = useMemo(
-    () => defaultFingerDrawingForViewport(viewportWidth, viewportHeight),
-    [viewportHeight, viewportWidth],
+    () => defaultFingerDrawingForViewport(windowWidth, viewportHeight),
+    [viewportHeight, windowWidth],
   );
   const [fingerDrawingEnabled, setFingerDrawingEnabled] = useState(
     defaultFingerDrawingEnabled,
@@ -263,6 +304,7 @@ export default function NoteScreen() {
     onStatusChange: safeStatusChange,
     enabled: Boolean(id) && autosaveEnabled && bodyReady,
   });
+  if (flushRef) flushRef.current = flushNow;
 
   const history = useOverlayHistory({fileId: id, canvasRef,
     readPages: () => enginePagesRef.current.map(page => ({...page, ...overlayMapRef.current.get(page.id)})),
@@ -356,7 +398,11 @@ export default function NoteScreen() {
       try {
         const [meta, body] = await Promise.all([getNote(id), readNoteBody(id)]);
         if (cancelled) return;
-        if (meta) setMetadata(meta);
+        const sourceUri = meta?.pdfUri ?? undefined;
+        const renderUri = await resolvePdfRenderUri(sourceUri).catch(() => sourceUri);
+        if (cancelled) return;
+        setPdfRenderUri(renderUri);
+        setMetadata(meta);
         if (body.kind === 'unreadable') {
           // A body file exists but cannot be read. Never fall back to an empty
           // notebook here: autosave would overwrite the file and destroy
@@ -863,12 +909,12 @@ export default function NoteScreen() {
     cancelPendingAutosave();
     setAutosaveEnabled(false);
     try {
-      router.replace('/');
+      if (onClosed) onClosed(); else router.replace('/');
     } catch (error) {
       exitRef.current = 'editing';
       if (__DEV__) console.warn('[NoteScreen] navigation failed', error);
     }
-  }, [cancelPendingAutosave, router]);
+  }, [cancelPendingAutosave, onClosed, router]);
 
   // Save-then-leave. On failure the user chooses: retry, stay, or explicitly
   // discard. The named function expression lets the retry button re-invoke it.
@@ -876,6 +922,10 @@ export default function NoteScreen() {
     const saved = await flushNow();
     if (!isMountedRef.current) return;
     if (saved) {
+      if (beforeLeave && !await beforeLeave()) {
+        exitRef.current = 'editing';
+        return;
+      }
       navigateHome();
       return;
     }
@@ -887,7 +937,12 @@ export default function NoteScreen() {
         {
           text: t.editor.leaveAnyway,
           style: 'destructive',
-          onPress: () => navigateHome(),
+          onPress: () => {
+            void (async () => {
+              if (!beforeLeave || await beforeLeave()) navigateHome();
+              else exitRef.current = 'editing';
+            })();
+          },
         },
         {
           text: t.editor.stay,
@@ -898,7 +953,7 @@ export default function NoteScreen() {
         },
       ],
     );
-  }, [flushNow, navigateHome]);
+  }, [beforeLeave, flushNow, navigateHome]);
 
   const handleBack = useCallback(async () => {
     if (exitRef.current !== 'editing') return;
@@ -1043,6 +1098,8 @@ export default function NoteScreen() {
         onTogglePageSidebar={() => setIsPageSidebarOpen((value) => !value)}
         onExport={() => void handleExport()}
         onPreferences={() => { setToolPopover(null); setAction({ kind: 'preferences' }); }}
+        onSplit={onSplit}
+        closePane={Boolean(onClosed)}
       />
 
       <KeyboardAvoidingView
@@ -1064,7 +1121,7 @@ export default function NoteScreen() {
           toolState={toolState}
           holdToShapeEnabled={holdToShape}
           backgroundType={paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing)}
-          pdfBackgroundBaseUri={metadata?.pdfUri ?? undefined}
+          pdfBackgroundBaseUri={pdfRenderUri}
           fingerDrawingEnabled={fingerDrawingEnabled}
           onContentTap={hasSelectableImages && !fingerDrawingEnabled && !['select', 'text', 'insert'].includes(toolState.toolType)
             ? handleImageFingerTap : undefined}
@@ -1108,6 +1165,8 @@ export default function NoteScreen() {
         activeTool={toolState.toolType as ToolDescriptor['type']}
         toolColors={toolColors}
         topInset={headerHeight}
+        containerWidth={isSplit ? paneWidth : undefined}
+        screenOffsetX={screenOffsetX}
         fingerDrawingEnabled={fingerDrawingEnabled}
         onToggleFingerDrawing={() => {
           void Haptics.selectionAsync();

@@ -22,6 +22,8 @@ export interface EditorHeaderProps {
   onTogglePageSidebar: () => void;
   onExport: () => void;
   onPreferences: () => void;
+  onSplit?: () => void;
+  closePane?: boolean;
 }
 
 export function EditorHeader({
@@ -36,6 +38,8 @@ export function EditorHeader({
   onTogglePageSidebar,
   onExport,
   onPreferences,
+  onSplit,
+  closePane = false,
 }: EditorHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -54,13 +58,13 @@ export function EditorHeader({
         <Pressable
           testID="editor-back"
           accessibilityRole="button"
-          accessibilityLabel={t.library.backLabel}
+          accessibilityLabel={closePane ? t.editor.closeSplit : t.library.backLabel}
           onPress={onBack}
           hitSlop={10}
           style={({ pressed }) => [styles.sideButton, pressed && { opacity: 0.5 }]}
         >
           <Ionicons name="chevron-back" size={26} color={theme.colors.accent} />
-          <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>
+          {!closePane && <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>}
         </Pressable>
 
         <Pressable
@@ -87,6 +91,10 @@ export function EditorHeader({
         </Pressable>
 
         <View style={styles.rightActions}>
+          {onSplit && <Pressable accessibilityRole="button" accessibilityLabel={t.editor.openSplit}
+            testID="editor-open-split" onPress={onSplit} hitSlop={8} style={styles.iconButton}>
+            <Ionicons name="copy-outline" size={22} color={theme.colors.accent} />
+          </Pressable>}
           <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.title}
             testID="editor-preferences" onPress={onPreferences} hitSlop={10} style={styles.iconButton}>
             <Ionicons name="settings-outline" size={22} color={theme.colors.accent} />

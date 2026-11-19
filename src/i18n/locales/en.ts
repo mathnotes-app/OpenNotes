@@ -179,6 +179,10 @@ export const en = {
     couldNotOpenRatingsTitle: 'Could not open ratings',
   },
   editor: {
+    openSplit: "Open another note beside this one",
+    closeSplit: "Close second note",
+    chooseSplitNote: "Choose a note",
+    noOtherNotes: "No other notes yet",
     statusReady: 'ready',
     statusPending: 'unsaved changes',
     statusSaving: 'saving…',

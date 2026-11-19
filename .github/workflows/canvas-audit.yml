@@ -63,6 +63,7 @@ jobs:
           xcrun simctl addmedia "$simulator_id" assets/icon.png
           xcrun simctl privacy "$simulator_id" grant photos com.builderpro.opennotes
           python3 scripts/seed-native-audit.py "$simulator_id"
+          python3 scripts/seed-pdf-detail-audit.py "$simulator_id"
       - name: Inspect photo picker
         continue-on-error: true
         run: |
@@ -109,6 +110,8 @@ jobs:
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testInvalidNativePayloadShowsRecoveryWithoutOverwritingNote \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testPreferencesAndReturnToPen \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testLineSpacingSurvivesRelaunch \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testSplitNotesRemainIndependentAndSaveOnClose \
+            -only-testing:OpenNotesUITests/NotebookInteractionUITests/testZoomedPdfVectorDetailRemainsVisible \
             -only-testing:OpenNotesUITests/NotebookInteractionUITests/testChoosePhotoCover \
             -collect-test-diagnostics never
       - name: Preserve interaction test evidence

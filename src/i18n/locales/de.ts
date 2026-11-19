@@ -179,6 +179,10 @@ export const de: Strings = {
     couldNotOpenRatingsTitle: 'Bewertungen konnten nicht geöffnet werden',
   },
   editor: {
+    openSplit: "Weitere Notiz nebeneinander öffnen",
+    closeSplit: "Zweite Notiz schließen",
+    chooseSplitNote: "Notiz auswählen",
+    noOtherNotes: "Noch keine weiteren Notizen",
     statusReady: 'bereit',
     statusPending: 'ungesicherte Änderungen',
     statusSaving: 'sichert…',

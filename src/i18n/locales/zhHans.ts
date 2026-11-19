@@ -177,6 +177,10 @@ export const zhHans: Strings = {
     couldNotOpenRatingsTitle: '无法打开评价',
   },
   editor: {
+    openSplit: "并排打开另一篇笔记",
+    closeSplit: "关闭第二篇笔记",
+    chooseSplitNote: "选择笔记",
+    noOtherNotes: "还没有其他笔记",
     statusReady: '就绪',
     statusPending: '有未保存的更改',
     statusSaving: '保存中…',

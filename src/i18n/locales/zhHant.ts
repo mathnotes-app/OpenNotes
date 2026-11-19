@@ -177,6 +177,10 @@ export const zhHant: Strings = {
     couldNotOpenRatingsTitle: '無法開啟評分',
   },
   editor: {
+    openSplit: "並排開啟另一篇筆記",
+    closeSplit: "關閉第二篇筆記",
+    chooseSplitNote: "選擇筆記",
+    noOtherNotes: "目前沒有其他筆記",
     statusReady: '就緒',
     statusPending: '有未儲存的變更',
     statusSaving: '儲存中…',

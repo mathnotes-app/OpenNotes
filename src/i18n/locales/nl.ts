@@ -179,6 +179,10 @@ export const nl: Strings = {
     couldNotOpenRatingsTitle: 'Kon beoordelingen niet openen',
   },
   editor: {
+    openSplit: "Open een andere notitie ernaast",
+    closeSplit: "Tweede notitie sluiten",
+    chooseSplitNote: "Kies een notitie",
+    noOtherNotes: "Nog geen andere notities",
     statusReady: 'gereed',
     statusPending: 'niet-bewaarde wijzigingen',
     statusSaving: 'bewaren…',

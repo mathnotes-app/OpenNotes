@@ -179,6 +179,10 @@ export const fr: Strings = {
     couldNotOpenRatingsTitle: 'Impossible d’ouvrir les évaluations',
   },
   editor: {
+    openSplit: "Ouvrir une autre note à côté",
+    closeSplit: "Fermer la deuxième note",
+    chooseSplitNote: "Choisir une note",
+    noOtherNotes: "Aucune autre note pour le moment",
     statusReady: 'prêt',
     statusPending: 'modifications non enregistrées',
     statusSaving: 'enregistrement…',

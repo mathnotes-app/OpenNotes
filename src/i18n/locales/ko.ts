@@ -179,6 +179,10 @@ export const ko: Strings = {
     couldNotOpenRatingsTitle: '평가를 열지 못했습니다',
   },
   editor: {
+    openSplit: "다른 노트를 나란히 열기",
+    closeSplit: "두 번째 노트 닫기",
+    chooseSplitNote: "노트 선택",
+    noOtherNotes: "다른 노트가 없습니다",
     statusReady: '준비됨',
     statusPending: '저장되지 않은 변경 사항',
     statusSaving: '저장 중…',

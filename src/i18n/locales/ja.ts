@@ -179,6 +179,10 @@ export const ja: Strings = {
     couldNotOpenRatingsTitle: '評価を開けませんでした',
   },
   editor: {
+    openSplit: "別のノートを並べて開く",
+    closeSplit: "2つ目のノートを閉じる",
+    chooseSplitNote: "ノートを選択",
+    noOtherNotes: "他のノートはまだありません",
     statusReady: '準備完了',
     statusPending: '未保存の変更',
     statusSaving: '保存中…',

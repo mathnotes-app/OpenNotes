@@ -2,6 +2,59 @@ import XCTest
 import UIKit
 
 final class NotebookInteractionUITests: NotebookUITestCase {
+  func testZoomedPdfVectorDetailRemainsVisible() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-pdf-detail")
+    let viewport = element(app, "ink-viewport")
+    XCTAssertTrue(viewport.waitForExistence(timeout: 20))
+    viewport.pinch(withScale: 3, velocity: 1)
+    let rect = CGRect(x: viewport.frame.midX - 100, y: viewport.frame.midY - 60, width: 200, height: 120)
+    let visible = NSPredicate { _, _ in contrastingInkPixels(app.screenshot().image, rect: rect) > 300 }
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 15), .completed,
+                   "Fine vector detail must remain visible when zoomed")
+    self.attach(app, "Zoomed PDF detail")
+  }
+
+  func testSplitNotesRemainIndependentAndSaveOnClose() {
+    let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
+    app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    launchPrepared(app)
+    let dismiss = app.buttons["Not now"]
+    if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
+    tap(app, "note-audit-performance-1-pages")
+    tap(app, "editor-open-split")
+    tap(app, "split-note-audit-cross-page")
+    let canvases = app.descendants(matching: .any).matching(identifier: "ink-viewport")
+    let twoCanvases = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: canvases)
+    XCTAssertEqual(XCTWaiter.wait(for: [twoCanvases], timeout: 30), .completed)
+    let panes = canvases.allElementsBoundByIndex.sorted { $0.frame.minX < $1.frame.minX }
+    XCTAssertLessThanOrEqual(panes[0].frame.maxX, panes[1].frame.minX + 2)
+    let right = panes[1]
+    let enable = app.buttons.matching(identifier: "Enable finger drawing").allElementsBoundByIndex
+      .first { $0.frame.midX > app.frame.midX }
+    enable?.tap()
+    let before = app.screenshot().image
+    let start = right.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.72))
+    let end = right.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.72))
+    start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+    let region = CGRect(x: right.frame.minX + right.frame.width * 0.2,
+                        y: right.frame.minY + right.frame.height * 0.70,
+                        width: right.frame.width * 0.6, height: right.frame.height * 0.04)
+    let written = app.screenshot().image
+    XCTAssertGreaterThan(changedInkPixels(before, written, rect: region), 10)
+    tap(app, "Close second note")
+    tap(app, "editor-open-split")
+    tap(app, "split-note-audit-cross-page")
+    let reopened = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: canvases)
+    XCTAssertEqual(XCTWaiter.wait(for: [reopened], timeout: 30), .completed)
+    XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: region), 10,
+                         "The second note's ink must survive closing and reopening")
+  }
+
   func testLineSpacingSurvivesRelaunch() {
     let app = XCUIApplication(bundleIdentifier: "com.builderpro.opennotes")
     app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

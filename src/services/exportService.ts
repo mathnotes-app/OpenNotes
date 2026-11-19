@@ -11,7 +11,7 @@ import {
   PDF_PAGE_WIDTH,
   type PrintablePage,
 } from './pdfExportHtml';
-import { PDFUtilsModule } from './pdfUtilsModule';
+import { PDFUtilsModule, resolvePdfRenderUri } from './pdfUtilsModule';
 import { indexAssetsByPage } from '../utils/continuousAssets';
 import { overlayLayerBoundaries } from '../utils/visualLayerOrder';
 import { pageBackgroundType } from '../utils/paperSpacing';
@@ -150,7 +150,7 @@ async function renderNativePagesInChunks(options: {
     );
     const pngUris = await batchExportPages(
       inkPayloads.map((payload, offset) => layerBoundaries.has(chunkPageIndexes[offset]) ? '{"pages":{}}' : payload),
-      chunkPages.map((p) => pageBackgroundType(backgroundType, p?.pageType)),
+      chunkPages.map((p) => pageBackgroundType(backgroundType, p?.pageType, p?.pdfPageNumber)),
       exportWidth,
       exportHeight,
       EXPORT_SCALE,
@@ -263,6 +263,7 @@ export async function exportNotebookAsPdf(
   const passUris: string[] = [];
   let mergedUri: string | null = null;
   try {
+    const renderPdfUri = await resolvePdfRenderUri(pdfBackgroundUri);
     const pixelRatio = PixelRatio.get();
     const nativeScale = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
     const exportWidth = Math.round(NOTE_PAGE_WIDTH * nativeScale);
@@ -283,7 +284,7 @@ export async function exportNotebookAsPdf(
         pageIndexes,
         exportWidth,
         exportHeight,
-        pdfBackgroundUri,
+        pdfBackgroundUri: renderPdfUri,
         backgroundType,
         layerBoundaries,
       });

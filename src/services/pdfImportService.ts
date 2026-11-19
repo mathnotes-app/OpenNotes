@@ -55,15 +55,15 @@ async function createPdfNote(
     }
 
     const title = cleanTitle(options.title) || cleanTitle(result.name.replace(/\.pdf$/i, ''));
+    await setNoteBackground(meta.id, 'pdf', result.uri);
     const body = createPdfNotebookData(result.pageCount);
     const saveResult = await saveNoteBody(meta.id, body);
     if (!saveResult.ok) {
       throw new Error('Imported PDF note body could not be saved.');
     }
-    const withBackground = await setNoteBackground(meta.id, 'pdf', result.uri);
     const finalMetadata = title
       ? await renameNote(meta.id, title)
-      : withBackground;
+      : saveResult.metadata;
     await recordSuccessfulNoteSave(meta.id);
     return finalMetadata;
   } catch (error) {

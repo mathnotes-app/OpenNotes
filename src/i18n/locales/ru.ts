@@ -189,6 +189,10 @@ export const ru: Strings = {
     couldNotOpenRatingsTitle: 'Не удалось открыть оценки',
   },
   editor: {
+    openSplit: "Открыть другую заметку рядом",
+    closeSplit: "Закрыть вторую заметку",
+    chooseSplitNote: "Выберите заметку",
+    noOtherNotes: "Других заметок пока нет",
     statusReady: 'готово',
     statusPending: 'несохранённые изменения',
     statusSaving: 'сохранение…',

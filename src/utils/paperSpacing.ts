@@ -27,7 +27,8 @@ export function paperBackgroundType(type: BackgroundType, spacing: unknown): str
 }
 
 /** Imported PDF pages retain their background; other pages use the note paper. */
-export function pageBackgroundType(noteType: string | undefined, pageType: string | undefined): string {
+export function pageBackgroundType(noteType: string | undefined, pageType: string | undefined, pdfPageNumber?: number): string {
   if (pageType === 'pdf') return 'pdf';
+  if (noteType === 'pdf' && !pageType && Number.isInteger(pdfPageNumber) && (pdfPageNumber ?? 0) > 0) return 'pdf';
   return noteType === 'pdf' ? (pageType ?? 'plain') : (noteType ?? pageType ?? 'plain');
 }

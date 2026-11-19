@@ -1,12 +1,12 @@
 import { ClipOp, Skia, type SkImage } from '@shopify/react-native-skia';
 import { batchExportPages, splitProjectedPageByLayers, type InkTextBox, type InsertedElement, type NotebookPage } from '@mathnotes/mobile-ink';
-import { Platform } from 'react-native';
+import { PixelRatio, Platform } from 'react-native';
 import { createPromiseQueue } from '../utils/promiseQueue';
-import { PDFUtilsModule } from './pdfUtilsModule';
+import { PDFUtilsModule, resolvePdfRenderUri } from './pdfUtilsModule';
 import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../utils/visualLayerOrder';
 import { pageBackgroundType } from '../utils/paperSpacing';
 
-export const THUMBNAIL_VERSION = 4;
+export const THUMBNAIL_VERSION = 5;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const SCALE = 0.5;
@@ -63,10 +63,20 @@ async function composePageThumbnail(
     .sort((a, b) => finite(a.zIndex, 1) - finite(b.zIndex, 1)
       || finite(a.zIndex, 0) - finite(b.zIndex, 0));
   const textBoxes = (page.textBoxes ?? []).filter(box => Boolean(box.content));
+  const pageType = pageBackgroundType(backgroundType, page.pageType, page.pdfPageNumber);
+  const isPdf = pageType === 'pdf';
+  const renderPdfUri = isPdf ? await resolvePdfRenderUri(pdfUri) : undefined;
+  if (isPdf && !renderPdfUri) throw new Error('Thumbnail PDF background is missing');
+  const density = isPdf ? PixelRatio.get() : 1;
+  const nativeScale = Number.isFinite(density) && density > 0 ? density : 1;
+  const rasterHeight = isPdf ? Math.ceil(PAGE_HEIGHT * SCALE) / SCALE : PAGE_HEIGHT;
+  const renderWidth = Math.ceil(PAGE_WIDTH * nativeScale);
+  const renderHeight = Math.ceil(rasterHeight * nativeScale);
+  const renderScale = SCALE / nativeScale;
   if (!elements.length && !textBoxes.length) {
     const [rendered] = await batchExportPages(
-      [page.data ?? '{"pages":{}}'], [pageBackgroundType(backgroundType, page.pageType)], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
-      pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+      [page.data ?? '{"pages":{}}'], [pageType], renderWidth, renderHeight, renderScale,
+      renderPdfUri, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!rendered) throw new Error('Thumbnail page could not be rendered');
     return rendered;
@@ -77,8 +87,8 @@ async function composePageThumbnail(
   let inkGroups: (string | null)[];
   {
     [raster] = await batchExportPages(
-      ['{"pages":{}}'], [pageBackgroundType(backgroundType, page.pageType)], PAGE_WIDTH, PAGE_HEIGHT, SCALE,
-      pdfUri ?? undefined, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
+      ['{"pages":{}}'], [pageType], renderWidth, renderHeight, renderScale,
+      renderPdfUri, [page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex],
     );
     if (!raster) throw new Error('Thumbnail background could not be rendered');
     const payload = page.data ?? '{"pages":{}}';
@@ -90,7 +100,7 @@ async function composePageThumbnail(
       .filter(({data}) => Object.keys(JSON.parse(data).pages ?? {}).length > 0);
     for (let first = 0; first < nonempty.length; first += 8) {
       const batch = nonempty.slice(first, first + 8);
-      const uris = await batchExportPages(batch.map(item => item.data), batch.map(() => 'pdf'), PAGE_WIDTH, PAGE_HEIGHT, SCALE,
+      const uris = await batchExportPages(batch.map(item => item.data), batch.map(() => 'pdf'), renderWidth, renderHeight, renderScale,
         undefined, batch.map(() => page.pdfPageNumber ? page.pdfPageNumber - 1 : pageIndex));
       batch.forEach((item, index) => {
         if (!uris[index]) throw new Error('Thumbnail ink could not be rendered');
@@ -109,7 +119,7 @@ async function composePageThumbnail(
     const base = await decodeImage(raster);
     try {
       canvas.drawImageRect(base, Skia.XYWHRect(0, 0, base.width(), base.height()),
-        Skia.XYWHRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT), paint);
+        Skia.XYWHRect(0, 0, PAGE_WIDTH, rasterHeight), paint);
     } finally {
       base.dispose();
     }
@@ -174,7 +184,7 @@ async function composePageThumbnail(
       const ink = await decodeImage(uri);
       try {
         canvas.drawImageRect(ink, Skia.XYWHRect(0, 0, ink.width(), ink.height()),
-          Skia.XYWHRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT), paint);
+          Skia.XYWHRect(0, 0, PAGE_WIDTH, rasterHeight), paint);
       } finally { ink.dispose(); }
     };
     await drawInk(inkGroups[0]);

@@ -27,7 +27,7 @@ function notebook(pages) {
   };
 }
 
-function harness(files = {}, { mergePdfFiles } = {}) {
+function harness(files = {}, { mergePdfFiles, preparePdfForRendering } = {}) {
   const printCalls = [];
   const batchCalls = [];
   const projectionCalls = [];
@@ -78,6 +78,7 @@ function harness(files = {}, { mergePdfFiles } = {}) {
       if (name === 'react-native') return { PixelRatio: { get: () => 2 }, Platform: { OS: 'ios' } };
       if (name === './pdfUtilsModule') {
         return {
+          resolvePdfRenderUri: async uri => uri ? preparePdfForRendering?.(uri) ?? uri : undefined,
           PDFUtilsModule: mergePdfFiles === null
             ? {}
             : {
@@ -129,6 +130,15 @@ test('does not apply an imported PDF background to a subsequently added blank pa
   const result = await h.exportNotebookAsPdf({ data, filename: 'mixed', backgroundType: 'pdf', pdfBackgroundUri: 'file:///note.pdf' });
   assert.equal(result.ok, true);
   assert.deepEqual(Array.from(h.batchCalls[0][1]), ['pdf', 'plain']);
+});
+
+test('PDF export renders the prepared annotated copy and keeps the source page index', async () => {
+  const h = harness({}, {preparePdfForRendering: async () => 'file:///prepared.pdf'});
+  const data = notebook([{pageType: 'pdf', pdfPageNumber: 3}]);
+  const result = await h.exportNotebookAsPdf({ data, filename: 'plan', backgroundType: 'pdf', pdfBackgroundUri: 'file:///plan.pdf' });
+  assert.equal(result.ok, true);
+  assert.equal(h.batchCalls[0][5], 'file:///prepared.pdf');
+  assert.equal(h.batchCalls[0][6][0], 2);
 });
 
 test('a three-page PDF includes a photo and typed text on their original page', async () => {

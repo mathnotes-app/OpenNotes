@@ -47,7 +47,7 @@ const blue = solid('#0000ff');
 const black = solid('#000000');
 const transparent = solid('#00000000');
 
-function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent, inkLayers } = {}) {
+function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent, inkLayers, preparePdfForRendering } = {}) {
   const exports = {};
   const nativeCalls = [];
   let lastGroup = 0;
@@ -55,10 +55,11 @@ function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeIm
     if (name === '../utils/promiseQueue') return { createPromiseQueue };
     if (name === '../utils/visualLayerOrder') return { imageLayerOrder, overlayLayerBoundaries, textLayerOrder };
     if (name === '../utils/paperSpacing') return { pageBackgroundType };
-    if (name === 'react-native') return { Platform: { OS: 'ios' } };
-    if (name === './pdfUtilsModule') return { PDFUtilsModule: nativeImage ? {
-      readImageForThumbnail: nativeImage,
-    } : undefined };
+    if (name === 'react-native') return { Platform: { OS: 'ios' }, PixelRatio: { get: () => 2 } };
+    if (name === './pdfUtilsModule') return {
+      PDFUtilsModule: nativeImage ? { readImageForThumbnail: nativeImage } : undefined,
+      resolvePdfRenderUri: async uri => uri ? preparePdfForRendering?.(uri) ?? uri : undefined,
+    };
     if (name === '@shopify/react-native-skia') return { Skia: nativeParagraphBuilder ? {
       ...Skia, ParagraphBuilder: { Make: (...args) => {
         const builder = Skia.ParagraphBuilder.Make(...args);
@@ -224,10 +225,13 @@ test('a failed native image fallback does not cache an incomplete thumbnail', as
 });
 
 test('PDF thumbnails without a preview request the correct background page', async () => {
-  const h = harness();
+  const h = harness({preparePdfForRendering: async () => 'file:///prepared.pdf'});
   await h.createPageThumbnail(page([photo()], { previewUri: undefined, pdfPageNumber: 3 }), 'pdf', 'file:///lecture.pdf', 1);
-  assert.equal(h.nativeCalls[0][5], 'file:///lecture.pdf');
+  assert.equal(h.nativeCalls[0][5], 'file:///prepared.pdf');
   assert.equal(h.nativeCalls[0][6][0], 2);
+  assert.equal(h.nativeCalls[0][2], 1640);
+  assert.equal(h.nativeCalls[0][3], 2124);
+  assert.equal(h.nativeCalls[0][4], 0.25);
 });
 
 test('typed text is included and clipped to its original text box', async () => {
