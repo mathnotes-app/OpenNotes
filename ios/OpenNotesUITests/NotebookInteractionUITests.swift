@@ -25,30 +25,37 @@ final class NotebookInteractionUITests: NotebookUITestCase {
     launchPrepared(app)
     let dismiss = app.buttons["Not now"]
     if dismiss.waitForExistence(timeout: 2) { dismiss.tap() }
-    tap(app, "note-audit-performance-1-pages")
+    tap(app, "note-audit-split-primary")
     tap(app, "editor-open-split")
-    tap(app, "split-note-audit-cross-page")
+    tap(app, "split-note-audit-split-secondary")
     let canvases = app.descendants(matching: .any).matching(identifier: "ink-viewport")
     let twoCanvases = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: canvases)
     XCTAssertEqual(XCTWaiter.wait(for: [twoCanvases], timeout: 30), .completed)
     let panes = canvases.allElementsBoundByIndex.sorted { $0.frame.minX < $1.frame.minX }
     XCTAssertLessThanOrEqual(panes[0].frame.maxX, panes[1].frame.minX + 2)
     let right = panes[1]
-    let enable = app.buttons.matching(identifier: "Enable finger drawing").allElementsBoundByIndex
-      .first { $0.frame.midX > app.frame.midX }
-    enable?.tap()
+    func rightButton(_ identifier: String) -> XCUIElement? {
+      app.buttons.matching(identifier: identifier).allElementsBoundByIndex
+        .first { $0.frame.midX > app.frame.midX }
+    }
+    guard let pen = rightButton("tool-pen") else { return XCTFail("Missing Pen in the second pane") }
+    if !pen.isSelected { pen.tap() }
+    rightButton("Enable finger drawing")?.tap()
+    XCTAssertNotNil(rightButton("Disable finger drawing"))
     let before = app.screenshot().image
-    let start = right.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.72))
-    let end = right.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.72))
+    let start = right.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.52))
+    let end = right.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.52))
     start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
-    let region = CGRect(x: right.frame.minX + right.frame.width * 0.2,
-                        y: right.frame.minY + right.frame.height * 0.70,
-                        width: right.frame.width * 0.6, height: right.frame.height * 0.04)
-    let written = app.screenshot().image
-    XCTAssertGreaterThan(changedInkPixels(before, written, rect: region), 10)
+    let region = CGRect(x: right.frame.minX + right.frame.width * 0.25,
+                        y: right.frame.minY + right.frame.height * 0.50,
+                        width: right.frame.width * 0.5, height: right.frame.height * 0.04)
+    let visible = NSPredicate { _, _ in changedInkPixels(before, app.screenshot().image, rect: region) > 10 }
+    XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visible, object: nil)], timeout: 10), .completed)
+    let leftRegion = region.offsetBy(dx: panes[0].frame.minX - right.frame.minX, dy: 0)
+    XCTAssertLessThan(changedInkPixels(before, app.screenshot().image, rect: leftRegion), 10)
     tap(app, "Close second note")
     tap(app, "editor-open-split")
-    tap(app, "split-note-audit-cross-page")
+    tap(app, "split-note-audit-split-secondary")
     let reopened = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: canvases)
     XCTAssertEqual(XCTWaiter.wait(for: [reopened], timeout: 30), .completed)
     XCTAssertGreaterThan(changedInkPixels(before, app.screenshot().image, rect: region), 10,

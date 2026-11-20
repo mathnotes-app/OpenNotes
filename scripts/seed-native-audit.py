@@ -59,6 +59,18 @@ for count in [100, 1, 2]:
                              'createdAt': now, 'updatedAt': now, 'backgroundType': 'plain' if count == 2 else 'lined',
                              'pdfUri': None, 'thumbnailUri': None})
     catalog.setdefault('deletedNoteIds', {}).pop(note_id, None)
+# The split-view test exercises an isolated pair of notebooks.
+for side in ('primary', 'secondary'):
+    note_id = f'audit-split-{side}'
+    body = {'version': '1.0', 'originalCanvasWidth': width, 'pages': [
+        {'id': f'{note_id}-page-1', 'title': 'Page 1', 'rotation': 0,
+         'data': '{"pages":{}}', 'textBoxes': [], 'insertedElements': []}]}
+    (bodies / f'{note_id}.body').write_text(json.dumps(body))
+    catalog['notes'] = [note for note in catalog['notes'] if note['id'] != note_id]
+    catalog['notes'].append({'id': note_id, 'title': f'Audit split {side}', 'folderId': None,
+                             'createdAt': now, 'updatedAt': now, 'backgroundType': 'plain',
+                             'pdfUri': None, 'thumbnailUri': None})
+    catalog.setdefault('deletedNoteIds', {}).pop(note_id, None)
 # A single image is owned by page two but overlaps the first page.
 asset_id = 'audit-cross-asset'
 asset_dir = documents / 'images' / asset_id
