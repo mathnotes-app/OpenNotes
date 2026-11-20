@@ -28,7 +28,9 @@ jobs:
       IOS_SIMULATOR_FAMILY: ipad
     steps:
       - name: Disable Spotlight indexing on the disposable audit runner
-        run: sudo mdutil -i off /
+        run: |
+          sudo mdutil -i off / /System/Volumes/Data
+          mdutil -s / /System/Volumes/Data
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
