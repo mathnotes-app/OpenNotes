@@ -1,1 +1,1 @@
-Escritura y zoom más fluidos, apariencia clara y oscura, tamaños de herramienta ajustables y mejor organización. Las imágenes y los trazos conservan su orden.
+Abre dos notas lado a lado en el iPad. Los PDF importados se ven más nítidos al acercar y ahora puedes ajustar el espacio entre renglones.

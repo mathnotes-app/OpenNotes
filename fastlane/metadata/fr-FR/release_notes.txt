@@ -1,1 +1,1 @@
-Écriture et zoom plus fluides, thèmes clair et sombre, tailles d’outils réglables et organisation simplifiée. Les images et les traits conservent leur ordre.
+Ouvrez deux notes côte à côte sur iPad. Les PDF importés restent plus nets au zoom. Vous pouvez aussi régler l’interligne du papier ligné.

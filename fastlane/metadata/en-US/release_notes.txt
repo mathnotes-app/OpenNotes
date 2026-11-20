@@ -1,1 +1,1 @@
-Smoother writing and zooming, light and dark appearance, adjustable tool sizes, and easier note organization. Images and ink now keep their stacking order.
+Open two notes side by side on iPad. Imported PDFs stay sharper as you zoom, and ruled paper now supports custom line spacing.
