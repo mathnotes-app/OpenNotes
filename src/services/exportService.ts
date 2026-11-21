@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { PixelRatio, Platform } from 'react-native';
-import { batchExportPages, projectDocumentPages, splitProjectedPageByLayers, type SerializedNotebookData } from '@mathnotes/mobile-ink';
+import { batchExportPages, projectDocumentPages, splitProjectedPageByLayers, supportsVectorPdfExport, type SerializedNotebookData } from '@mathnotes/mobile-ink';
 import {
   buildPdfHtml,
   NOTE_PAGE_HEIGHT,
@@ -15,6 +15,7 @@ import { PDFUtilsModule, resolvePdfRenderUri } from './pdfUtilsModule';
 import { indexAssetsByPage } from '../utils/continuousAssets';
 import { overlayLayerBoundaries } from '../utils/visualLayerOrder';
 import { pageBackgroundType } from '../utils/paperSpacing';
+import { exportVectorNotebook } from './vectorNotebookExport';
 
 const EXPORT_SCALE = 1.0;
 const DEFAULT_NATIVE_BATCH_SIZE = 8;
@@ -252,6 +253,16 @@ async function deleteFiles(uris: string[]): Promise<void> {
   );
 }
 
+async function sharePdf(uri: string, filename: string): Promise<void> {
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(uri, {
+      mimeType: 'application/pdf',
+      dialogTitle: filename,
+      UTI: 'com.adobe.pdf',
+    });
+  }
+}
+
 export async function exportNotebookAsPdf(
   options: ExportOptions,
 ): Promise<{ ok: boolean; uri?: string; error?: string }> {
@@ -266,6 +277,12 @@ export async function exportNotebookAsPdf(
     const renderPdfUri = await resolvePdfRenderUri(pdfBackgroundUri);
     const pixelRatio = PixelRatio.get();
     const nativeScale = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
+    if (supportsVectorPdfExport()) {
+      mergedUri = await exportVectorNotebook(data, renderPdfUri, backgroundType, nativeScale);
+      await sharePdf(mergedUri, filename);
+      return { ok: true, uri: mergedUri };
+    }
+
     const exportWidth = Math.round(NOTE_PAGE_WIDTH * nativeScale);
     const exportHeight = Math.round(NOTE_PAGE_HEIGHT * nativeScale);
     const pageCount = data.pages.length;
@@ -313,16 +330,7 @@ export async function exportNotebookAsPdf(
     if (pdfUri !== passUris[0]) mergedUri = pdfUri;
     await deleteFiles(passUris.filter((uri) => uri !== pdfUri));
 
-    const available = await Sharing.isAvailableAsync();
-    if (!available) {
-      return { ok: true, uri: pdfUri };
-    }
-
-    await Sharing.shareAsync(pdfUri, {
-      mimeType: 'application/pdf',
-      dialogTitle: filename,
-      UTI: 'com.adobe.pdf',
-    });
+    await sharePdf(pdfUri, filename);
     return { ok: true, uri: pdfUri };
   } catch (error) {
     await deleteFiles(mergedUri ? [...passUris, mergedUri] : passUris);
