@@ -112,7 +112,7 @@ function normalizeNote(value: unknown): NoteMetadata | null {
   const v = value as Record<string, unknown>;
   if (!isNonEmptyString(v.id)) return null;
   const backgroundType =
-    typeof v.backgroundType === 'string' && v.backgroundType in BACKGROUND_TYPE_FLAGS
+    typeof v.backgroundType === 'string' && Object.hasOwn(BACKGROUND_TYPE_FLAGS, v.backgroundType)
       ? (v.backgroundType as BackgroundType)
       : 'plain';
   return {
@@ -403,7 +403,7 @@ export interface CatalogStore {
    * Applies a serialized mutation. Return null from the mutator to indicate no
    * change (nothing is persisted). Mutators must not modify the input catalog.
    */
-  mutate(fn: (catalog: Catalog) => Catalog | null): Promise<Catalog>;
+  mutate(fn: (catalog: Catalog) => Catalog | null | Promise<Catalog | null>): Promise<Catalog>;
   /**
    * Drops the in-memory cache so the next read reloads (and reconciles) from
    * disk. Used after a restore writes files behind the store's back.
@@ -557,10 +557,10 @@ export function createCatalogStore(env: CatalogEnv): CatalogStore {
         cached = null;
       });
     },
-    mutate(fn: (catalog: Catalog) => Catalog | null): Promise<Catalog> {
+    mutate(fn: (catalog: Catalog) => Catalog | null | Promise<Catalog | null>): Promise<Catalog> {
       return queue.enqueue(async () => {
         const current = await loadLocked();
-        const next = fn(current);
+        const next = await fn(current);
         if (next === null) return current;
         await persist(next, current);
         cached = next;

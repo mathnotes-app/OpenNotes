@@ -12,6 +12,9 @@ import { radius, spacing } from '../src/theme/spacing';
 import { typography } from '../src/theme/typography';
 import { useTheme } from '../src/hooks/useTheme';
 import { createPdfNoteFromUri } from '../src/services/pdfImportService';
+import { openDriveNotebook } from '../src/services/iCloudDrive';
+import { isNotebookFileUrl } from '../src/services/iCloudNotebookFormat';
+import { useDriveLibrarySync } from '../src/hooks/useICloudDrive';
 import {
   installCrashCapture,
   recordCrash,
@@ -32,7 +35,8 @@ export default function RootLayout() {
 
 function RootContent() {
   const { isDark, colors } = useTheme();
-  useOpenInPdfImport();
+  useOpenInDocument();
+  useDriveLibrarySync();
   const [pendingReport, setPendingReport] = useState<CrashReport | null>(reportFromPreviousRun);
   const dismissReport = useCallback(() => setPendingReport(null), []);
   const shareReport = useCallback(() => {
@@ -114,23 +118,26 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   );
 }
 
-function useOpenInPdfImport() {
+function useOpenInDocument() {
   const router = useRouter();
   const importingRef = useRef(false);
 
   useEffect(() => {
     const handleUrl = async (url: string | null) => {
-      if (!url || !looksLikePdfUrl(url) || handledPdfUrls.has(url) || importingRef.current) {
-        return;
-      }
-      handledPdfUrls.add(url);
+      if (!url || importingRef.current) return;
+      const isNotebook = isNotebookFileUrl(url);
+      if (!isNotebook && (!looksLikePdfUrl(url) || handledPdfUrls.has(url))) return;
+      if (!isNotebook) handledPdfUrls.add(url);
       importingRef.current = true;
       try {
-        const note = await createPdfNoteFromUri(url);
-        if (note) router.replace(`/note/${note.id}`);
+        const id = isNotebook ? await openDriveNotebook(url) : (await createPdfNoteFromUri(url))?.id;
+        if (id) router.replace(`/note/${id}`);
       } catch (error) {
-        if (__DEV__) console.warn('[RootLayout] open-in PDF import failed', error);
-        Alert.alert('Could not import PDF', 'Please try importing it from the library.');
+        if (isNotebook) Alert.alert(t.drive.title, t.drive.failed);
+        else {
+          if (__DEV__) console.warn('[RootLayout] open-in PDF import failed', error);
+          Alert.alert('Could not import PDF', 'Please try importing it from the library.');
+        }
       } finally {
         importingRef.current = false;
       }

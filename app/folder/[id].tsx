@@ -9,6 +9,8 @@ import { NewItemFAB } from '../../src/components/library/NewItemFAB';
 import { NoteCard } from '../../src/components/library/NoteCard';
 import { EmptyState } from '../../src/components/library/EmptyState';
 import { ItemActionsMenu } from '../../src/components/library/ItemActionsMenu';
+import { iCloudDriveActions } from '../../src/components/library/iCloudDriveActions';
+import { useDriveLibraryRefresh } from '../../src/hooks/useICloudDrive';
 import { RenameDialog } from '../../src/components/library/RenameDialog';
 import { FolderPickerSheet } from '../../src/components/library/FolderPickerSheet';
 import { CreateNoteBackgroundSheet } from '../../src/components/library/CreateNoteBackgroundSheet';
@@ -61,6 +63,7 @@ export default function FolderScreen() {
     setLoading(false);
   }, [id]);
   const { chooseCover, removeCover, presentPendingCover } = useNoteCover(refresh);
+  useDriveLibraryRefresh(refresh);
 
   useEffect(() => {
     void refresh();
@@ -198,6 +201,7 @@ export default function FolderScreen() {
           action?.kind === 'noteMenu'
             ? [
                 { key: 'cover', label: t.preferences.chooseCover, onPress: () => chooseCover(action.note) },
+                ...iCloudDriveActions(action.note),
                 ...(action.note.customCoverUri ? [{ key: 'removeCover', label: t.preferences.removeCover, onPress: () => void removeCover(action.note) }] : []),
                 {
                   key: 'rename',

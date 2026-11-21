@@ -72,4 +72,17 @@ function resolveStrings(): Strings {
 }
 
 /** The active string catalog. Import `t` and read `t.section.key`. */
-export const t: Strings = resolveStrings();
+export const t = { ...resolveStrings(), drive: {
+  title: 'iCloud Drive',
+  details: 'Sync notebooks you add to Files → iCloud Drive → OpenNotes.',
+  enabled: 'Changes sync when you return to the library.',
+  pending: 'Waiting for one or more notebooks to sync.',
+  unavailable: 'iCloud Drive is unavailable. Check your Apple Account and iCloud Drive settings.',
+  add: 'Add to iCloud Drive',
+  addTitle: 'Add this notebook to iCloud Drive?',
+  addDetails: 'Your notebook and its attachments will appear in the OpenNotes folder in Files and sync through your Apple Account.',
+  added: 'Notebook added to iCloud Drive',
+  savedDetails: 'Find it in Files → iCloud Drive → OpenNotes. Enable iCloud Drive in OpenNotes on your other device to see it there.',
+  failed: 'Could not open or sync this notebook. Your local notes are still on this device.',
+  conflictCopy: (title: string) => `${title} (Conflict copy)`,
+} };

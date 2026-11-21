@@ -7,6 +7,7 @@ import { typography } from '../../theme/typography';
 import { Sheet } from '../ui/Sheet';
 import { OPEN_NOTES_LINKS, openExternalLink } from '../../services/externalLinks';
 import { t } from '../../i18n';
+import { ICloudDriveSettings } from './ICloudDriveSettings';
 
 interface OpenNotesSheetProps {
   visible: boolean;
@@ -128,6 +129,7 @@ export function OpenNotesSheet({
               ) : null
             }
           />
+          <ICloudDriveSettings visible={visible} />
           </View>
         ) : null}
 

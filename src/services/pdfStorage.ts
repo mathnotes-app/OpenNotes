@@ -28,6 +28,8 @@ async function ensureDir(): Promise<void> {
   }
 }
 
+export const ensureDirectoryForSyncedPdf = ensureDir;
+
 export interface PickedPdfResult {
   uri: string;
   name: string;

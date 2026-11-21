@@ -29,6 +29,7 @@ The iPad and iPhone app is available on the App Store. This repository also incl
 - PDF import from picker, share/open-in flows, and multi-page notebooks.
 - Image and text objects on top of handwritten pages.
 - PDF export for sharing notebooks outside the app.
+- Optional iCloud Drive notebooks on iOS, accessible in Files.
 - Local-first storage with no account system and no analytics.
 
 ## Building a Drawing App?
@@ -70,7 +71,9 @@ npx expo run:ios --device
 
 OpenNotes stores notes, imported PDFs, images, and thumbnails on your device. It does not require an app account or include analytics SDKs or tracking.
 
-On iOS, iCloud backup is enabled by default when available and can be turned off in the app. It backs up notebook data to your iCloud account; it is separate from live collaboration or document sync between devices.
+On iOS, iCloud backup is enabled by default when available and can be turned off in the app. It stores recovery data in your iCloud account.
+
+To sync a notebook between devices, use **Add to iCloud Drive** in its menu. Find it under **Files → iCloud Drive → OpenNotes**. Devices signed into the same Apple Account can open the file in Files or enable **iCloud Drive** in OpenNotes to see it in the library. Editing stays local while the notebook is open. Changes sync when you return to the library, and concurrent edits can appear as separate conflict copies. Library folders are local to each device. Deleting a local library copy keeps the iCloud file. Use Files to remove a file from iCloud Drive.
 
 If you export, share, back up, or import files through another app or operating-system service, that service's behavior is outside OpenNotes.
 
