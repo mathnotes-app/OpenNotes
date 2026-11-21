@@ -1,0 +1,8 @@
+{
+  "package": "@mathnotes/mobile-ink",
+  "version": "0.3.14",
+  "source": "https://github.com/mathnotes-app/mobile-ink",
+  "commit": "8916385fb60c29f415714d7a2e4e29219c82a4e7",
+  "sha256": "51126f708236b31d63bab309f3cc6597d1b31e59a1d66410d965bd0d08942195",
+  "pull_request": "https://github.com/mathnotes-app/mobile-ink/pull/69"
+}

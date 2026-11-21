@@ -114,6 +114,14 @@ export function useToolState() {
     [perTool, persist],
   );
 
+  const selectToolIfActive = useCallback((expected: SupportedTool, next: SupportedTool) => {
+    setActiveType(current => {
+      if (current !== expected) return current;
+      persist(perTool, next);
+      return next;
+    });
+  }, [perTool, persist]);
+
   const toolColors = useMemo(() => {
     const out = {} as Record<SupportedTool, string>;
     for (const descriptor of TOOL_DESCRIPTORS) {
@@ -122,5 +130,5 @@ export function useToolState() {
     return out;
   }, [perTool]);
 
-  return { toolState, setToolState, selectTool, toolColors, perTool };
+  return { toolState, setToolState, selectTool, selectToolIfActive, toolColors, perTool };
 }

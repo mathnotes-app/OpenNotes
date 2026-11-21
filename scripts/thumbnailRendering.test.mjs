@@ -5,6 +5,8 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { createPromiseQueue } from '../src/utils/promiseQueue.ts';
+import { imageLayerOrder, overlayLayerBoundaries, textLayerOrder } from '../src/utils/visualLayerOrder.ts';
+import { pageBackgroundType } from '../src/utils/paperSpacing.ts';
 
 const require = createRequire(import.meta.url);
 const initCanvasKit = require('canvaskit-wasm/bin/full/canvaskit.js');
@@ -43,16 +45,17 @@ const white = solid('#ffffff');
 const red = solid('#ff0000');
 const blue = solid('#0000ff');
 const black = solid('#000000');
+const transparent = solid('#00000000');
 
-function harness({
-  nativeFails = false, nativeParagraphBuilder = false, nativeImage, density = 2,
-  preparePdfForRendering, render = () => white,
-} = {}) {
+function harness({ nativeFails = false, nativeParagraphBuilder = false, nativeImage, ink = transparent, inkLayers, preparePdfForRendering } = {}) {
   const exports = {};
   const nativeCalls = [];
+  let lastGroup = 0;
   vm.runInNewContext(source, { exports, require(name) {
     if (name === '../utils/promiseQueue') return { createPromiseQueue };
-    if (name === 'react-native') return { PixelRatio: { get: () => density } };
+    if (name === '../utils/visualLayerOrder') return { imageLayerOrder, overlayLayerBoundaries, textLayerOrder };
+    if (name === '../utils/paperSpacing') return { pageBackgroundType };
+    if (name === 'react-native') return { Platform: { OS: 'ios' }, PixelRatio: { get: () => 2 } };
     if (name === './pdfUtilsModule') return {
       PDFUtilsModule: nativeImage ? { readImageForThumbnail: nativeImage } : undefined,
       resolvePdfRenderUri: async uri => uri ? preparePdfForRendering?.(uri) ?? uri : undefined,
@@ -64,10 +67,17 @@ function harness({
         return builder;
       } },
     } : Skia, ClipOp: { Intersect: 1 } };
-    if (name === '@mathnotes/mobile-ink') return { batchExportPages: async (...args) => {
+    if (name === '@mathnotes/mobile-ink') return { splitProjectedPageByLayers: async (_payload, boundaries) => {
+      lastGroup = boundaries.length;
+      return Array.from({length: boundaries.length + 1}, (_, index) => JSON.stringify({pages: {0: String(index)}}));
+    }, batchExportPages: async (...args) => {
       nativeCalls.push(args);
       if (nativeFails) throw new Error('Native renderer unavailable');
-      return [render(...args)];
+      if (args[1][0] !== 'pdf' || args[5]) return args[0].map(() => white);
+      return args[0].map(payload => {
+        const index = Number(JSON.parse(payload).pages[0]);
+        return inkLayers?.[index] ?? (index === lastGroup ? ink : transparent);
+      });
     } };
     throw new Error('Unexpected import: ' + name);
   } });
@@ -95,11 +105,29 @@ function pixel(uri, x, y) {
   return [...lastRaster.pixels.subarray(offset, offset + 4)];
 }
 
-test('legacy ink-only previews are returned byte-for-byte without rendering', async () => {
+test('ink-only thumbnails are rendered from the saved page even without a preview', async () => {
   const h = harness();
-  assert.equal(await h.createPageThumbnail(page()), white);
-  assert.equal(h.nativeCalls.length, 0);
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, data: '{"pages":{"0":"ink"}}'}), 'lined'), white);
+  assert.equal(h.nativeCalls.length, 1);
+  assert.equal(h.nativeCalls[0][0][0], '{"pages":{"0":"ink"}}');
+  assert.equal(h.nativeCalls[0][1][0], 'lined');
   assert.equal(await h.createPageThumbnail(undefined), null);
+});
+
+test('thumbnail paper follows the note spacing even when the page is marked plain', async () => {
+  const h = harness();
+  await h.createPageThumbnail(page([], {pageType: 'plain'}), 'lined-narrow');
+  assert.equal(h.nativeCalls[0][1][0], 'lined-narrow');
+  await h.createPageThumbnail(page([photo()], {pageType: 'plain'}), 'lined-compact');
+  assert.equal(h.nativeCalls[1][1][0], 'lined-compact');
+});
+
+test('PDF-only thumbnails render the specified page and source', async () => {
+  const h = harness();
+  assert.equal(await h.createPageThumbnail(page([], {previewUri: undefined, pageType: 'pdf', pdfPageNumber: 3}),
+    'pdf', 'file:///document.pdf'), white);
+  assert.equal(h.nativeCalls[0][5], 'file:///document.pdf');
+  assert.equal(h.nativeCalls[0][6][0], 2);
 });
 
 test('a photo is visible at its page coordinates over the background', async () => {
@@ -159,8 +187,14 @@ test('crop rectangles select the requested portion of an image', async () => {
   image.dispose(); surface.dispose(); paint.dispose();
 });
 
-test('handwriting remains below inserted images', async () => {
-  const result = await harness().createPageThumbnail(page([photo()], { previewUri: black }));
+test('handwriting appears above inserted images', async () => {
+  const result = await harness({ ink: black }).createPageThumbnail(page([photo()]));
+  assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
+  assert.deepEqual(pixel(result, 100, 100), [0, 0, 0, 255]);
+});
+
+test('an image covers handwriting that predates it', async () => {
+  const result = await harness({ inkLayers: [black, transparent] }).createPageThumbnail(page([photo()]));
   assert.deepEqual(pixel(result, 10, 10), [0, 0, 0, 255]);
   assert.deepEqual(pixel(result, 100, 100), [255, 0, 0, 255]);
 });
@@ -191,68 +225,13 @@ test('a failed native image fallback does not cache an incomplete thumbnail', as
 });
 
 test('PDF thumbnails without a preview request the correct background page', async () => {
-  const h = harness();
+  const h = harness({preparePdfForRendering: async () => 'file:///prepared.pdf'});
   await h.createPageThumbnail(page([photo()], { previewUri: undefined, pdfPageNumber: 3 }), 'pdf', 'file:///lecture.pdf', 1);
-  assert.equal(h.nativeCalls[0][5], 'file:///lecture.pdf');
+  assert.equal(h.nativeCalls[0][5], 'file:///prepared.pdf');
   assert.equal(h.nativeCalls[0][6][0], 2);
-});
-
-const savedPdfInk = '{"pages":{"0":"c2F2ZWQ="}}';
-const preparedPdf = 'file:///cache/lecture.pdf';
-
-function pdfRaster(payloads, _types, width, height, scale, uri) {
-  // Mirror the native raster bounds and fixed device-pixel ink coordinates.
-  const surface = Skia.Surface.Make(Math.floor(width * scale), Math.floor(height * scale));
-  const canvas = surface.getCanvas();
-  canvas.clear(Skia.Color(uri === preparedPdf ? '#0000ff' : '#ffffff'));
-  canvas.scale(scale, scale);
-  const paint = Skia.Paint();
-  paint.setColor(Skia.Color('#000000'));
-  if (payloads[0] === savedPdfInk) {
-    canvas.drawRect(Skia.XYWHRect(400, 800, 80, 24), paint);
-    canvas.drawRect(Skia.XYWHRect(400, 2120, 80, 2), paint);
-  }
-  const image = surface.makeImageSnapshot();
-  try {
-    return 'data:image/png;base64,' + image.encodeToBase64();
-  } finally {
-    image.dispose();
-    paint.dispose();
-    surface.dispose();
-  }
-}
-
-test('PDF covers use saved ink over the prepared background even when a preview exists', async () => {
-  const h = harness({ preparePdfForRendering: async () => preparedPdf, render: pdfRaster });
-  const result = await h.createPageThumbnail(
-    page([], { data: savedPdfInk, previewUri: red, pageType: 'pdf', pdfPageNumber: 3 }),
-    'pdf', 'file:///lecture.pdf',
-  );
-  assert.deepEqual(pixel(result, 10, 10), [0, 0, 255, 255]);
-  assert.deepEqual(pixel(result, 110, 202), [0, 0, 0, 255]);
-  assert.deepEqual(pixel(result, 210, 405), [0, 0, 255, 255]);
-  assert.equal(h.nativeCalls[0][6][0], 2);
-});
-
-test('a PDF cover retains bottom-edge ink and composites overlays at page coordinates', async () => {
-  const h = harness({ preparePdfForRendering: async () => preparedPdf, render: pdfRaster });
-  const result = await h.createPageThumbnail(
-    page([photo()], { data: savedPdfInk, previewUri: red, pageType: 'pdf' }),
-    'pdf', 'file:///lecture.pdf',
-  );
-  assert.deepEqual(pixel(result, 100, 100), [255, 0, 0, 255]);
-  assert.deepEqual(pixel(result, 180, 100), [0, 0, 255, 255]);
-  const bottom = pixel(result, 110, 530);
-  assert.equal(bottom[3], 255);
-  assert.ok(bottom[2] < 200, 'Expected ink in the final thumbnail row');
-});
-
-test('a PDF with no handwriting or stored preview still produces a cover', async () => {
-  const h = harness({ preparePdfForRendering: async () => preparedPdf, render: pdfRaster });
-  const result = await h.createPageThumbnail(page([], { data: '', previewUri: undefined, pageType: 'pdf' }),
-    'pdf', 'file:///lecture.pdf');
-  assert.ok(result);
-  assert.deepEqual(pixel(result, 10, 10), [0, 0, 255, 255]);
+  assert.equal(h.nativeCalls[0][2], 1640);
+  assert.equal(h.nativeCalls[0][3], 2124);
+  assert.equal(h.nativeCalls[0][4], 0.25);
 });
 
 test('typed text is included and clipped to its original text box', async () => {

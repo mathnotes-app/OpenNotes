@@ -1,3 +1,6 @@
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
+import {selectedOverlayTouchRects} from '../../src/utils/overlayTouchRects';
+import {useOverlayHistory} from '../../src/components/editor/history/useOverlayHistory';
 import React, {
   useCallback,
   useEffect,
@@ -12,6 +15,8 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  PixelRatio,
+  processColor,
   Pressable,
   StyleSheet,
   Text,
@@ -23,8 +28,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
-  InfiniteInkCanvas,
-  type InfiniteInkCanvasRef,
+  ContinuousDocumentCanvas as InfiniteInkCanvas,
+  type ContinuousDocumentCanvasRef,
   type InkTextBox,
   type InsertedElement,
   type NotebookPage,
@@ -39,19 +44,24 @@ import {
   type ToolbarButtonAnchor,
 } from '../../src/components/editor/FloatingToolbar';
 import { PageSidebar } from '../../src/components/editor/PageSidebar';
+import { SplitNotePicker } from '../../src/components/editor/SplitNotePicker';
 import { ToolSettingsPopover } from '../../src/components/editor/ToolSettingsPopover';
+import { PreferencesSheet } from '../../src/components/ui/PreferencesSheet';
 import { ItemActionsMenu } from '../../src/components/library/ItemActionsMenu';
 import { RenameDialog } from '../../src/components/library/RenameDialog';
 import { OverlayLayer, type OverlaySelection } from '../../src/components/editor/OverlayLayer';
 import { useTheme } from '../../src/hooks/useTheme';
+import { usePreferences } from '../../src/hooks/Preferences';
 import { useToolState } from '../../src/hooks/useToolState';
 import { useAutosave, type AutosaveStatus } from '../../src/hooks/useAutosave';
 import { useViewportTransformStore } from '../../src/hooks/useViewportTransform';
 import {
+  cancelThumbnailRepairs,
   getNote,
   readNoteBody,
   renameNote,
   saveNoteBody,
+  setNoteLineSpacing,
 } from '../../src/services/notesRepo';
 import { createEmptyNotebookData } from '../../src/services/noteBodyStorage';
 import {
@@ -62,19 +72,25 @@ import {
 import { exportNotebookAsPdf } from '../../src/services/exportService';
 import { resolvePdfRenderUri } from '../../src/services/pdfUtilsModule';
 import { recordSuccessfulNoteSave } from '../../src/services/lifecycleService';
+import { duplicateAssetPosition } from '../../src/utils/continuousAssets';
+import { documentVisualLayers, imageAtContentPoint } from '../../src/utils/visualLayerOrder';
+import { insertImagePosition } from '../../src/utils/insertImagePosition';
+import { paperBackgroundType, resolveLineSpacing } from '../../src/utils/paperSpacing';
 import { textBoxId, insertedElementId } from '../../src/utils/id';
 import { spacing } from '../../src/theme/spacing';
 import { t } from '../../src/i18n';
 import { typography } from '../../src/theme/typography';
-import type { NoteMetadata } from '../../src/types/note';
+import type { LineSpacing, NoteMetadata } from '../../src/types/note';
 import type { ToolDescriptor } from '../../src/utils/toolPalette';
 
+const CONTENT_PADDING = 16;
 const PAGE_WIDTH = 820;
 const PAGE_HEIGHT = 1061;
 const FINGER_DRAWING_PREF_KEY = 'opennotes.editor.fingerDrawingEnabled';
 
 type EditorAction =
   | { kind: 'insertImage' }
+  | { kind: 'preferences' }
   | { kind: 'rename' };
 
 interface PageOverlayState {
@@ -130,13 +146,51 @@ function defaultFingerDrawingForViewport(width: number, height: number): boolean
 }
 
 export default function NoteScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { width } = useWindowDimensions();
+  const [workspaceWidth, setWorkspaceWidth] = useState(width);
+  const [secondId, setSecondId] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const secondFlush = useRef<(() => Promise<boolean>) | null>(null);
+  const closePicker = useCallback(() => setPicking(false), []);
+  const closeSecond = useCallback(() => { secondFlush.current = null; setSecondId(null); }, []);
+  const beforeLeave = useCallback(async () => {
+    if (!secondId || !secondFlush.current) return true;
+    if (await secondFlush.current()) return true;
+    Alert.alert(t.editor.saveFailedTitle, t.editor.saveFailedBody);
+    return false;
+  }, [secondId]);
+  const paneWidth = secondId ? (workspaceWidth - StyleSheet.hairlineWidth) / 2 : workspaceWidth;
+  if (!id) return null;
+  return <View style={{flex: 1, flexDirection: 'row'}} onLayout={event => setWorkspaceWidth(event.nativeEvent.layout.width)}>
+    <View style={{flex: 1, overflow: 'hidden'}}>
+      <NotePane id={id} paneWidth={paneWidth} isSplit={Boolean(secondId)} onSplit={!secondId && workspaceWidth >= 720 ? () => setPicking(true) : undefined}
+        beforeLeave={beforeLeave} />
+    </View>
+    {secondId && <>
+      <View style={{width: StyleSheet.hairlineWidth, backgroundColor: '#888'}} />
+      <View style={{flex: 1, overflow: 'hidden'}}>
+        <NotePane key={secondId} id={secondId} paneWidth={paneWidth} isSplit screenOffsetX={paneWidth + StyleSheet.hairlineWidth}
+          onClosed={closeSecond} flushRef={secondFlush} />
+      </View>
+    </>}
+    <SplitNotePicker visible={picking} excludeId={id} onClose={closePicker}
+      onChoose={selected => { setPicking(false); setSecondId(selected); }} />
+  </View>;
+}
+
+function NotePane({ id, paneWidth, isSplit = false, screenOffsetX = 0, onSplit, onClosed, beforeLeave, flushRef }: {
+  id: string; paneWidth: number; isSplit?: boolean; screenOffsetX?: number; onSplit?: () => void;
+  onClosed?: () => void; beforeLeave?: () => Promise<boolean>;
+  flushRef?: React.MutableRefObject<(() => Promise<boolean>) | null>;
+}) {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { width: windowWidth, height: viewportHeight } = useWindowDimensions();
+  const viewportWidth = paneWidth;
 
-  const canvasRef = useRef<InfiniteInkCanvasRef | null>(null);
+  const canvasRef = useRef<ContinuousDocumentCanvasRef | null>(null);
   const pendingBodyRef = useRef<SerializedNotebookData | null>(null);
   const canvasReadyRef = useRef(false);
   const isMountedRef = useRef(true);
@@ -148,15 +202,24 @@ export default function NoteScreen() {
   const lastPenToolRef = useRef<'pen' | 'highlighter' | 'crayon' | 'calligraphy'>('pen');
 
   const [metadata, setMetadata] = useState<NoteMetadata | null>(null);
+  const [lineSpacingBusy, setLineSpacingBusy] = useState(false);
+  const lineSpacingBusyRef = useRef(false);
   const [pdfRenderUri, setPdfRenderUri] = useState<string>();
   const [enginePages, setEnginePages] = useState<NotebookPage[]>([]);
+  const enginePagesRef = useRef(enginePages);
+  const updateEnginePages = useCallback((pages: NotebookPage[]) => {
+    enginePagesRef.current = pages;
+    setEnginePages(pages);
+  }, []);
+  const flushHistoryRef = useRef<() => Promise<void>>(async () => {});
   const [overlayMap, setOverlayMap] = useState<Map<string, PageOverlayState>>(
     () => new Map(),
   );
   const overlayMapRef = useRef(overlayMap);
-  useEffect(() => {
-    overlayMapRef.current = overlayMap;
-  }, [overlayMap]);
+  const replaceOverlayMap = useCallback((next: Map<string, PageOverlayState>) => {
+    overlayMapRef.current = next;
+    setOverlayMap(next);
+  }, []);
 
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>('idle');
@@ -166,13 +229,14 @@ export default function NoteScreen() {
   // Autosave stays disabled until the body has loaded (or the user explicitly
   // chose to start blank), so nothing can overwrite an unread body on disk.
   const [bodyReady, setBodyReady] = useState(false);
+  const [nativeContentReady, setNativeContentReady] = useState(false);
   const [selection, setSelection] = useState<OverlaySelection | null>(null);
   const [action, setAction] = useState<EditorAction | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isPageSidebarOpen, setIsPageSidebarOpen] = useState(false);
   const defaultFingerDrawingEnabled = useMemo(
-    () => defaultFingerDrawingForViewport(viewportWidth, viewportHeight),
-    [viewportHeight, viewportWidth],
+    () => defaultFingerDrawingForViewport(windowWidth, viewportHeight),
+    [viewportHeight, windowWidth],
   );
   const [fingerDrawingEnabled, setFingerDrawingEnabled] = useState(
     defaultFingerDrawingEnabled,
@@ -182,7 +246,8 @@ export default function NoteScreen() {
     anchor: ToolbarButtonAnchor;
   } | null>(null);
 
-  const { toolState, setToolState, selectTool, toolColors } = useToolState();
+  const { toolState, setToolState, selectTool, selectToolIfActive, toolColors } = useToolState();
+  const { returnToPen, holdToShape } = usePreferences();
   const { store } = useViewportTransformStore();
 
   const safeStatusChange = useCallback((next: AutosaveStatus) => {
@@ -205,6 +270,7 @@ export default function NoteScreen() {
 
   const persistMerged = useCallback(async () => {
     if (!id || !canvasRef.current) return;
+    await flushHistoryRef.current();
     const canvasData = await canvasRef.current.getNotebookData();
     const overlay = overlayMapRef.current;
     const mergedPages = mergeStoredPreviews(canvasData.pages).map((page) => {
@@ -238,6 +304,14 @@ export default function NoteScreen() {
     onStatusChange: safeStatusChange,
     enabled: Boolean(id) && autosaveEnabled && bodyReady,
   });
+  if (flushRef) flushRef.current = flushNow;
+
+  const history = useOverlayHistory({fileId: id, canvasRef,
+    readPages: () => enginePagesRef.current.map(page => ({...page, ...overlayMapRef.current.get(page.id)})),
+    writePages: pages => replaceOverlayMap(new Map(pages.map(page => [page.id, overlayFromPage(page)]))),
+    onChange: scheduleAutosave,
+  });
+  flushHistoryRef.current = history.flushOverlayHistory;
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -278,23 +352,36 @@ export default function NoteScreen() {
     });
   }, [fingerDrawingEnabled]);
 
+  const handleCanvasLoadError = useCallback((error: unknown) => {
+    if (__DEV__) console.warn('[NoteScreen] native notebook load failed', error);
+    if (!isMountedRef.current) return;
+    canvasReadyRef.current = false;
+    setNativeContentReady(false);
+    pendingBodyRef.current = null;
+    setBodyReady(false);
+    setBodyLoadFailed(true);
+  }, []);
+
   const applyNotebookData = useCallback(
     (notebookData: SerializedNotebookData) => {
+      setNativeContentReady(false);
       rememberPagePreviews(notebookData.pages);
-      setEnginePages(mergeStoredPreviews(notebookData.pages));
+      updateEnginePages(mergeStoredPreviews(notebookData.pages));
       const initialMap = new Map<string, PageOverlayState>();
       for (const page of notebookData.pages) {
         initialMap.set(page.id, overlayFromPage(page));
       }
-      setOverlayMap(initialMap);
+      replaceOverlayMap(initialMap);
       setBodyReady(true);
-      if (canvasReadyRef.current) {
-        void canvasRef.current?.loadNotebookData(notebookData);
+      if (canvasReadyRef.current && canvasRef.current) {
+        void canvasRef.current.loadNotebookData(notebookData).then(() => {
+          if (isMountedRef.current) setNativeContentReady(true);
+        }).catch(handleCanvasLoadError);
       } else {
         pendingBodyRef.current = notebookData;
       }
     },
-    [mergeStoredPreviews, rememberPagePreviews],
+    [mergeStoredPreviews, rememberPagePreviews, handleCanvasLoadError],
   );
 
   // Initial load
@@ -304,7 +391,7 @@ export default function NoteScreen() {
     storedPreviewByPageIdRef.current = new Map();
     setBodyReady(false);
     setBodyLoadFailed(false);
-    setEnginePages([]);
+    updateEnginePages([]);
     setCurrentPageIndex(0);
     setLoading(true);
     (async () => {
@@ -363,17 +450,22 @@ export default function NoteScreen() {
     const pending = pendingBodyRef.current;
     if (pending) {
       pendingBodyRef.current = null;
-      void canvasRef.current?.loadNotebookData(pending);
+      void canvasRef.current?.loadNotebookData(pending).then(() => {
+        if (isMountedRef.current) setNativeContentReady(true);
+      }).catch(handleCanvasLoadError);
+    } else {
+      setNativeContentReady(true);
     }
-  }, []);
+  }, [handleCanvasLoadError]);
 
   const handlePagesChange = useCallback((next: NotebookPage[]) => {
     if (!isMountedRef.current || exitRef.current === 'navigating') return;
     rememberPagePreviews(next);
     const pagesWithPreviews = mergeStoredPreviews(next);
-    setEnginePages(pagesWithPreviews);
+    updateEnginePages(pagesWithPreviews);
     // Make sure every page id has an overlay slot; drop overlays for removed pages.
-    setOverlayMap((prev) => {
+    {
+      const prev = overlayMapRef.current;
       let changed = false;
       const nextMap = new Map(prev);
       const idsInPages = new Set(pagesWithPreviews.map((p) => p.id));
@@ -389,8 +481,8 @@ export default function NoteScreen() {
           changed = true;
         }
       }
-      return changed ? nextMap : prev;
-    });
+      if (changed) replaceOverlayMap(nextMap);
+    }
   }, [mergeStoredPreviews, rememberPagePreviews]);
 
   const handleDrawingChange = useCallback(() => {
@@ -414,6 +506,10 @@ export default function NoteScreen() {
   // Push tool state to canvas whenever it changes
   useEffect(() => {
     canvasRef.current?.setTool(toolState);
+    if (toolState.toolType === 'pen' || toolState.toolType === 'highlighter' ||
+        toolState.toolType === 'crayon' || toolState.toolType === 'calligraphy') {
+      lastPenToolRef.current = toolState.toolType;
+    }
   }, [toolState]);
 
   const handleToolPress = useCallback(
@@ -465,13 +561,13 @@ export default function NoteScreen() {
   );
 
   const handleUndo = useCallback(() => {
-    canvasRef.current?.undo();
+    history.undoHistory();
     scheduleAutosave();
-  }, [scheduleAutosave]);
+  }, [scheduleAutosave, history.undoHistory]);
   const handleRedo = useCallback(() => {
-    canvasRef.current?.redo();
+    history.redoHistory();
     scheduleAutosave();
-  }, [scheduleAutosave]);
+  }, [scheduleAutosave, history.redoHistory]);
 
   const handleJumpToPage = useCallback(
     (pageIndex: number) => {
@@ -502,24 +598,18 @@ export default function NoteScreen() {
       pageIndex: number,
       updater: (state: PageOverlayState) => PageOverlayState,
     ) => {
-      setOverlayMap((prev) => {
-        const page = enginePages[pageIndex];
-        if (!page) return prev;
-        const current = prev.get(page.id) ?? emptyOverlay();
-        const next = updater(current);
-        const nextMap = new Map(prev);
-        nextMap.set(page.id, next);
-        return nextMap;
-      });
+      const pageId = enginePagesRef.current[pageIndex]?.id;
+      if (!pageId) return;
+      history.setOverlayPages(pages => pages.map(page => page.id === pageId
+        ? {...page, ...updater(overlayFromPage(page))} : page));
       scheduleAutosave();
     },
-    [enginePages, scheduleAutosave],
+    [history.setOverlayPages, scheduleAutosave],
   );
 
   const applyInsertedImage = useCallback(
-    (picked: PickedImageResult) => {
-      const pageIdx = Math.min(currentPageIndex, enginePages.length - 1);
-      if (pageIdx < 0) return;
+    async (picked: PickedImageResult) => {
+      if (enginePages.length === 0) return;
       const aspect = picked.width / Math.max(1, picked.height);
       const maxDim = 360;
       let w = picked.width;
@@ -532,15 +622,24 @@ export default function NoteScreen() {
         h = maxDim;
         w = h * aspect;
       }
+      const { pageIndex: pageIdx, x, y } = insertImagePosition(store.getSnapshot(), PAGE_WIDTH, PAGE_HEIGHT,
+        enginePages.length, CONTENT_PADDING, w, h, currentPageIndex);
+      const zIndex = Array.from(overlayMapRef.current.values()).reduce(
+        (highest, overlay) => overlay.insertedElements.reduce((value, asset) => Math.max(value, asset.zIndex ?? 0), highest), 0,
+      ) + 1;
+      const canvas = canvasRef.current;
+      if (Platform.OS === 'ios' && !canvas) throw new Error('Ink canvas is unavailable');
+      const layerOrder = Platform.OS === 'ios' ? await canvas!.reserveLayerOrder() : undefined;
       const element: InsertedElement = {
         id: insertedElementId(),
         type: 'image',
-        x: Math.max(0, (PAGE_WIDTH - w) / 2),
-        y: Math.max(0, (PAGE_HEIGHT - h) / 2),
+        x,
+        y,
         width: w,
         height: h,
         aspectRatio: aspect,
         rotation: 0,
+        layerOrder,
         sourceUri: picked.uri,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -551,13 +650,13 @@ export default function NoteScreen() {
           ...state.insertedElements,
           {
             ...element,
-            zIndex: Math.max(0, ...state.insertedElements.map((el) => el.zIndex ?? 0)) + 1,
+            zIndex,
           },
         ],
       }));
       setSelection({ type: 'image', pageIndex: pageIdx, id: element.id });
     },
-    [currentPageIndex, enginePages.length, mutateOverlay],
+    [currentPageIndex, enginePages.length, mutateOverlay, store],
   );
 
   const handleInsertFromLibrary = useCallback(async () => {
@@ -565,9 +664,15 @@ export default function NoteScreen() {
     setAction(null);
     try {
       const picked = await pickFromLibrary(id);
-      if (picked) applyInsertedImage(picked);
+      if (picked) {
+        await applyInsertedImage(picked);
+        selectTool('select');
+        return;
+      }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] insert from library failed', error);
+      Alert.alert(t.editor.insertImageTitle,
+        error instanceof Error && error.message === 'photo-access-denied' ? t.preferences.photoAccess : t.common.pleaseTryAgain);
     }
     selectTool('pen');
   }, [applyInsertedImage, id, selectTool]);
@@ -577,7 +682,11 @@ export default function NoteScreen() {
     setAction(null);
     try {
       const picked = await pickFromCamera(id);
-      if (picked) applyInsertedImage(picked);
+      if (picked) {
+        await applyInsertedImage(picked);
+        selectTool('select');
+        return;
+      }
     } catch (error) {
       if (__DEV__) console.warn('[NoteScreen] insert from camera failed', error);
     }
@@ -585,10 +694,18 @@ export default function NoteScreen() {
   }, [applyInsertedImage, id, selectTool]);
 
   const handleCreateTextBox = useCallback(
-    (pageIndex: number, box: InkTextBox) => {
+    async (pageIndex: number, box: InkTextBox): Promise<boolean> => {
+      let layerOrder: number | undefined;
+      if (Platform.OS === 'ios') {
+        try {
+          const canvas = canvasRef.current;
+          if (!canvas) throw new Error('Ink canvas is unavailable');
+          layerOrder = await canvas.reserveLayerOrder();
+        } catch { Alert.alert(t.common.pleaseTryAgain); return false; }
+      }
       mutateOverlay(pageIndex, (state) => ({
         ...state,
-        textBoxes: [...state.textBoxes, box],
+        textBoxes: [...state.textBoxes, { ...box, layerOrder }],
       }));
       const needsTrailingBlankPage = pageIndex >= enginePages.length - 1;
       const ensureTrailingBlankPage = needsTrailingBlankPage
@@ -601,6 +718,7 @@ export default function NoteScreen() {
           canvasRef.current?.revealPagePosition(pageIndex, box.y, true);
         }, 250);
       });
+      return true;
     },
     [enginePages.length, mutateOverlay],
   );
@@ -629,34 +747,57 @@ export default function NoteScreen() {
 
   const handleUpdateInsertedElement = useCallback(
     (pageIndex: number, elementId: string, patch: Partial<InsertedElement>) => {
-      const now = new Date().toISOString();
-      mutateOverlay(pageIndex, (state) => ({
-        ...state,
-        insertedElements: state.insertedElements.map((el) =>
-          el.id === elementId ? { ...el, ...patch, updatedAt: now } : el,
-        ),
-      }));
+      const apply = (layerOrder?: number) => {
+        const now = new Date().toISOString();
+        mutateOverlay(pageIndex, (state) => ({
+          ...state,
+          insertedElements: state.insertedElements.map((el) =>
+            el.id === elementId ? { ...el, ...patch, ...(layerOrder !== undefined ? {layerOrder} : {}), updatedAt: now } : el,
+          ),
+        }));
+      };
+      if (Platform.OS !== 'ios' || patch.zIndex === undefined) { apply(); return; }
+      const minZIndex = Array.from(overlayMapRef.current.values()).reduce(
+        (minimum, overlay) => overlay.insertedElements.reduce((value, asset) => Math.min(value, asset.zIndex ?? 0), minimum), 0,
+      );
+      if (patch.zIndex < minZIndex) { apply(0); return; }
+      const canvas = canvasRef.current;
+      if (!canvas) { Alert.alert(t.common.pleaseTryAgain); return; }
+      void canvas.reserveLayerOrder().then(apply).catch(() => Alert.alert(t.common.pleaseTryAgain));
     },
     [mutateOverlay],
   );
 
   const handleDuplicateInsertedElement = useCallback(
-    (pageIndex: number, elementId: string) => {
+    async (pageIndex: number, elementId: string) => {
       const page = enginePages[pageIndex];
       if (!page) return;
       const state = overlayMapRef.current.get(page.id) ?? emptyOverlay();
       const element = state.insertedElements.find((el) => el.id === elementId);
       if (!element) return;
 
+      let layerOrder: number | undefined;
+      if (Platform.OS === 'ios') {
+        try {
+          const canvas = canvasRef.current;
+          if (!canvas) throw new Error('Ink canvas is unavailable');
+          layerOrder = await canvas.reserveLayerOrder();
+        } catch { Alert.alert(t.common.pleaseTryAgain); return; }
+      }
+
       const now = new Date().toISOString();
       const nextId = insertedElementId();
-      const maxZIndex = Math.max(0, ...state.insertedElements.map((el) => el.zIndex ?? 0));
+      const maxZIndex = Array.from(overlayMapRef.current.values()).reduce(
+        (highest, overlay) => overlay.insertedElements.reduce(
+          (value, asset) => Math.max(value, asset.zIndex ?? 0), highest,
+        ), 0,
+      );
       const duplicated: InsertedElement = {
         ...element,
         id: nextId,
-        x: Math.max(0, Math.min(PAGE_WIDTH - (element.width ?? 80), element.x + 20)),
-        y: Math.max(0, Math.min(PAGE_HEIGHT - (element.height ?? 80), element.y + 20)),
+        ...duplicateAssetPosition(element, pageIndex, PAGE_WIDTH, PAGE_HEIGHT, enginePages.length),
         zIndex: maxZIndex + 1,
+        layerOrder,
         createdAt: now,
         updatedAt: now,
       };
@@ -697,11 +838,29 @@ export default function NoteScreen() {
     [id],
   );
 
+  const handleLineSpacing = useCallback(async (value: LineSpacing) => {
+    if (!id || lineSpacingBusyRef.current) return;
+    lineSpacingBusyRef.current = true;
+    setLineSpacingBusy(true);
+    try {
+      const next = await setNoteLineSpacing(id, value);
+      if (!next) throw new Error('Note not found');
+      if (isMountedRef.current) setMetadata(next);
+    } catch (error) {
+      if (__DEV__) console.warn('[NoteScreen] line spacing update failed', error);
+      Alert.alert(t.editor.statusError, t.common.pleaseTryAgain);
+    } finally {
+      lineSpacingBusyRef.current = false;
+      if (isMountedRef.current) setLineSpacingBusy(false);
+    }
+  }, [id]);
+
   const handleExport = useCallback(async () => {
     if (!id || !canvasRef.current || isExporting) return;
     setIsExporting(true);
     try {
       await flushNow();
+      await flushHistoryRef.current();
       const canvasData = await canvasRef.current.getNotebookData();
       const overlay = overlayMapRef.current;
       const mergedPages = mergeStoredPreviews(canvasData.pages).map((page) => {
@@ -718,6 +877,7 @@ export default function NoteScreen() {
       const result = await exportNotebookAsPdf({
         data: { ...canvasData, pages: mergedPages },
         pdfBackgroundUri: metadata?.pdfUri ?? null,
+        backgroundType: paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing),
         filename,
       });
       if (!result.ok) {
@@ -738,6 +898,8 @@ export default function NoteScreen() {
     isExporting,
     mergeStoredPreviews,
     metadata?.pdfUri,
+    metadata?.backgroundType,
+    metadata?.lineSpacing,
     metadata?.title,
     rememberPagePreviews,
   ]);
@@ -747,12 +909,12 @@ export default function NoteScreen() {
     cancelPendingAutosave();
     setAutosaveEnabled(false);
     try {
-      router.replace('/');
+      if (onClosed) onClosed(); else router.replace('/');
     } catch (error) {
       exitRef.current = 'editing';
       if (__DEV__) console.warn('[NoteScreen] navigation failed', error);
     }
-  }, [cancelPendingAutosave, router]);
+  }, [cancelPendingAutosave, onClosed, router]);
 
   // Save-then-leave. On failure the user chooses: retry, stay, or explicitly
   // discard. The named function expression lets the retry button re-invoke it.
@@ -760,6 +922,10 @@ export default function NoteScreen() {
     const saved = await flushNow();
     if (!isMountedRef.current) return;
     if (saved) {
+      if (beforeLeave && !await beforeLeave()) {
+        exitRef.current = 'editing';
+        return;
+      }
       navigateHome();
       return;
     }
@@ -771,7 +937,12 @@ export default function NoteScreen() {
         {
           text: t.editor.leaveAnyway,
           style: 'destructive',
-          onPress: () => navigateHome(),
+          onPress: () => {
+            void (async () => {
+              if (!beforeLeave || await beforeLeave()) navigateHome();
+              else exitRef.current = 'editing';
+            })();
+          },
         },
         {
           text: t.editor.stay,
@@ -782,7 +953,7 @@ export default function NoteScreen() {
         },
       ],
     );
-  }, [flushNow, navigateHome]);
+  }, [beforeLeave, flushNow, navigateHome]);
 
   const handleBack = useCallback(async () => {
     if (exitRef.current !== 'editing') return;
@@ -798,6 +969,7 @@ export default function NoteScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      cancelThumbnailRepairs();
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
         void handleBack();
         return true;
@@ -819,6 +991,34 @@ export default function NoteScreen() {
       };
     });
   }, [enginePages, overlayMap]);
+  const hasSelectableImages = useMemo(() => pagesForOverlay.some(page =>
+    (page.insertedElements ?? []).some(element => Boolean(element.sourceUri ?? element.renderedImageUri))),
+  [pagesForOverlay]);
+
+  const handleImageFingerTap = useCallback((event: {nativeEvent: {locationX: number; locationY: number}}) => {
+    const hit = imageAtContentPoint(pagesForOverlay,
+      {x: event.nativeEvent.locationX, y: event.nativeEvent.locationY},
+      {pageWidth: PAGE_WIDTH, pageHeight: PAGE_HEIGHT, contentPadding: CONTENT_PADDING,
+        containerWidth: store.getSnapshot()?.containerWidth ?? viewportWidth});
+    if (!hit) return;
+    selectTool('select');
+    setSelection({type: 'image', pageIndex: hit.pageIndex, id: hit.id});
+  }, [pagesForOverlay, selectTool, store, viewportWidth]);
+
+  const documentImageLayersJSON = useMemo(() => {
+    if (Platform.OS !== 'ios') return undefined;
+    const interactive = ['select', 'text', 'insert'].includes(toolState.toolType);
+    return JSON.stringify(documentVisualLayers(pagesForOverlay, PAGE_HEIGHT, selection, interactive, authored => {
+      const displayColor = inkDisplayColor(authored, resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light'));
+      const color = processColor(displayColor);
+      return typeof color === 'number' ? color >>> 0 : 0xff000000;
+    }, currentPageIndex, PixelRatio.get()));
+  }, [currentPageIndex, pagesForOverlay, selection, theme.isDark, toolState.toolType]);
+
+  const overlayTouchRects = useMemo(() => selectedOverlayTouchRects(pagesForOverlay, selection,
+    {pageWidth: PAGE_WIDTH, pageHeight: PAGE_HEIGHT, contentPadding: CONTENT_PADDING,
+      containerWidth: store.getSnapshot()?.containerWidth ?? viewportWidth}),
+    [pagesForOverlay, selection, store, viewportWidth]);
 
   if (!id) {
     return (
@@ -897,6 +1097,9 @@ export default function NoteScreen() {
         onRename={() => setAction({ kind: 'rename' })}
         onTogglePageSidebar={() => setIsPageSidebarOpen((value) => !value)}
         onExport={() => void handleExport()}
+        onPreferences={() => { setToolPopover(null); setAction({ kind: 'preferences' }); }}
+        onSplit={onSplit}
+        closePane={Boolean(onClosed)}
       />
 
       <KeyboardAvoidingView
@@ -904,22 +1107,38 @@ export default function NoteScreen() {
         style={styles.canvasArea}
       >
         <InfiniteInkCanvas
+          displayAppearance={resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light')}
           ref={canvasRef}
           style={styles.flex}
           initialPageCount={1}
+          minScale={0.25}
+          renderBackend={Platform.OS === "ios" ? "ganesh" : "cpu"}
+          contentPadding={CONTENT_PADDING}
+          blockedTouchRects={overlayTouchRects}
+          documentImageLayersJSON={documentImageLayersJSON}
           pageWidth={PAGE_WIDTH}
           pageHeight={PAGE_HEIGHT}
           toolState={toolState}
-          backgroundType={metadata?.backgroundType ?? 'plain'}
+          holdToShapeEnabled={holdToShape}
+          backgroundType={paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing)}
           pdfBackgroundBaseUri={pdfRenderUri}
           fingerDrawingEnabled={fingerDrawingEnabled}
+          onContentTap={hasSelectableImages && !fingerDrawingEnabled && !['select', 'text', 'insert'].includes(toolState.toolType)
+            ? handleImageFingerTap : undefined}
           onReady={handleCanvasReady}
+          onError={handleCanvasLoadError}
           onDrawingChange={handleDrawingChange}
+          onStrokeEnd={tool => {
+            if (returnToPen && tool === 'eraser') selectToolIfActive('eraser', 'pen');
+          }}
+          onExternalEdit={payload => history.handleHistoryDrawingChange({nativeEvent: {externalEdit: {payload}}})}
+          onHistoryAction={historyAction => history.handleHistoryDrawingChange({nativeEvent: {historyAction}})}
           onCurrentPageChange={handleCurrentPageChange}
           onPagesChange={handlePagesChange}
           onPencilDoubleTap={handlePencilDoubleTap}
           overlay={
             <OverlayLayer
+              nativeImages={Platform.OS === 'ios'}
               store={store}
               pages={pagesForOverlay}
               pageWidth={PAGE_WIDTH}
@@ -942,9 +1161,12 @@ export default function NoteScreen() {
       </KeyboardAvoidingView>
 
       <FloatingToolbar
+        historyEnabled={nativeContentReady}
         activeTool={toolState.toolType as ToolDescriptor['type']}
         toolColors={toolColors}
         topInset={headerHeight}
+        containerWidth={isSplit ? paneWidth : undefined}
+        screenOffsetX={screenOffsetX}
         fingerDrawingEnabled={fingerDrawingEnabled}
         onToggleFingerDrawing={() => {
           void Haptics.selectionAsync();
@@ -959,7 +1181,7 @@ export default function NoteScreen() {
       <PageSidebar
         visible={isPageSidebarOpen}
         pages={pagesForOverlay}
-        backgroundType={metadata?.backgroundType ?? 'plain'}
+        backgroundType={paperBackgroundType(metadata?.backgroundType ?? 'plain', metadata?.lineSpacing)}
         pdfUri={metadata?.pdfUri}
         currentPage={currentPageIndex}
         topInset={headerHeight}
@@ -988,6 +1210,10 @@ export default function NoteScreen() {
         onChange={handleChangeToolSettings}
         onClose={() => setToolPopover(null)}
       />
+
+      <PreferencesSheet visible={action?.kind === 'preferences'} onClose={() => setAction(null)}
+        noteLineSpacing={metadata?.backgroundType === 'lined' ? resolveLineSpacing(metadata.lineSpacing) : undefined}
+        onNoteLineSpacingChange={value => void handleLineSpacing(value)} lineSpacingBusy={lineSpacingBusy} />
 
       <ItemActionsMenu
         visible={action?.kind === 'insertImage'}

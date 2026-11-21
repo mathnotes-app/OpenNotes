@@ -21,6 +21,9 @@ export interface EditorHeaderProps {
   onRename: () => void;
   onTogglePageSidebar: () => void;
   onExport: () => void;
+  onPreferences: () => void;
+  onSplit?: () => void;
+  closePane?: boolean;
 }
 
 export function EditorHeader({
@@ -34,6 +37,9 @@ export function EditorHeader({
   onRename,
   onTogglePageSidebar,
   onExport,
+  onPreferences,
+  onSplit,
+  closePane = false,
 }: EditorHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -50,12 +56,15 @@ export function EditorHeader({
     >
       <View style={[styles.bar, { height: EDITOR_HEADER_BAR_HEIGHT }]}>
         <Pressable
+          testID="editor-back"
+          accessibilityRole="button"
+          accessibilityLabel={closePane ? t.editor.closeSplit : t.library.backLabel}
           onPress={onBack}
           hitSlop={10}
           style={({ pressed }) => [styles.sideButton, pressed && { opacity: 0.5 }]}
         >
           <Ionicons name="chevron-back" size={26} color={theme.colors.accent} />
-          <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>
+          {!closePane && <Text style={[typography.body, { color: theme.colors.accent }]}>{t.library.backLabel}</Text>}
         </Pressable>
 
         <Pressable
@@ -76,11 +85,20 @@ export function EditorHeader({
             ]}
             numberOfLines={1}
           >
-            {t.editor.pageStatus(currentPage + 1, pageCount, statusLabel(status))}
+            {t.preferences.pagePosition(currentPage + 1, pageCount)}
+            {status === 'error' ? ` · ${t.editor.statusError}` : ''}
           </Text>
         </Pressable>
 
         <View style={styles.rightActions}>
+          {onSplit && <Pressable accessibilityRole="button" accessibilityLabel={t.editor.openSplit}
+            testID="editor-open-split" onPress={onSplit} hitSlop={8} style={styles.iconButton}>
+            <Ionicons name="copy-outline" size={22} color={theme.colors.accent} />
+          </Pressable>}
+          <Pressable accessibilityRole="button" accessibilityLabel={t.preferences.title}
+            testID="editor-preferences" onPress={onPreferences} hitSlop={10} style={styles.iconButton}>
+            <Ionicons name="settings-outline" size={22} color={theme.colors.accent} />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t.editor.pagesA11y}
@@ -118,21 +136,6 @@ export function EditorHeader({
       </View>
     </View>
   );
-}
-
-function statusLabel(status: AutosaveStatus): string {
-  switch (status) {
-    case 'idle':
-      return t.editor.statusReady;
-    case 'pending':
-      return t.editor.statusPending;
-    case 'saving':
-      return t.editor.statusSaving;
-    case 'saved':
-      return t.editor.statusSaved;
-    case 'error':
-      return t.editor.statusError;
-  }
 }
 
 const styles = StyleSheet.create({

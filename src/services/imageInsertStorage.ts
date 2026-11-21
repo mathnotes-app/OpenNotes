@@ -50,13 +50,13 @@ async function copyAssetToNote(
     };
   } catch (error) {
     if (__DEV__) console.warn('[imageInsertStorage] copy failed', error);
-    return null;
+    throw error;
   }
 }
 
 export async function pickFromLibrary(noteId: string): Promise<PickedImageResult | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) return null;
+  // The system picker grants access to the selected item; full photo-library
+  // access is not required and can be denied even when picking is allowed.
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsEditing: false,

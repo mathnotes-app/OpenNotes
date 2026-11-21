@@ -9,21 +9,46 @@ import {
   createCatalogStore,
   parseCatalog,
 } from '../src/services/catalogStore.ts';
+import { paperBackgroundType } from '../src/utils/paperSpacing.ts';
+
+test('line spacing survives catalog and older notes retain their original paper', () => {
+  const input = {version: 1, folders: [], notes: [
+    {id: 'old', backgroundType: 'lined'},
+    {id: 'new', backgroundType: 'lined', lineSpacing: 'narrow'},
+    {id: 'custom', backgroundType: 'lined', lineSpacing: 'custom-47'},
+    {id: 'invalid', backgroundType: 'lined', lineSpacing: 'invalid'},
+  ]};
+  const notes = parseCatalog(JSON.stringify(parseCatalog(JSON.stringify(input)))).notes;
+  assert.equal(paperBackgroundType(notes[0].backgroundType, notes[0].lineSpacing), 'lined');
+  assert.equal(paperBackgroundType(notes[1].backgroundType, notes[1].lineSpacing), 'lined-narrow');
+  assert.equal(paperBackgroundType(notes[2].backgroundType, notes[2].lineSpacing), 'lined-custom-47');
+  assert.equal(paperBackgroundType(notes[3].backgroundType, notes[3].lineSpacing), 'lined');
+  assert.equal(paperBackgroundType('pdf', 'compact'), 'pdf');
+});
 
 test('catalog reload preserves composed thumbnail versions and still accepts old notes', () => {
   const catalog = parseCatalog(JSON.stringify({
     version: 1, folders: [], notes: [
       { id: 'old', title: 'Old note', thumbnailUri: 'old-ink-preview' },
-      { id: 'v1', title: 'Old cover', thumbnailUri: 'old-cover', thumbnailVersion: 1 },
-      { id: 'new', title: 'PDF note', thumbnailUri: 'composed-cover', thumbnailVersion: 2 },
+      { id: 'new', title: 'Photo note', thumbnailUri: 'composed-cover', thumbnailVersion: 4 },
     ],
   }));
   assert.equal(catalog.notes[0].thumbnailUri, 'old-ink-preview');
   assert.equal(catalog.notes[0].thumbnailVersion, undefined);
-  assert.equal(catalog.notes[1].thumbnailVersion, 1);
+  assert.equal(catalog.notes[1].thumbnailVersion, 4);
   const restored = parseCatalog(JSON.stringify(catalog));
-  assert.equal(restored.notes[2].thumbnailUri, 'composed-cover');
-  assert.equal(restored.notes[2].thumbnailVersion, 2);
+  assert.equal(restored.notes[1].thumbnailUri, 'composed-cover');
+  assert.equal(restored.notes[1].thumbnailVersion, 4);
+});
+
+test('custom photo covers survive catalog serialization without replacing generated previews', () => {
+  const source = { version: 1, folders: [], notes: [
+    { id: 'cover', title: 'Covered', thumbnailUri: 'generated', thumbnailVersion: 1,
+      customCoverUri: 'file:///old/Documents/images/cover/photo.jpg' },
+  ] };
+  const restored = parseCatalog(JSON.stringify(parseCatalog(JSON.stringify(source))));
+  assert.equal(restored.notes[0].customCoverUri, 'file:///old/Documents/images/cover/photo.jpg');
+  assert.equal(restored.notes[0].thumbnailUri, 'generated');
 });
 
 function makeKv(initial = {}) {

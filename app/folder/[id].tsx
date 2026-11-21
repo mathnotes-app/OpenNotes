@@ -13,6 +13,7 @@ import { RenameDialog } from '../../src/components/library/RenameDialog';
 import { FolderPickerSheet } from '../../src/components/library/FolderPickerSheet';
 import { CreateNoteBackgroundSheet } from '../../src/components/library/CreateNoteBackgroundSheet';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useNoteCover } from '../../src/hooks/useNoteCover';
 import { spacing } from '../../src/theme/spacing';
 import {
   createNote,
@@ -27,7 +28,7 @@ import {
   listFolders,
   renameFolder,
 } from '../../src/services/foldersRepo';
-import type { BackgroundType, FolderMetadata, NoteMetadata } from '../../src/types/note';
+import type { BackgroundType, FolderMetadata, LineSpacing, NoteMetadata } from '../../src/types/note';
 
 type Action =
   | { kind: 'createNoteBackground' }
@@ -59,6 +60,7 @@ export default function FolderScreen() {
     setAllFolders(folders);
     setLoading(false);
   }, [id]);
+  const { chooseCover, removeCover, presentPendingCover } = useNoteCover(refresh);
 
   useEffect(() => {
     void refresh();
@@ -70,7 +72,7 @@ export default function FolderScreen() {
     }, [refresh]),
   );
 
-  const handleCreateNote = useCallback(async (backgroundType: BackgroundType, title: string) => {
+  const handleCreateNote = useCallback(async (backgroundType: BackgroundType, title: string, lineSpacing: LineSpacing) => {
     if (!folder || creatingNoteRef.current) return;
     creatingNoteRef.current = true;
     setAction(null);
@@ -80,6 +82,7 @@ export default function FolderScreen() {
         const meta = await createNote({
           folderId: folder.id,
           backgroundType,
+          lineSpacing,
           title: title.trim() || undefined,
         });
         router.push(`/note/${meta.id}`);
@@ -183,16 +186,19 @@ export default function FolderScreen() {
 
       <CreateNoteBackgroundSheet
         visible={action?.kind === 'createNoteBackground'}
-        onPick={(type, title) => void handleCreateNote(type, title)}
+        onPick={(type, title, lineSpacing) => void handleCreateNote(type, title, lineSpacing)}
         onClose={() => setAction(null)}
       />
 
       <ItemActionsMenu
         visible={action?.kind === 'noteMenu'}
+        onDismiss={presentPendingCover}
         title={action?.kind === 'noteMenu' ? action.note.title : undefined}
         actions={
           action?.kind === 'noteMenu'
             ? [
+                { key: 'cover', label: t.preferences.chooseCover, onPress: () => chooseCover(action.note) },
+                ...(action.note.customCoverUri ? [{ key: 'removeCover', label: t.preferences.removeCover, onPress: () => void removeCover(action.note) }] : []),
                 {
                   key: 'rename',
                   label: t.common.rename,

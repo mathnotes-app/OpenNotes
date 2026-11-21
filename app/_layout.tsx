@@ -4,10 +4,10 @@ import { Stack, useRouter, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Alert, Pressable, Share, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { CrashReportBanner } from '../src/components/CrashReportBanner';
 import * as Linking from 'expo-linking';
-import { darkColors, lightColors } from '../src/theme/colors';
+import { PreferencesProvider } from '../src/hooks/Preferences';
 import { radius, spacing } from '../src/theme/spacing';
 import { typography } from '../src/theme/typography';
 import { useTheme } from '../src/hooks/useTheme';
@@ -27,9 +27,11 @@ const reportFromPreviousRun = takePendingCrashReport();
 const handledPdfUrls = new Set<string>();
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  const colors = isDark ? darkColors : lightColors;
+  return <PreferencesProvider><RootContent /></PreferencesProvider>;
+}
+
+function RootContent() {
+  const { isDark, colors } = useTheme();
   useOpenInPdfImport();
   const [pendingReport, setPendingReport] = useState<CrashReport | null>(reportFromPreviousRun);
   const dismissReport = useCallback(() => setPendingReport(null), []);

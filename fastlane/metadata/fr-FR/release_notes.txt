@@ -1,1 +1,1 @@
-Les PDF importés ne disparaissent plus des notes après une mise à jour de l'app. Correction des plantages lors de la suppression d'une sélection après une annulation et de l'export PDF de longs carnets. Si OpenNotes se ferme de façon inattendue, vous pouvez désormais partager les détails de l'erreur pour nous aider à la corriger.
+Ouvrez deux notes côte à côte sur iPad. Les PDF importés restent plus nets au zoom. Vous pouvez aussi régler l’interligne du papier ligné.

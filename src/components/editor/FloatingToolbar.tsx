@@ -1,3 +1,4 @@
+import { resolveInkDisplayAppearance, inkDisplayColor } from '@mathnotes/mobile-ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
@@ -181,8 +182,11 @@ export interface FloatingToolbarProps {
   onToolLongPress: (tool: ToolDescriptor, anchor: ToolbarButtonAnchor) => void;
   fingerDrawingEnabled: boolean;
   onToggleFingerDrawing: () => void;
+  historyEnabled?: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  containerWidth?: number;
+  screenOffsetX?: number;
 }
 
 interface ButtonLayout {
@@ -202,12 +206,16 @@ export function FloatingToolbar({
   onToolLongPress,
   fingerDrawingEnabled,
   onToggleFingerDrawing,
+  historyEnabled = true,
   onUndo,
   onRedo,
+  containerWidth,
+  screenOffsetX = 0,
 }: FloatingToolbarProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { width: windowWidth, height: screenHeight } = useWindowDimensions();
+  const screenWidth = containerWidth ?? windowWidth;
 
   const [dockedEdge, setDockedEdge] = useState<DockedEdge>('top');
   const orientation = orientationForEdge(dockedEdge);
@@ -295,6 +303,13 @@ export function FloatingToolbar({
     dockedEdgeRef.current = nextEdge;
     setDockedEdge((prev) => (prev === nextEdge ? prev : nextEdge));
   }, []);
+
+  useEffect(() => {
+    if (containerWidth !== undefined && containerWidth < 380 &&
+        (dockedEdge === 'top' || dockedEdge === 'bottom')) {
+      commitDockedEdge(EDGE_LEFT);
+    }
+  }, [containerWidth, dockedEdge, commitDockedEdge]);
 
   const startDrag = useCallback(() => {
     draggingRef.current = true;
@@ -438,7 +453,7 @@ export function FloatingToolbar({
       if (!layout) {
         return {
           toolType,
-          screenX: x + pill.width / 2,
+          screenX: screenOffsetX + x + pill.width / 2,
           screenY: y + pill.height / 2,
           width: 0,
           height: 0,
@@ -447,14 +462,14 @@ export function FloatingToolbar({
       }
       return {
         toolType,
-        screenX: x + layout.offsetX,
+        screenX: screenOffsetX + x + layout.offsetX,
         screenY: y + layout.offsetY,
         width: layout.width,
         height: layout.height,
         dockedEdge: edge,
       };
     },
-    [translateX, translateY],
+    [translateX, translateY, screenOffsetX],
   );
 
   return (
@@ -476,7 +491,7 @@ export function FloatingToolbar({
           >
             {TOOL_DESCRIPTORS.map((tool) => {
               const isActive = activeTool === tool.type;
-              const tint = tool.supportsColor ? toolColors[tool.type] : undefined;
+              const tint = tool.supportsColor ? inkDisplayColor(toolColors[tool.type], resolveInkDisplayAppearance(theme.isDark ? 'dark' : 'light')) : undefined;
               return (
                 <View
                   key={tool.type}
@@ -530,6 +545,7 @@ export function FloatingToolbar({
               iconName="arrow-undo-outline"
               compact={isCompactHorizontal}
               accessibilityLabel={t.editor.undo}
+              disabled={!historyEnabled}
               onPress={onUndo}
               theme={theme}
             />
@@ -537,6 +553,7 @@ export function FloatingToolbar({
               iconName="arrow-redo-outline"
               compact={isCompactHorizontal}
               accessibilityLabel={t.editor.redo}
+              disabled={!historyEnabled}
               onPress={onRedo}
               theme={theme}
             />
@@ -548,6 +565,7 @@ export function FloatingToolbar({
 }
 
 function SmallIconButton({
+  disabled = false,
   iconName,
   active = false,
   compact = false,
@@ -557,6 +575,7 @@ function SmallIconButton({
 }: {
   iconName: keyof typeof Ionicons.glyphMap;
   active?: boolean;
+  disabled?: boolean;
   compact?: boolean;
   accessibilityLabel: string;
   onPress: () => void;
@@ -564,6 +583,7 @@ function SmallIconButton({
 }) {
   return (
     <Pressable
+      disabled={disabled}
       onPress={() => {
         void Haptics.selectionAsync();
         onPress();
@@ -571,9 +591,10 @@ function SmallIconButton({
       hitSlop={4}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: active, disabled }}
       style={({ pressed }) => [
         styles.smallButton,
+        disabled && { opacity: 0.35 },
         compact && styles.smallButtonCompact,
         {
           backgroundColor: active

@@ -1,1 +1,1 @@
-I PDF importati non scompaiono più dalle note dopo un aggiornamento dell'app. Corretti i crash durante l'eliminazione di una selezione dopo Annulla e l'esportazione in PDF di quaderni lunghi. Se OpenNotes si chiude inaspettatamente, ora puoi condividere i dettagli dell'errore per aiutarci a risolverlo.
+Apri due note affiancate su iPad. I PDF importati restano più nitidi quando ingrandisci e ora puoi regolare la distanza tra le righe del foglio.
