@@ -43,3 +43,14 @@ RCT_EXTERN_METHOD(listCloudFiles:(NSString *)dir
                   rejecter:(RCTPromiseRejectBlock)rejecter)
 
 @end
+
+@interface RCT_EXTERN_MODULE(ICloudDriveNotebooks, NSObject)
+
+RCT_EXTERN_METHOD(getAccount:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(listNotebooks:(NSString *)account resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(readNotebook:(NSString *)name account:(NSString *)account knownRevision:(NSString * _Nullable)knownRevision stageId:(NSString *)stageId resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(writeNotebook:(NSString *)name account:(NSString *)account expectedRevision:(NSString * _Nullable)expectedRevision stageId:(NSString *)stageId resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(openNotebook:(NSString *)uri stageId:(NSString *)stageId resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+RCT_EXTERN_METHOD(resolveConflicts:(NSString *)name account:(NSString *)account revisions:(NSArray<NSString *> *)revisions resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter)
+
+@end

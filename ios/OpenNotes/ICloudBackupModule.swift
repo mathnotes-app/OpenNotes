@@ -15,7 +15,7 @@ class ICloudBackupModule: NSObject {
   func getContainerPath(_ resolver: @escaping RCTPromiseResolveBlock,
                         rejecter: @escaping RCTPromiseRejectBlock) {
     DispatchQueue.global(qos: .utility).async {
-      guard let containerUrl = FileManager.default.url(forUbiquityContainerIdentifier: nil) else {
+      guard let containerUrl = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.com.builderpro.opennotes") else {
         resolver(NSNull())
         return
       }

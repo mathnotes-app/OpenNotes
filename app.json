@@ -16,16 +16,20 @@
     "ios": {
       "bundleIdentifier": "com.builderpro.opennotes",
       "icon": "./assets/icon.png",
-      "buildNumber": "44",
+      "buildNumber": "45",
       "supportsTablet": true,
       "usesIcloudStorage": true,
       "entitlements": {
         "com.apple.developer.icloud-container-identifiers": [
-          "iCloud.com.builderpro.opennotes"
+          "iCloud.com.builderpro.opennotes",
+          "iCloud.com.builderpro.opennotes.notebooks"
         ],
-        "com.apple.developer.icloud-services": ["CloudDocuments"],
+        "com.apple.developer.icloud-services": [
+          "CloudDocuments"
+        ],
         "com.apple.developer.ubiquity-container-identifiers": [
-          "iCloud.com.builderpro.opennotes"
+          "iCloud.com.builderpro.opennotes",
+          "iCloud.com.builderpro.opennotes.notebooks"
         ]
       },
       "infoPlist": {
@@ -41,6 +45,15 @@
               "com.adobe.pdf"
             ],
             "LSHandlerRank": "Owner"
+          },
+          {
+            "CFBundleTypeName": "OpenNotes Notebook",
+            "CFBundleTypeRole": "Editor",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": [
+              "com.builderpro.opennotes.notebook"
+            ],
+            "LSTypeIsPackage": true
           }
         ],
         "UTImportedTypeDeclarations": [
@@ -57,6 +70,28 @@
               ],
               "public.mime-type": [
                 "application/pdf"
+              ]
+            }
+          }
+        ],
+        "NSUbiquitousContainers": {
+          "iCloud.com.builderpro.opennotes.notebooks": {
+            "NSUbiquitousContainerName": "OpenNotes",
+            "NSUbiquitousContainerIsDocumentScopePublic": true,
+            "NSUbiquitousContainerSupportedFolderLevels": "None"
+          }
+        },
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.builderpro.opennotes.notebook",
+            "UTTypeDescription": "OpenNotes Notebook",
+            "UTTypeConformsTo": [
+              "com.apple.package",
+              "public.composite-content"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "opennotes"
               ]
             }
           }

@@ -3,12 +3,20 @@ import type { BackgroundType, LineSpacing, NoteMetadata } from '../types/note';
 import { paperBackgroundType } from '../utils/paperSpacing';
 import { noteId as makeNoteId } from '../utils/id';
 import { t } from '../i18n';
+import { createPromiseQueue } from '../utils/promiseQueue';
 import { catalogStore } from './catalogEnv';
 import { pruneTombstones } from './catalogStore';
 import { deleteBody, readBody, writeBody, type BodyReadResult } from './noteBodyStorage';
 import { deletePdfForNote } from './pdfStorage';
 import { deleteImagesForNote } from './imageInsertStorage';
 import { createPageThumbnail, THUMBNAIL_VERSION } from './thumbnailService';
+
+/** Serialize cloud application with editor body saves and reads. */
+export const noteIO = createPromiseQueue();
+
+export function readSavedNote(id: string): Promise<[NoteMetadata | null, BodyReadResult]> {
+  return noteIO.enqueue(() => Promise.all([getNote(id), readBody(id)]));
+}
 
 export async function listAllMetadata(): Promise<NoteMetadata[]> {
   const catalog = await catalogStore.getCatalog();
@@ -62,7 +70,7 @@ export async function updateMetadata(
       ...patch,
       id: current.id,
       createdAt: current.createdAt,
-      updatedAt: patch.updatedAt ?? new Date().toISOString(),
+      updatedAt: new Date(Math.max(Date.parse(current.updatedAt) + 1 || 0, Date.now())).toISOString(),
     };
     return {
       ...catalog,
@@ -134,6 +142,13 @@ export async function saveNoteBody(
   id: string,
   data: SerializedNotebookData,
 ): Promise<{ ok: boolean; metadata: NoteMetadata | null }> {
+  return noteIO.enqueue(() => saveNoteBodyLocked(id, data));
+}
+
+async function saveNoteBodyLocked(
+  id: string,
+  data: SerializedNotebookData,
+): Promise<{ ok: boolean; metadata: NoteMetadata | null }> {
   // Invalidate in-flight library renders before changing the body, including
   // when two saves happen in the same clock millisecond.
   thumbnailRevisions.set(id, (thumbnailRevisions.get(id) ?? 0) + 1);
@@ -147,7 +162,6 @@ export async function saveNoteBody(
   // the last cover until the library regenerates it from the saved body.
   const meta = await updateMetadata(id, {
     thumbnailVersion: undefined,
-    updatedAt: new Date().toISOString(),
   });
   return { ok: true, metadata: meta };
 }
@@ -192,7 +206,7 @@ export async function deleteNote(id: string): Promise<void> {
       [id]: now,
     },
   }));
-  await deleteNoteFiles(id);
+  await noteIO.enqueue(() => deleteNoteFiles(id));
 }
 
 export async function deleteAllNotesInFolder(folderId: string): Promise<void> {
@@ -209,7 +223,7 @@ export async function deleteAllNotesInFolder(folderId: string): Promise<void> {
       deletedNoteIds,
     };
   });
-  await Promise.all(targets.map((n) => deleteNoteFiles(n.id)));
+  await noteIO.enqueue(() => Promise.all(targets.map((n) => deleteNoteFiles(n.id))));
 }
 
 export async function orphanNotesInFolder(folderId: string): Promise<void> {

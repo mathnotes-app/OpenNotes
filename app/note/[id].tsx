@@ -58,7 +58,7 @@ import { useViewportTransformStore } from '../../src/hooks/useViewportTransform'
 import {
   cancelThumbnailRepairs,
   getNote,
-  readNoteBody,
+  readSavedNote,
   renameNote,
   saveNoteBody,
   setNoteLineSpacing,
@@ -396,7 +396,7 @@ function NotePane({ id, paneWidth, isSplit = false, screenOffsetX = 0, onSplit, 
     setLoading(true);
     (async () => {
       try {
-        const [meta, body] = await Promise.all([getNote(id), readNoteBody(id)]);
+        const [meta, body] = await readSavedNote(id);
         if (cancelled) return;
         const sourceUri = meta?.pdfUri ?? undefined;
         const renderUri = await resolvePdfRenderUri(sourceUri).catch(() => sourceUri);

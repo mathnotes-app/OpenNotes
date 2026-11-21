@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		1264B56C11B3670107FF502E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		3DEFFA791C634A50BB097201 /* ICloudDriveNotebooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEFFA781C634A50BB097201 /* ICloudDriveNotebooks.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4788858903E15B3CAEB129E6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */; };
 		511FEA48B7554353BD76B271 /* NotebookInteractionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */; };
 		687B4D655A434E689D7A6F2E /* NotebookUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = F179D0B9F0C84C9EBD8B6E62 /* NotebookUITestCase.swift */; };
 		6F4F07E6B68040CA9CCD835A /* NotebookStallUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */; };
+		3DEFFA721C634A50BB097201 /* ICloudDriveUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEFFA731C634A50BB097201 /* ICloudDriveUITests.swift */; };
 		7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */; };
 		7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */; };
 		7D3A801A2E1A4CC89B1B09C1 /* ICloudBackupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */; };
@@ -44,16 +46,18 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OpenNotes/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OpenNotes/Info.plist; sourceTree = "<group>"; };
 		33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotebookInteractionUITests.swift; sourceTree = "<group>"; };
+		3DEFFA781C634A50BB097201 /* ICloudDriveNotebooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ICloudDriveNotebooks.swift; path = OpenNotes/ICloudDriveNotebooks.swift; sourceTree = "<group>"; };
 		575BE98DD16F76BFF21A39E6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = OpenNotes/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFUtilsModule.swift; path = OpenNotes/PDFUtilsModule.swift; sourceTree = "<group>"; };
 		7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PDFUtilsModule.m; path = OpenNotes/PDFUtilsModule.m; sourceTree = "<group>"; };
 		7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ICloudBackupModule.swift; path = OpenNotes/ICloudBackupModule.swift; sourceTree = "<group>"; };
 		7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = ICloudBackupModule.m; path = OpenNotes/ICloudBackupModule.m; sourceTree = "<group>"; };
 		7D3A801C2E1A4CC89B1B09C1 /* ImageThumbnailEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ImageThumbnailEncoder.swift; path = OpenNotes/ImageThumbnailEncoder.swift; sourceTree = "<group>"; };
-		7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InkVisibilityAssertions.swift; sourceTree = "<group>"; };
 		7D3A80312E1A4CC89B1B09C1 /* PDFRenderCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PDFRenderCopy.swift; path = OpenNotes/PDFRenderCopy.swift; sourceTree = "<group>"; };
+		7E4709944072AD746778B1F8 /* InkVisibilityAssertions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InkVisibilityAssertions.swift; sourceTree = "<group>"; };
 		9B82DFB67047998EABD93C92 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-OpenNotes/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotebookStallUITests.swift; sourceTree = "<group>"; };
+		3DEFFA731C634A50BB097201 /* ICloudDriveUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ICloudDriveUITests.swift; sourceTree = "<group>"; };
 		A7A85B485F4321855B927960 /* libPods-OpenNotes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OpenNotes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = OpenNotes/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -102,6 +106,7 @@
 				7D3A80142E1A4CC89B1B09C1 /* PDFUtilsModule.swift */,
 				7D3A80152E1A4CC89B1B09C1 /* PDFUtilsModule.m */,
 				7D3A80182E1A4CC89B1B09C1 /* ICloudBackupModule.swift */,
+				3DEFFA781C634A50BB097201 /* ICloudDriveNotebooks.swift */,
 				7D3A80192E1A4CC89B1B09C1 /* ICloudBackupModule.m */,
 				7D3A801C2E1A4CC89B1B09C1 /* ImageThumbnailEncoder.swift */,
 				7D3A80312E1A4CC89B1B09C1 /* PDFRenderCopy.swift */,
@@ -172,6 +177,7 @@
 				0677D15AA0FA40208901792C /* NativeCanvasAudit.swift */,
 				F179D0B9F0C84C9EBD8B6E62 /* NotebookUITestCase.swift */,
 				A0A6A459021B45B788C0AD70 /* NotebookStallUITests.swift */,
+				3DEFFA731C634A50BB097201 /* ICloudDriveUITests.swift */,
 				33A61D4CAFBD88E11AEFF939 /* NotebookInteractionUITests.swift */,
 			);
 			name = OpenNotesUITests;
@@ -434,6 +440,7 @@
 				7D3A80162E1A4CC89B1B09C1 /* PDFUtilsModule.swift in Sources */,
 				7D3A80172E1A4CC89B1B09C1 /* PDFUtilsModule.m in Sources */,
 				7D3A801A2E1A4CC89B1B09C1 /* ICloudBackupModule.swift in Sources */,
+				3DEFFA791C634A50BB097201 /* ICloudDriveNotebooks.swift in Sources */,
 				7D3A801B2E1A4CC89B1B09C1 /* ICloudBackupModule.m in Sources */,
 				7D3A801D2E1A4CC89B1B09C1 /* ImageThumbnailEncoder.swift in Sources */,
 				7D3A80322E1A4CC89B1B09C1 /* PDFRenderCopy.swift in Sources */,
@@ -449,6 +456,7 @@
 				CA7387E72D1A4EFD8F6C213D /* NativeCanvasAudit.swift in Sources */,
 				687B4D655A434E689D7A6F2E /* NotebookUITestCase.swift in Sources */,
 				6F4F07E6B68040CA9CCD835A /* NotebookStallUITests.swift in Sources */,
+				3DEFFA721C634A50BB097201 /* ICloudDriveUITests.swift in Sources */,
 				511FEA48B7554353BD76B271 /* NotebookInteractionUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -474,7 +482,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -513,7 +521,7 @@
 				CODE_SIGN_ENTITLEMENTS = OpenNotes/OpenNotes.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = U2CPXQV7AJ;
 				INFOPLIST_FILE = OpenNotes/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
