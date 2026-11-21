@@ -27,7 +27,7 @@ function notebook(pages) {
   };
 }
 
-function harness(files = {}, { mergePdfFiles, preparePdfForRendering } = {}) {
+function harness(files = {}, { mergePdfFiles, preparePdfForRendering, vectorExport } = {}) {
   const printCalls = [];
   const batchCalls = [];
   const projectionCalls = [];
@@ -53,6 +53,7 @@ function harness(files = {}, { mergePdfFiles, preparePdfForRendering } = {}) {
     },
   };
   const mobileInk = {
+    supportsVectorPdfExport: () => !!vectorExport,
     async projectDocumentPages(payloads, height, indices) {
       projectionCalls.push({ payloads, height, indices });
       return indices.map(index => 'projected-' + index);
@@ -93,6 +94,7 @@ function harness(files = {}, { mergePdfFiles, preparePdfForRendering } = {}) {
       if (name === '../utils/continuousAssets') return { indexAssetsByPage };
       if (name === '../utils/visualLayerOrder') return { overlayLayerBoundaries };
       if (name === '../utils/paperSpacing') return { pageBackgroundType };
+      if (name === './vectorNotebookExport') return { exportVectorNotebook: vectorExport };
       if (name === './pdfExportHtml') {
         return {
           buildPdfHtml,
@@ -363,4 +365,24 @@ test('each bounded export batch projects from the entire notebook, ignoring stal
   }
   assert.deepEqual(Array.from(h.projectionCalls[1].indices), [8]);
   assert.deepEqual(Array.from(h.batchCalls[1][0]), ['projected-8']);
+});
+
+
+test('exports through the vector writer with the prepared original PDF', async () => {
+  const data = notebook([{ pageType: 'pdf', pdfPageNumber: 1 }]);
+  const writes = [];
+  const h = harness({}, {
+    preparePdfForRendering: () => 'file:///render-copy.pdf',
+    vectorExport: async (...args) => {
+      writes.push(args);
+      return 'file:///vector.pdf';
+    },
+  });
+  const result = await h.exportNotebookAsPdf({
+    data, pdfBackgroundUri: 'file:///source.pdf', filename: 'Plans',
+  });
+  assert.equal(result.uri, 'file:///vector.pdf');
+  assert.deepEqual(writes, [[data, 'file:///render-copy.pdf', undefined, 2]]);
+  assert.equal(h.printCalls.length, 0);
+  assert.equal(h.batchCalls.length, 0);
 });
